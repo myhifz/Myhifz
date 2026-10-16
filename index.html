@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mon Hifz</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mon Hifz">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#F2F3EC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111916" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>html{-webkit-text-size-adjust:100%}body{margin:0}[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--paper);z-index:10}
+*{-webkit-tap-highlight-color:transparent}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one-column phone app, fixed bottom tab bar, ink-on-paper mushaf palette */
+:root{
+  --paper:#F2F3EC; --card:#FBFBF7; --ink:#1B2B26; --muted:#5E6B64; --line:#DADDD2;
+  --green:#1F5A47; --green-soft:#DCE8E1; --gold:#B0832B; --gold-soft:#F1E5C8;
+  --hard:#A9473A; --hard-soft:#F3DEDA;
+  --ar:"Amiri","Noto Naskh Arabic","Geeza Pro",serif;
+  --ui:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#111916; --card:#18221E; --ink:#E7ECE5; --muted:#93A099; --line:#2A3631;
+  --green:#6DBB9C; --green-soft:#1E3A30; --gold:#D9AE5A; --gold-soft:#3A3020;
+  --hard:#E08A7C; --hard-soft:#3D2420; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#111916; --card:#18221E; --ink:#E7ECE5; --muted:#93A099; --line:#2A3631;
+  --green:#6DBB9C; --green-soft:#1E3A30; --gold:#D9AE5A; --gold-soft:#3A3020;
+  --hard:#E08A7C; --hard-soft:#3D2420; color-scheme:dark}
+html,body{background:var(--paper);color:var(--ink)}
+body{font-family:var(--ui);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 110px}
+h1{font-size:28px;line-height:1.15;margin:0;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin:28px 0 10px}
+.sub{color:var(--muted);font-size:14px;margin-top:4px}
+.ar{font-family:var(--ar);direction:rtl}
+.num{font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.streak{display:flex;flex-direction:column;align-items:center;background:var(--gold-soft);color:var(--gold);border-radius:14px;padding:8px 12px;min-width:64px}
+.streak b{font-size:22px;line-height:1}
+.streak span{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+
+.list{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+.row{display:flex;align-items:center;gap:12px}
+.medal{flex:none;width:38px;height:38px;border-radius:50%;border:1.5px solid var(--gold);color:var(--gold);display:grid;place-items:center;font-size:13px;font-weight:700}
+.name{flex:1;min-width:0}
+.name .t{font-weight:600}
+.name .m{font-size:13px;color:var(--muted)}
+.name .ar{font-size:22px;line-height:1.2}
+.right{text-align:right}
+.right .ar{font-size:22px}
+.bar{display:flex;gap:3px;margin-top:6px}
+.bar i{width:14px;height:4px;border-radius:2px;background:var(--line)}
+.bar i.on{background:var(--green)}
+.rate{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.rate button{border:0;border-radius:12px;padding:11px 4px;font-weight:600;font-size:14px}
+.r-hard{background:var(--hard-soft);color:var(--hard)}
+.r-mid{background:var(--gold-soft);color:var(--gold)}
+.r-easy{background:var(--green-soft);color:var(--green)}
+
+.empty{text-align:center;padding:28px 16px}
+.empty .ar{font-size:30px;color:var(--green)}
+.empty p{color:var(--muted);margin:8px 0 0}
+
+.search{width:100%;box-sizing:border-box;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:12px 14px;font:inherit;color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 13px;font-size:14px;font-weight:500}
+.chip.on{background:var(--green);border-color:var(--green);color:var(--paper)}
+.chip.add{border-style:dashed;color:var(--green)}
+.srow{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--line)}
+.check{flex:none;width:28px;height:28px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);display:grid;place-items:center}
+.check.on{background:var(--green);border-color:var(--green);color:var(--paper)}
+
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat b{display:block;font-size:26px;line-height:1.1}
+.stat span{font-size:13px;color:var(--muted)}
+.prog{height:10px;border-radius:5px;background:var(--line);overflow:hidden;margin-top:10px}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--gold))}
+.heat{display:grid;grid-template-columns:repeat(10,1fr);gap:5px}
+.heat i{aspect-ratio:1;border-radius:4px;background:var(--line);max-width:100%}
+.heat i.l1{background:var(--green-soft)} .heat i.l2{background:var(--green)}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:11px 14px;font-weight:600;font-size:14px}
+.btn.pri{background:var(--green);border-color:var(--green);color:var(--paper)}
+textarea{width:100%;box-sizing:border-box;min-height:90px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:10px;font:12px ui-monospace,monospace}
+.note{font-size:13px;color:var(--muted)}
+
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
+nav button{flex:1;max-width:180px;border:0;background:none;padding:12px 4px 10px;font-size:12px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px}
+nav button.on{color:var(--green)}
+nav svg{width:22px;height:22px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:999px;font-size:14px;font-weight:500;z-index:9}
+@media (prefers-reduced-motion:no-preference){.card{animation:in .25s ease}@keyframes in{from{transform:translateY(4px)}}}
+</style>
+
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<nav id="nav">
+  <button data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Aujourd'hui</button>
+  <button data-tab="surahs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h7a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-7a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h7z"/></svg>Sourates</button>
+  <button data-tab="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>Stats</button>
+</nav>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const RAW="Al-Fatiha|الفاتحة|7;Al-Baqara|البقرة|286;Al-Imran|آل عمران|200;An-Nisa|النساء|176;Al-Ma'ida|المائدة|120;Al-An'am|الأنعام|165;Al-A'raf|الأعراف|206;Al-Anfal|الأنفال|75;At-Tawba|التوبة|129;Yunus|يونس|109;Hud|هود|123;Yusuf|يوسف|111;Ar-Ra'd|الرعد|43;Ibrahim|إبراهيم|52;Al-Hijr|الحجر|99;An-Nahl|النحل|128;Al-Isra|الإسراء|111;Al-Kahf|الكهف|110;Maryam|مريم|98;Ta-Ha|طه|135;Al-Anbiya|الأنبياء|112;Al-Hajj|الحج|78;Al-Mu'minun|المؤمنون|118;An-Nur|النور|64;Al-Furqan|الفرقان|77;Ash-Shu'ara|الشعراء|227;An-Naml|النمل|93;Al-Qasas|القصص|88;Al-Ankabut|العنكبوت|69;Ar-Rum|الروم|60;Luqman|لقمان|34;As-Sajda|السجدة|30;Al-Ahzab|الأحزاب|73;Saba|سبأ|54;Fatir|فاطر|45;Ya-Sin|يس|83;As-Saffat|الصافات|182;Sad|ص|88;Az-Zumar|الزمر|75;Ghafir|غافر|85;Fussilat|فصلت|54;Ash-Shura|الشورى|53;Az-Zukhruf|الزخرف|89;Ad-Dukhan|الدخان|59;Al-Jathiya|الجاثية|37;Al-Ahqaf|الأحقاف|35;Muhammad|محمد|38;Al-Fath|الفتح|29;Al-Hujurat|الحجرات|18;Qaf|ق|45;Adh-Dhariyat|الذاريات|60;At-Tur|الطور|49;An-Najm|النجم|62;Al-Qamar|القمر|55;Ar-Rahman|الرحمن|78;Al-Waqi'a|الواقعة|96;Al-Hadid|الحديد|29;Al-Mujadila|المجادلة|22;Al-Hashr|الحشر|24;Al-Mumtahana|الممتحنة|13;As-Saff|الصف|14;Al-Jumu'a|الجمعة|11;Al-Munafiqun|المنافقون|11;At-Taghabun|التغابن|18;At-Talaq|الطلاق|12;At-Tahrim|التحريم|12;Al-Mulk|الملك|30;Al-Qalam|القلم|52;Al-Haqqa|الحاقة|52;Al-Ma'arij|المعارج|44;Nuh|نوح|28;Al-Jinn|الجن|28;Al-Muzzammil|المزمل|20;Al-Muddaththir|المدثر|56;Al-Qiyama|القيامة|40;Al-Insan|الإنسان|31;Al-Mursalat|المرسلات|50;An-Naba|النبأ|40;An-Nazi'at|النازعات|46;Abasa|عبس|42;At-Takwir|التكوير|29;Al-Infitar|الانفطار|19;Al-Mutaffifin|المطففين|36;Al-Inshiqaq|الانشقاق|25;Al-Buruj|البروج|22;At-Tariq|الطارق|17;Al-A'la|الأعلى|19;Al-Ghashiya|الغاشية|26;Al-Fajr|الفجر|30;Al-Balad|البلد|20;Ash-Shams|الشمس|15;Al-Layl|الليل|21;Ad-Duha|الضحى|11;Ash-Sharh|الشرح|8;At-Tin|التين|8;Al-Alaq|العلق|19;Al-Qadr|القدر|5;Al-Bayyina|البينة|8;Az-Zalzala|الزلزلة|8;Al-Adiyat|العاديات|11;Al-Qari'a|القارعة|11;At-Takathur|التكاثر|8;Al-Asr|العصر|3;Al-Humaza|الهمزة|9;Al-Fil|الفيل|5;Quraysh|قريش|4;Al-Ma'un|الماعون|7;Al-Kawthar|الكوثر|3;Al-Kafirun|الكافرون|6;An-Nasr|النصر|3;Al-Masad|المسد|5;Al-Ikhlas|الإخلاص|4;Al-Falaq|الفلق|5;An-Nas|الناس|6";
+const S=RAW.split(";").map((x,i)=>{const[t,a,n]=x.split("|");return{id:i+1,t,a,n:+n}});
+const TOTAL=S.reduce((s,x)=>s+x.n,0);
+const IV=[1,2,4,7,14,30,60]; // jours entre révisions selon le niveau
+const KEY="murajaa-v1";
+let st={s:{},log:{}}, tab="today", filter="all", q="";
+try{const v=localStorage.getItem(KEY); if(v) st=JSON.parse(v);}catch(e){}
+try{const t=localStorage.getItem(KEY+"-tab"); if(t) tab=t;}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
+
+const pad=n=>String(n).padStart(2,"0");
+const ds=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const today=()=>ds(new Date());
+const addDays=(s,n)=>{const d=new Date(s+"T12:00");d.setDate(d.getDate()+n);return ds(d)};
+const diff=(a,b)=>Math.round((new Date(a+"T12:00")-new Date(b+"T12:00"))/864e5);
+const $=id=>document.getElementById(id);
+
+function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,1800)}
+function streak(){let n=0,d=today();if(!st.log[d])d=addDays(d,-1);while(st.log[d]){n++;d=addDays(d,-1)}return n}
+function memo(){return S.filter(x=>st.s[x.id])}
+function due(){const t=today();return memo().filter(x=>st.s[x.id].due<=t).sort((a,b)=>st.s[a.id].due.localeCompare(st.s[b.id].due)||a.id-b.id)}
+function bar(lv){return '<div class="bar">'+IV.map((_,i)=>'<i class="'+(i<=lv?"on":"")+'"></i>').join("")+"</div>"}
+function ago(x){const r=st.s[x.id];if(!r.last)return"Jamais révisée ici";const d=diff(today(),r.last);return d===0?"Révisée aujourd'hui":d===1?"Révisée hier":"Révisée il y a "+d+" j"}
+
+function addSurahs(ids){let i=0,t=today();ids.forEach(id=>{if(!st.s[id]){st.s[id]={lv:0,due:addDays(t,Math.floor(i/5)),last:null};i++}});save();return i}
+function rate(id,r){const x=st.s[id],t=today();
+  x.lv = r==="hard"?0 : r==="easy"?Math.min(x.lv+1,IV.length-1) : x.lv;
+  x.due=addDays(t,IV[x.lv]); x.last=t; st.log[t]=(st.log[t]||0)+1; save();
+  toast("Prochaine révision dans "+IV[x.lv]+" j");render()}
+
+function vToday(){
+  const d=due(), m=memo(), now=new Date();
+  const date=now.toLocaleDateString("fr-BE",{weekday:"long",day:"numeric",month:"long"});
+  let h='<div class="top"><div><h1>Révision du jour</h1><div class="sub">'+date+'</div></div><div class="streak"><b class="num">'+streak()+'</b><span>jours</span></div></div>';
+  if(!m.length){
+    h+='<div class="card empty" style="margin-top:20px"><div class="ar">بسم الله</div><p>Commence par cocher les sourates que tu connais déjà. Elles seront réparties sur les prochains jours.</p><div class="chips" style="justify-content:center"><button class="chip add" data-bulk="78-114">+ Juz \'Amma</button><button class="chip add" data-bulk="67-77">+ Juz Tabarak</button><button class="chip" data-go="surahs">Choisir à la main</button></div></div>';
+    return h}
+  const ay=d.reduce((s,x)=>s+x.n,0);
+  h+='<h2>'+(d.length?d.length+" sourate"+(d.length>1?"s":"")+" · "+ay+" versets":"À jour")+'</h2>';
+  if(!d.length){
+    const next=m.slice().sort((a,b)=>st.s[a.id].due.localeCompare(st.s[b.id].due)).slice(0,4);
+    h+='<div class="card empty"><div class="ar">ما شاء الله</div><p>Tout est révisé pour aujourd\'hui.</p></div><h2>Prochaines révisions</h2><div class="list">'+next.map(x=>{const n=diff(st.s[x.id].due,today());return'<div class="card row"><div class="medal num">'+x.id+'</div><div class="name"><div class="t">'+x.t+'</div><div class="m">Dans '+n+' j</div></div><div class="ar right" style="font-size:20px">'+x.a+'</div></div>'}).join("")+"</div>";
+    return h}
+  h+='<div class="list">'+d.map(x=>{const r=st.s[x.id],late=diff(today(),r.due);
+    return'<div class="card"><div class="row"><div class="medal num">'+x.id+'</div><div class="name"><div class="t">'+x.t+'</div><div class="m num">'+x.n+' versets · '+ago(x)+(late>0?' · <span style="color:var(--hard)">'+late+' j de retard</span>':'')+'</div>'+bar(r.lv)+'</div><div class="ar right">'+x.a+'</div></div><div class="rate"><button class="r-hard" data-rate="hard" data-id="'+x.id+'">Difficile</button><button class="r-mid" data-rate="mid" data-id="'+x.id+'">Moyen</button><button class="r-easy" data-rate="easy" data-id="'+x.id+'">Facile</button></div></div>'}).join("")+"</div>";
+  h+='<p class="note" style="margin-top:16px">Difficile : tu la revois demain. Moyen : même rythme. Facile : l\'écart s\'allonge (jusqu\'à 60 jours).</p>';
+  return h}
+
+function vSurahs(){
+  const m=memo().length;
+  let h='<h1>Sourates</h1><div class="sub num">'+m+' / 114 mémorisées</div><div style="margin-top:16px"><input class="search" id="q" type="search" placeholder="Chercher (nom ou numéro)" value="'+q.replace(/"/g,"")+'"></div>';
+  h+='<div class="chips"><button class="chip '+(filter==="all"?"on":"")+'" data-filter="all">Toutes</button><button class="chip '+(filter==="mem"?"on":"")+'" data-filter="mem">Mémorisées</button><button class="chip add" data-bulk="78-114">+ Juz \'Amma</button><button class="chip add" data-bulk="67-77">+ Tabarak</button></div><div>';
+  const qq=q.trim().toLowerCase();
+  S.filter(x=>(filter==="all"||st.s[x.id])&&(!qq||x.t.toLowerCase().includes(qq)||String(x.id)===qq||x.a.includes(q.trim()))).forEach(x=>{const on=!!st.s[x.id];
+    h+='<div class="srow"><button class="check '+(on?"on":"")+'" data-toggle="'+x.id+'" aria-label="'+(on?"Retirer ":"Ajouter ")+x.t+'">'+(on?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>':"")+'</button><div class="name"><div class="t"><span class="num" style="color:var(--gold)">'+x.id+'.</span> '+x.t+'</div><div class="m num">'+x.n+' versets</div>'+(on?bar(st.s[x.id].lv):"")+'</div><div class="ar right" style="font-size:20px">'+x.a+'</div></div>'});
+  return h+"</div>"}
+
+function vStats(){
+  const m=memo(),ay=m.reduce((s,x)=>s+x.n,0),pct=(ay/TOTAL*100);
+  const rev=Object.values(st.log).reduce((a,b)=>a+b,0);
+  const strong=m.filter(x=>st.s[x.id].lv>=4).length;
+  let cells="";for(let i=29;i>=0;i--){const d=addDays(today(),-i),n=st.log[d]||0;cells+='<i class="'+(n>=3?"l2":n?"l1":"")+'" title="'+d+" : "+n+'"></i>'}
+  return'<h1>Statistiques</h1><div class="card" style="margin-top:16px"><div class="row" style="justify-content:space-between"><div><div class="sub" style="margin:0">Coran mémorisé</div><b class="num" style="font-size:30px">'+pct.toFixed(1)+' %</b></div><div class="right num note">'+ay+' / '+TOTAL+'<br>versets</div></div><div class="prog"><i style="width:'+pct+'%"></i></div></div>'
+  +'<div class="stats" style="margin-top:10px"><div class="card stat"><b class="num">'+m.length+'</b><span>sourates</span></div><div class="card stat"><b class="num">'+streak()+'</b><span>jours d\'affilée</span></div><div class="card stat"><b class="num">'+rev+'</b><span>révisions au total</span></div><div class="card stat"><b class="num">'+strong+'</b><span>bien ancrées (niveau 5+)</span></div></div>'
+  +'<h2>30 derniers jours</h2><div class="card"><div class="heat">'+cells+'</div></div>'
+  +'<h2>Sauvegarde</h2><div class="card"><p class="note" style="margin-top:0">Tes données restent sur ce téléphone, dans ce navigateur. Copie une sauvegarde de temps en temps (dans tes notes par exemple).</p><div class="chips"><button class="btn pri" data-act="export">Copier la sauvegarde</button><button class="btn" data-act="showimp">Restaurer</button></div><div id="imp" hidden><textarea id="impt" placeholder="Colle ta sauvegarde ici"></textarea><div class="chips"><button class="btn pri" data-act="import">Restaurer ces données</button></div></div><textarea id="expt" hidden readonly></textarea></div>'}
+
+function render(){
+  $("app").innerHTML=tab==="today"?vToday():tab==="surahs"?vSurahs():vStats();
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
+  const qi=$("q");if(qi)qi.oninput=e=>{q=e.target.value;const p=qi.selectionStart;render();const n=$("q");n.focus();n.setSelectionRange(p,p)};
+}
+function go(t){tab=t;try{localStorage.setItem(KEY+"-tab",t)}catch(e){}render();scrollTo(0,0)}
+
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;const d=b.dataset;
+  if(d.tab)go(d.tab);
+  else if(d.go)go(d.go);
+  else if(d.rate)rate(+d.id,d.rate);
+  else if(d.filter){filter=d.filter;render()}
+  else if(d.toggle){const id=+d.toggle;if(st.s[id]){delete st.s[id];toast("Retirée")}else{st.s[id]={lv:0,due:addDays(today(),1),last:null};toast("Ajoutée, à réviser demain")}save();render()}
+  else if(d.bulk){const[a,z]=d.bulk.split("-").map(Number),ids=[];for(let i=a;i<=z;i++)ids.push(i);const n=addSurahs(ids);toast(n?n+" sourates ajoutées, réparties 5 par jour":"Déjà toutes ajoutées");render()}
+  else if(d.act==="export"){const txt=JSON.stringify(st);const ta=$("expt");ta.value=txt;
+    navigator.clipboard&&navigator.clipboard.writeText(txt).then(()=>toast("Sauvegarde copiée"),()=>{ta.hidden=false;ta.select();toast("Sélectionne et copie le texte")})||(ta.hidden=false,ta.select())}
+  else if(d.act==="showimp"){$("imp").hidden=false}
+  else if(d.act==="import"){try{const v=JSON.parse($("impt").value);if(!v.s||!v.log)throw 0;st=v;save();toast("Données restaurées");render()}catch(x){toast("Texte invalide : colle la sauvegarde complète")}}
+});
+render();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
