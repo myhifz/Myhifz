@@ -107,7 +107,7 @@ function vHome(){
   h+='<div class="hero"><div class="t">Progression du jour</div><div class="ring"><svg viewBox="0 0 170 170"><circle cx="85" cy="85" r="'+R+'" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.22)" stroke-width="8"/><circle cx="85" cy="85" r="'+R+'" fill="none" stroke="rgba(255,255,255,.92)" stroke-width="8" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+(C*(1-pct/100))+'"/></svg><div class="in"><div class="p num">'+pct+'%</div><div class="s num">'+x.done+'/'+x.tot+' pages</div></div></div><div class="hbar"><i style="width:'+pct+'%"></i></div></div>';
   const tp=(a,b)=>b?Math.round(a/b*100):100;
   h+='<div class="tiles"><button class="card tile n" data-tab="rev"><div class="ic">'+I.star+'</div><div class="p num">'+tp(x.jd,x.J.length)+'%</div><div class="k">Hifdh al-Jadid</div><div class="s num">'+x.jd+'/'+x.J.length+' pages</div><div class="tbar"><i style="width:'+tp(x.jd,x.J.length)+'%"></i></div></button>'
-    +'<button class="card tile o" data-tab="rev"><div class="ic">'+I.stack+'</div><div class="p num">'+tp(x.od,x.O.length)+'%</div><div class="k">Janb ad-Dars</div><div class="s num">'+x.od+'/'+x.O.length+' pages</div><div class="tbar"><i style="width:'+tp(x.od,x.O.length)+'%"></i></div></button></div>';
+    +'<button class="card tile o" data-tab="rev"><div class="ic">'+I.stack+'</div><div class="p num">'+tp(x.od,x.O.length)+'%</div><div class="k">Hifdh</div><div class="s num">'+x.od+'/'+x.O.length+' pages</div><div class="tbar"><i style="width:'+tp(x.od,x.O.length)+'%"></i></div></button></div>';
   h+='<div class="card"><div class="ctitle">'+I.chart+'Tes statistiques</div><div class="sgrid"><div><b class="num">'+x.pr.total+'</b><span>Pages</span></div><div><b class="num">'+streak()+'</b><span>Série</span></div><div><b class="num">'+record()+'</b><span>Record</span></div></div></div>';
   const cp=x.pr.total/PAGES*100;let cells="";
   for(let i=29;i>=0;i--){const d=addDays(today(),-i),n=st.log[d]||0;cells+='<i class="'+(n&&n>=x.tot?"l2":n?"l1":"")+'"></i>'}
@@ -126,14 +126,14 @@ function vRev(){
   if(!x.pr)return h+needSetup();
   if(x.tot&&x.done===x.tot)h+='<div class="card empty" style="padding:18px"><div class="ar">ما شاء الله</div><p>Tout est fait pour aujourd\'hui. Qu\'Allah te le facilite.</p></div>';
   h+=block("sj","Hifdh al-Jadid","Chaque jour",x.J,x.Js,x.d.sj,x.pr,"n");
-  h+=block("so","Janb ad-Dars","Cycle de "+x.pr.d+" j",x.O,x.Os,x.d.so,x.pr,"o");
+  h+=block("so","Hifdh","Cycle de "+x.pr.d+" j",x.O,x.Os,x.d.so,x.pr,"o");
   return h+'<p class="note">Touche une sourate quand tu l\'as récitée.</p>'}
 
 function vPlan(){
   const pr=program(st.cfg);
   let h='<div><h1>Planning</h1><div class="sub">Les '+(pr?Math.max(7,pr.d):7)+' prochains jours</div></div>';
   if(!pr)return h+needSetup();
-  h+='<div class="card"><div class="bh"><div class="ctitle">Hifdh al-Jadid</div><span class="tag">Chaque jour</span></div><div class="rng">'+(pr.jadid.length?label(pr.jadid,pr):"Aucune page")+'</div></div><div class="lbl">Janb ad-Dars</div><div class="card plist">';
+  h+='<div class="card"><div class="bh"><div class="ctitle">Hifdh al-Jadid</div><span class="tag">Chaque jour</span></div><div class="rng">'+(pr.jadid.length?label(pr.jadid,pr):"Aucune page")+'</div></div><div class="lbl">Hifdh</div><div class="card plist">';
   const n=Math.max(7,pr.d);
   for(let i=0;i<n;i++){const d=addDays(today(),i),O=janbFor(pr,d),Os=surahsFor(O,pr),dd=dayRec(d),ok=Os.length&&Os.every(y=>dd.so.includes(y.s.id));
     h+='<div class="prow'+(i===0?" now":"")+'"><div class="pd"><b>'+(i===0?"Aujourd'hui":i===1?"Demain":fmtDay(d).split(" ").slice(0,2).join(" "))+'</b></div><div class="pr num">'+(O.length?label(O,pr):"Repos")+'</div>'+(ok?'<span class="okb">'+I.check+'</span>':"")+'</div>'}
