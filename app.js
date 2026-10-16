@@ -49,15 +49,21 @@ function label(pages,pr){
   const f=onPage(lo).filter(inR)[0]||onPage(lo)[0],l=onPage(hi).filter(inR).slice(-1)[0]||onPage(hi).slice(-1)[0];
   return(lo===hi?"Page "+lo:"Pages "+lo+" → "+hi)+" · "+(f.id===l.id?f.t:f.t+" → "+l.t)}
 
+/* Sourates couvertes par des pages (dans la plage mémorisée) */
+function surahsFor(pages,pr){if(!pages.length||!pr)return[];const lo=Math.min(...pages),hi=Math.max(...pages);
+  return S.filter(s=>s.id>=pr.a&&s.id<=pr.b&&s.p<=hi&&s.e>=lo).map(s=>({s,lo:Math.max(s.p,lo),hi:Math.min(s.e,hi)}))}
+/* Une page compte comme faite quand toutes ses sourates du jour sont cochées */
+function donePages(pages,list,ids){return pages.filter(p=>list.filter(x=>x.lo<=p&&x.hi>=p).every(x=>ids.includes(x.s.id))).length}
+function dayRec(date){const d=st.day[date];return d&&d.sj?d:{sj:[],so:[]}}
 function dayState(date){
-  const pr=program(st.cfg),d=st.day[date]||{j:[],o:[]};
-  const J=pr?pr.jadid:[],O=janbFor(pr,date);
-  const jd=J.filter(p=>d.j.includes(p)).length,od=O.filter(p=>d.o.includes(p)).length;
-  return{pr,J,O,jd,od,done:jd+od,tot:J.length+O.length,d}}
-function mark(kind,pages,on){
-  const t=today(),d=st.day[t]||(st.day[t]={j:[],o:[]});
-  pages.forEach(p=>{const i=d[kind].indexOf(p);if(on&&i<0)d[kind].push(p);if(!on&&i>=0)d[kind].splice(i,1)});
-  st.log[t]=d.j.length+d.o.length; if(!st.log[t])delete st.log[t];
+  const pr=program(st.cfg),d=dayRec(date);
+  const J=pr?pr.jadid:[],O=janbFor(pr,date),Js=surahsFor(J,pr),Os=surahsFor(O,pr);
+  const jd=donePages(J,Js,d.sj),od=donePages(O,Os,d.so);
+  return{pr,J,O,Js,Os,jd,od,done:jd+od,tot:J.length+O.length,d}}
+function mark(kind,ids,on){
+  const t=today();if(!st.day[t]||!st.day[t].sj)st.day[t]={sj:[],so:[]};const d=st.day[t];
+  ids.forEach(p=>{const i=d[kind].indexOf(p);if(on&&i<0)d[kind].push(p);if(!on&&i>=0)d[kind].splice(i,1)});
+  st.log[t]=d.sj.length+d.so.length; if(!st.log[t])delete st.log[t];
   Object.keys(st.day).forEach(k=>{if(diff(t,k)>40)delete st.day[k]});
   save()}
 
@@ -108,19 +114,20 @@ function vHome(){
   h+='<div class="card"><div class="row" style="justify-content:space-between"><div class="ctitle">Coran mémorisé</div><b class="num" style="font-size:22px">'+cp.toFixed(1)+' %</b></div><div class="note num" style="margin-top:2px">'+x.pr.total+' / '+PAGES+' pages · '+hizb(x.pr.total)+' hizb</div><div class="prog"><i style="width:'+cp+'%"></i></div><div class="note" style="margin-top:16px">30 derniers jours</div><div class="heat">'+cells+'</div></div>';
   return h}
 
-function block(kind,title,tag,pages,doneList,pr,cls){
+function block(kind,title,tag,pages,list,doneIds,pr,cls){
   if(!pages.length)return'<div class="card"><div class="bh"><div class="ctitle">'+title+'</div><span class="tag">'+tag+'</span></div><p class="note" style="margin:8px 0 0">Rien pour aujourd\'hui.</p></div>';
-  const all=pages.every(p=>doneList.includes(p)),n=pages.filter(p=>doneList.includes(p)).length;
-  return'<div class="card blk '+cls+'"><div class="bh"><div class="ctitle">'+title+'</div><span class="tag">'+tag+'</span></div><div class="rng">'+label(pages,pr)+'</div><div class="pgs">'+pages.map(p=>'<button class="pg '+(doneList.includes(p)?"on":"")+'" data-pg="'+p+'" data-k="'+kind+'" aria-label="Page '+p+'">'+(doneList.includes(p)?I.check:"")+'<span class="num">'+p+'</span></button>').join("")+'</div><div class="bf"><span class="note num">'+n+'/'+pages.length+' pages</span><button class="btn '+(all?"":"pri")+'" data-all="'+kind+'" data-on="'+(all?0:1)+'">'+(all?"Annuler":"Tout marquer comme fait")+'</button></div></div>'}
+  const n=list.filter(x=>doneIds.includes(x.s.id)).length,all=n===list.length;
+  return'<div class="card blk '+cls+'"><div class="bh"><div class="ctitle">'+title+'</div><span class="tag">'+tag+'</span></div><div class="rng num">'+(pages.length>1?"Pages "+Math.min(...pages)+" → "+Math.max(...pages):"Page "+pages[0])+' · '+pages.length+' page'+(pages.length>1?"s":"")+'</div><div class="sus">'+list.map(x=>{const on=doneIds.includes(x.s.id),part=x.lo!==x.s.p||x.hi!==x.s.e;
+    return'<button class="su '+(on?"on":"")+'" data-su="'+x.s.id+'" data-k="'+kind+'"><span class="sc">'+(on?I.check:"")+'</span><span class="sn"><b>'+x.s.t+'</b><span class="num">'+(x.lo===x.hi?"p. "+x.lo:"p. "+x.lo+"–"+x.hi)+(part?" · partie":"")+'</span></span><span class="ar">'+x.s.a+'</span></button>'}).join("")+'</div><div class="bf"><span class="note num">'+n+'/'+list.length+' sourate'+(list.length>1?"s":"")+'</span><button class="btn '+(all?"":"pri")+'" data-all="'+kind+'" data-on="'+(all?0:1)+'">'+(all?"Annuler":"Tout marquer comme fait")+'</button></div></div>'}
 
 function vRev(){
   const x=dayState(today());
   let h='<div><h1>Révision</h1><div class="sub">'+fmtDay(today())+'</div></div>';
   if(!x.pr)return h+needSetup();
   if(x.tot&&x.done===x.tot)h+='<div class="card empty" style="padding:18px"><div class="ar">ما شاء الله</div><p>Tout est fait pour aujourd\'hui. Qu\'Allah te le facilite.</p></div>';
-  h+=block("j","Hifdh al-Jadid","Chaque jour",x.J,x.d.j,x.pr,"n");
-  h+=block("o","Janb ad-Dars","Cycle de "+x.pr.d+" j",x.O,x.d.o,x.pr,"o");
-  return h+'<p class="note">Touche une page quand tu l\'as récitée.</p>'}
+  h+=block("sj","Hifdh al-Jadid","Chaque jour",x.J,x.Js,x.d.sj,x.pr,"n");
+  h+=block("so","Janb ad-Dars","Cycle de "+x.pr.d+" j",x.O,x.Os,x.d.so,x.pr,"o");
+  return h+'<p class="note">Touche une sourate quand tu l\'as récitée.</p>'}
 
 function vPlan(){
   const pr=program(st.cfg);
@@ -128,7 +135,7 @@ function vPlan(){
   if(!pr)return h+needSetup();
   h+='<div class="card"><div class="bh"><div class="ctitle">Hifdh al-Jadid</div><span class="tag">Chaque jour</span></div><div class="rng">'+(pr.jadid.length?label(pr.jadid,pr):"Aucune page")+'</div></div><div class="lbl">Janb ad-Dars</div><div class="card plist">';
   const n=Math.max(7,pr.d);
-  for(let i=0;i<n;i++){const d=addDays(today(),i),O=janbFor(pr,d),dd=st.day[d]||{o:[]},ok=O.length&&O.every(p=>dd.o.includes(p));
+  for(let i=0;i<n;i++){const d=addDays(today(),i),O=janbFor(pr,d),Os=surahsFor(O,pr),dd=dayRec(d),ok=Os.length&&Os.every(y=>dd.so.includes(y.s.id));
     h+='<div class="prow'+(i===0?" now":"")+'"><div class="pd"><b>'+(i===0?"Aujourd'hui":i===1?"Demain":fmtDay(d).split(" ").slice(0,2).join(" "))+'</b></div><div class="pr num">'+(O.length?label(O,pr):"Repos")+'</div>'+(ok?'<span class="okb">'+I.check+'</span>':"")+'</div>'}
   return h+'</div><p class="note">Le cycle recommence tous les '+pr.d+' jours. Tu peux changer le rythme dans Réglages.</p>'}
 
@@ -145,11 +152,11 @@ function vSet(){
   h+='<div class="card">'+head(I.dir,"Sens d'apprentissage","Dans quel sens as-tu mémorisé ?")+'<div class="seg"><button class="'+(draft.dir==="down"?"on":"")+'" data-dir="down"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 4v16M6 14l6 6 6-6"/></svg>Al-Fatiha → An-Nas</button><button class="'+(draft.dir==="up"?"on":"")+'" data-dir="up"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 20V4M6 10l6-6 6 6"/></svg>An-Nas → Al-Fatiha</button></div></div>';
   h+='<div class="card">'+head(I.loop,"Boucles de révision","Comment veux-tu répartir tes révisions ?")
    +'<div class="bh" style="margin-top:18px"><div class="lt">Hifdh al-Jadid</div><span class="tag">Chaque jour</span></div><div class="ld">Nombre de pages récentes à réviser tous les jours.</div><label class="numf"><input id="jn" type="number" inputmode="numeric" min="0" max="'+pr.total+'" value="'+draft.jn+'"><span>pages</span></label>'
-   +'<hr><div class="bh"><div class="lt">Janb ad-Dars</div><span class="tag">Cycle</span></div><div class="ld">En combien de jours veux-tu réviser le reste de ce que tu connais ?</div><label class="numf"><input id="dd" type="number" inputmode="numeric" min="1" max="60" value="'+draft.d+'"><span>jours</span></label>'
+   +'<hr><div class="bh"><div class="lt">Hifdh</div><span class="tag">Cycle</span></div><div class="ld">En combien de jours veux-tu réviser le reste de ce que tu connais ?</div><label class="numf"><input id="dd" type="number" inputmode="numeric" min="1" max="60" value="'+draft.d+'"><span>jours</span></label>'
    +'<div class="pill">'+I.calc+'<span>'+(pr.old.length?'Soit environ <b class="num">'+per+' page'+(per>1?"s":"")+'</b> par jour':'Tout est déjà dans Hifdh al-Jadid')+'</span></div></div>';
   const A=S[pr.a-1],B=S[pr.b-1],ord=draft.dir==="up"?[B,A]:[A,B];
   h+='<div class="card sum"><div class="ctitle">'+I.chart+'Résumé de ton programme</div>'
-   +[["Sourates",ord[0].t+" → "+ord[1].t],["Pages mémorisées",pr.total+" pages"],["Hizb mémorisés",'<span style="color:var(--acc2)">'+hizb(pr.total)+" hizb</span>"],["Hifdh al-Jadid",pr.jadid.length+" pages/jour"],["Janb ad-Dars","~"+per+" pages/jour"],["Total quotidien",'<b style="font-size:20px">~'+(pr.jadid.length+per)+" pages</b>"]]
+   +[["Sourates",ord[0].t+" → "+ord[1].t],["Pages mémorisées",pr.total+" pages"],["Hizb mémorisés",'<span style="color:var(--acc2)">'+hizb(pr.total)+" hizb</span>"],["Hifdh al-Jadid",pr.jadid.length+" pages/jour"],["Hifdh","~"+per+" pages/jour"],["Total quotidien",'<b style="font-size:20px">~'+(pr.jadid.length+per)+" pages</b>"]]
      .map(r=>'<div class="sr"><span>'+r[0]+'</span><b class="num">'+r[1]+'</b></div>').join("")+'</div>';
   h+='<div class="card">'+head(I.palette,"Couleur","Choisis le thème de l'app.",1)+'<div class="themes">'+Object.entries(THEMES).map(([k,t])=>'<button class="th '+(st.cfg.c===k?"on":"")+'" data-theme-c="'+k+'"><i style="background:linear-gradient(135deg,'+t.c[0]+','+t.c[1]+')"></i>'+t.n+'</button>').join("")+'</div></div>';
   h+='<div class="card">'+head(I.user,"Ton prénom","Affiché sur l'accueil (facultatif).",1)+'<input class="field" id="nm" type="text" maxlength="24" autocomplete="given-name" placeholder="Prénom" value="'+esc(draft.name)+'"></div>';
@@ -175,9 +182,9 @@ function go(t){if(t!=="set"){draft=null;resetArm=false}tab=t;try{localStorage.se
 document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
   if(d.tab)go(d.tab);
-  else if(d.pg){const p=+d.pg,k=d.k,on=!(st.day[today()]||{j:[],o:[]})[k].includes(p);mark(k,[p],on);const y=scrollY;render();scrollTo(0,y);
+  else if(d.su){const id=+d.su,k=d.k,on=!dayRec(today())[k].includes(id);mark(k,[id],on);const y=scrollY;render();scrollTo(0,y);
     const x=dayState(today());if(on&&x.tot&&x.done===x.tot)toast("Révision du jour terminée !")}
-  else if(d.all){const x=dayState(today());mark(d.all,d.all==="j"?x.J:x.O,d.on==="1");const y=scrollY;render();scrollTo(0,y)}
+  else if(d.all){const x=dayState(today());mark(d.all,(d.all==="sj"?x.Js:x.Os).map(y=>y.s.id),d.on==="1");const y=scrollY;render();scrollTo(0,y)}
   else if(d.dir){draft.dir=d.dir;const y=scrollY;render();scrollTo(0,y)}
   else if(d.themeC){st.cfg.c=d.themeC;draft.c=d.themeC;save();applyTheme();const y=scrollY;render();scrollTo(0,y);toast("Thème "+THEMES[d.themeC].n)}
   else if(d.act==="save"){const old=st.cfg,ch=old.a!==draft.a||old.b!==draft.b||old.dir!==draft.dir||+old.jn!==+draft.jn||+old.d!==+draft.d;
