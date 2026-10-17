@@ -9,7 +9,7 @@ const DEF={c:"vert",name:"",a:0,b:0,dir:"up",jn:6,d:3,start:"",icon:"rose",p1:0,
 
 let st={log:{},day:{},weak:[],cfg:{...DEF}}, tab="home", draft=null, resetArm=false;
 try{const v=JSON.parse(localStorage.getItem(KEY)||"null");
-  if(v){st.log=v.log||{};st.day=v.day||{};st.weak=v.weak||[];st.tp=v.tp;st.learned=v.learned||[];st.got=v.got;st.cfg=Object.assign({...DEF},v.cfg||{});
+  if(v){st.bk=v.bk||"";st.bkSnooze=v.bkSnooze||"";st.log=v.log||{};st.day=v.day||{};st.weak=v.weak||[];st.tp=v.tp;st.learned=v.learned||[];st.got=v.got;st.cfg=Object.assign({...DEF},v.cfg||{});
     // Ancienne version (cases par sourate) : on reprend la plage cochée
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}}}catch(e){}
 // Icône : celle de l'écran d'accueil vient du lien utilisé à l'installation (?icon=N)
@@ -176,6 +176,7 @@ function vHome(){
   let h='<div class="hd"><div class="hdt">'+(name?'<span class="hs">Salam Aleykoum</span><h1>'+esc(name)+'</h1>':'<h1>Salam Aleykoum</h1>')+'<span class="hdate">'+fmtDay(today())+'</span></div>'
    +'<div class="stk'+(sk?"":" zero")+'" data-v="'+sk+'">'+I.flame+'<b class="num">'+sk+'</b><span>jour'+(sk>1?"s":"")+'</span></div></div>';
   if(!x.pr)return h+needSetup();
+  if(needBackup()){const a=bkAge();h+='<div class="bkban">'+I.cloud+'<div><b>Pense à sauvegarder</b><span>'+(a===null?"Tu n\'as encore jamais sauvegardé.":"Dernière sauvegarde il y a "+a+" jours.")+'</span></div><button class="btn pri" data-act="savefile">Sauvegarder</button><button class="bkx" data-act="later" aria-label="Plus tard">×</button></div>'}
   const left=x.tot-x.done,pct=x.tot?Math.round(x.done/x.tot*100):100,R=34,C=2*Math.PI*R;
   /* 1. Aujourd'hui */
   if(x.off)h+='<div class="today off">'+GEO+'<div class="tring"><span class="moon">'+I.moon+'</span></div><div class="tt"><b>Jour off</b><span>Pas de mémorisation ni de révision aujourd\'hui. Repose-toi bien.</span></div></div>';
@@ -301,6 +302,19 @@ function vMoi(){
   /* Date de début */
   h+='<div class="sect">Mon parcours</div><div class="card"><div class="fl" style="margin-top:0">Date de début du hifdh</div><input class="field" id="hst" type="date" max="'+today()+'" value="'+hs+'"><div class="note" style="margin-top:8px">Début le '+fmtShort(hs)+' · il y a '+since(hs)+'.</div></div>';
   return h}
+function restoreFrom(v){if(!v||(!v.cfg&&!v.s))throw 0;
+    const keep={bk:[st.bk,v.saved,v.bk].filter(Boolean).sort().pop()||""};st={log:v.log||{},day:v.day||{},weak:v.weak||[],tp:v.tp||0,learned:v.learned||[],got:v.got,cfg:Object.assign({...DEF},v.cfg||{})};
+    if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}
+    if(ICONS[URL_ICON])st.cfg.icon=URL_ICON;if(!ICONS[st.cfg.icon])st.cfg.icon="rose";
+    Object.assign(st,keep);save();draft=null;applyTheme();applyIcon();toast("Données restaurées");render()}
+/* Sauvegarde dans Fichiers (menu Partager de l'iPhone), repli : téléchargement */
+function saveFile(){const t=today(),name="MonHifz-sauvegarde-"+t+".json",txt=JSON.stringify(Object.assign({},st,{app:"monhifz",saved:t}));
+  const done=()=>{st.bk=t;st.bkSnooze="";save();toast("Sauvegarde enregistrée");const y=scrollY;render();scrollTo(0,y)};
+  let file=null;try{file=new File([txt],name,{type:"application/json"})}catch(e){}
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:"Sauvegarde Mon Hifz"}).then(done).catch(e=>{if(e&&e.name!=="AbortError")dl()});return}
+  dl();function dl(){const u=URL.createObjectURL(new Blob([txt],{type:"application/json"})),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);done()}}
+function bkAge(){return st.bk?diff(today(),st.bk):null}
+function needBackup(){if(!program(st.cfg))return false;const a=bkAge();if(st.bkSnooze&&diff(today(),st.bkSnooze)<3)return false;return a===null?Object.keys(st.log).length>=3:a>=7}
 function vSet(){
   if(!draft)initDraft();
   const pr=program(draft),per=pr&&pr.old.length?pr.k:0;
@@ -331,7 +345,13 @@ function vSet(){
   if(sub==="profile")return vMoi();
   if(sub==="data"){
     let h=subHead("Données","Tes données restent sur ce téléphone.");
-    h+='<div class="card">'+head(I.cloud,"Sauvegarde","Copie une sauvegarde de temps en temps et garde-la dans tes notes.",1)+'<div class="chips" style="margin-top:14px"><button class="btn pri" data-act="export">Copier la sauvegarde</button><button class="btn" data-act="showimp">Restaurer</button></div><div id="imp" hidden><textarea id="impt" placeholder="Colle ta sauvegarde ici"></textarea><div class="chips" style="margin-top:10px"><button class="btn pri" data-act="import">Restaurer ces données</button></div></div><textarea id="expt" hidden readonly></textarea></div>';
+    const a=bkAge();
+    h+='<div class="card">'+head(I.cloud,"Sauvegarde","Enregistre un fichier dans Fichiers ou iCloud Drive.",1)
+     +'<div class="bkst '+(a===null||a>=7?"warn":"ok")+'">'+(a===null?"Aucune sauvegarde pour l\'instant":a===0?"Dernière sauvegarde : aujourd\'hui":"Dernière sauvegarde : il y a "+a+" jour"+(a>1?"s":""))+'</div>'
+     +'<button class="btn pri wide" data-act="savefile">'+I.cloud+'Sauvegarder dans Fichiers</button>'
+     +'<p class="note" style="margin:10px 0 0">Dans le menu qui s\'ouvre, choisis « Enregistrer dans Fichiers », puis iCloud Drive.</p>'
+     +'<div class="fl">Restaurer</div><label class="btn wide filebtn">'+I.doc+'Choisir un fichier de sauvegarde<input type="file" id="bkfile" accept=".json,application/json,text/plain" class="vh"></label>'
+     +'<details class="old"><summary>Ancienne méthode (texte)</summary>'+'<div class="chips" style="margin-top:14px"><button class="btn pri" data-act="export">Copier la sauvegarde</button><button class="btn" data-act="showimp">Restaurer</button></div><div id="imp" hidden><textarea id="impt" placeholder="Colle ta sauvegarde ici"></textarea><div class="chips" style="margin-top:10px"><button class="btn pri" data-act="import">Restaurer ces données</button></div></div><textarea id="expt" hidden readonly></textarea></details></div>';
     h+='<div class="card"><div class="ctitle" style="color:var(--hard)">'+I.trash+'Zone sensible</div><p class="note">Efface ton programme, tes révisions et ta série. La couleur et l\'icône sont gardées.</p><button class="reset" data-act="reset">'+(resetArm?"Touche encore pour tout effacer":"Réinitialiser toutes les données")+'</button></div>';
     return h}
   /* Liste principale */
@@ -342,7 +362,7 @@ function vSet(){
   let h='<div class="hello">'+logo()+'<div class="txt"><h1>Réglages</h1><div class="sub">Configure ta méthode de révision</div></div></div>';
   h+='<div class="lbl">Méthode</div><div class="card list">'+setRow("prog",I.book,"Mon programme",progVal)+setRow("rev",I.loop,"Révision",revVal+' · Jour off : '+offVal)+'</div>';
   h+='<div class="lbl">Personnalisation</div><div class="card list">'+setRow("look",I.palette,"Apparence",THEMES[c.c]?THEMES[c.c].n:"Vert",1)+setRow("profile",I.user,"Moi",(c.name.trim()?esc(c.name.trim())+" · ":"")+badges().filter(b=>b.ok).length+" jalons")+'</div>';
-  h+='<div class="lbl">Données</div><div class="card list">'+setRow("data",I.cloud,"Sauvegarde et restauration","",1)+'</div>';
+  h+='<div class="lbl">Données</div><div class="card list">'+setRow("data",I.cloud,"Sauvegarde et restauration",bkAge()===null?"Jamais sauvegardé":bkAge()===0?"Sauvegardé aujourd\'hui":"Il y a "+bkAge()+" j",1)+'</div>';
   return h}
 
 function render(){
@@ -358,6 +378,8 @@ function render(){
     if($("jn"))$("jn").oninput=e=>{draft.jn=Math.max(0,+e.target.value||0);upd()};
     if($("dd"))$("dd").oninput=e=>{draft.d=Math.max(1,Math.min(60,+e.target.value||1));upd()};
     if($("nm"))$("nm").oninput=e=>{st.cfg.name=e.target.value;save()};
+    if($("bkfile"))$("bkfile").onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();
+      r.onload=()=>{try{restoreFrom(JSON.parse(r.result))}catch(x){toast("Ce fichier n'est pas une sauvegarde Mon Hifz")}};r.onerror=()=>toast("Impossible de lire ce fichier");r.readAsText(f)};
     if($("photo"))$("photo").onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const img=new Image(),u=URL.createObjectURL(f);
       img.onload=()=>{const n=320,cv=document.createElement("canvas");cv.width=cv.height=n;const k=Math.min(img.width,img.height),cx=cv.getContext("2d");
         cx.drawImage(img,(img.width-k)/2,(img.height-k)/2,k,k,0,0,n,n);URL.revokeObjectURL(u);st.cfg.photo=cv.toDataURL("image/jpeg",.82);save();toast("Photo ajoutée");re()};
@@ -398,11 +420,9 @@ document.addEventListener("click",e=>{
   else if(d.act==="export"){const txt=JSON.stringify(st),ta=$("expt");ta.value=txt;const fb=()=>{ta.hidden=false;ta.select();toast("Sélectionne et copie le texte")};
     if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast("Sauvegarde copiée"),fb);else fb()}
   else if(d.act==="showimp"){$("imp").hidden=false}
-  else if(d.act==="import"){try{const v=JSON.parse($("impt").value);if(!v.cfg&&!v.s)throw 0;
-    st={log:v.log||{},day:v.day||{},weak:v.weak||[],tp:v.tp||0,learned:v.learned||[],got:v.got,cfg:Object.assign({...DEF},v.cfg||{})};
-    if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}
-    if(ICONS[URL_ICON])st.cfg.icon=URL_ICON;if(!ICONS[st.cfg.icon])st.cfg.icon="rose";
-    save();draft=null;applyTheme();applyIcon();toast("Données restaurées");render()}catch(x){toast("Colle la sauvegarde complète")}}
+  else if(d.act==="import"){try{restoreFrom(JSON.parse($("impt").value))}catch(x){toast("Colle la sauvegarde complète")}}
+  else if(d.act==="savefile"){saveFile()}
+  else if(d.act==="later"){st.bkSnooze=today();save();const y=scrollY;render();scrollTo(0,y)}
 });
 /* Appui long sur le nom d'une sourate : « à renforcer » */
 let longT=null,longFired=false,longXY=null;
