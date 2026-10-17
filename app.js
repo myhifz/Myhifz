@@ -4,7 +4,7 @@ const S=RAW.split(";").map((x,i)=>{const[t,a,p]=x.split("|");return{id:i+1,t,a,p
 S.forEach((x,i)=>{x.e=i===113?604:Math.max(x.p,S[i+1].p-1)});
 const PAGES=604, PER_HIZB=PAGES/60;
 const KEY="murajaa-v1";
-const THEMES={vert:{n:"Vert",c:["#1F6B52","#C08A2A"],tc:"#F4F5F1"},rose:{n:"Rose",c:["#C24B7A","#2A8A84"],tc:"#FBF6F6"},marine:{n:"Bleu marine",c:["#2C4F86","#D08F22"],tc:"#F5F4F1"},jaune:{n:"Jaune",c:["#E0A21A","#3F51A3"],tc:"#FAF8F1"}};
+const THEMES={vert:{n:"Vert",c:["#1A5C46","#3E9C78"],tc:"#F4F5F1"},rose:{n:"Rose",c:["#B23F6E","#E486AB"],tc:"#FBF6F6"},marine:{n:"Bleu marine",c:["#22436F","#4A74B0"],tc:"#F5F4F1"},jaune:{n:"Jaune",c:["#E0A21A","#F5CB4E"],tc:"#FAF8F1"}};
 const DEF={c:"vert",name:"",a:0,b:0,dir:"up",jn:6,d:3,start:"",icon:"rose",p1:0,p2:0,off:[]};
 
 let st={log:{},day:{},weak:[],cfg:{...DEF}}, tab="home", draft=null, resetArm=false;
@@ -254,7 +254,7 @@ function vSet(){
     return h+saveBar()}
   if(sub==="look"){
     let h=subHead("Apparence","Les changements s'appliquent tout de suite.");
-    h+='<div class="card">'+head(I.palette,"Couleur","Choisis le thème de l'app.",1)+'<div class="themes">'+Object.entries(THEMES).map(([k,t])=>'<button class="th '+(st.cfg.c===k?"on":"")+'" data-theme-c="'+k+'"><i style="background:linear-gradient(135deg,'+t.c[0]+' 0 55%,'+t.c[1]+' 55% 100%)"></i>'+t.n+'</button>').join("")+'</div></div>';
+    h+='<div class="card">'+head(I.palette,"Couleur","Choisis le thème de l'app.",1)+'<div class="themes">'+Object.entries(THEMES).map(([k,t])=>'<button class="th '+(st.cfg.c===k?"on":"")+'" data-theme-c="'+k+'"><i style="background:linear-gradient(135deg,'+t.c[0]+','+t.c[1]+')"></i>'+t.n+'</button>').join("")+'</div></div>';
     const ic=st.cfg.icon,link="myhifz.github.io/Myhifz/?icon="+ic;
     h+='<div class="card">'+head(I.book,"Icône de l'app","Choisis le logo de ton écran d'accueil.",1)+'<div class="icons">'+Object.entries(ICONS).map(([k,n])=>'<button class="ico '+(ic===k?"on":"")+'" data-icon="'+k+'" aria-label="Icône '+n+'"><img src="icons/'+k+'.png" alt=""><span>'+n+'</span></button>').join("")+'</div>'
      +(ic!==INSTALLED_ICON?'<div class="howto"><b>Pour l\'avoir sur ton écran d\'accueil :</b><ol><li>Copie ta sauvegarde (Réglages → Données).</li><li>Supprime l\'icône actuelle de l\'écran d\'accueil.</li><li>Ouvre ce lien dans Safari :<div class="lk"><span class="num">'+link+'</span><button class="btn" data-act="copylink">Copier</button></div></li><li>Partager → « Sur l\'écran d\'accueil ».</li><li>Ouvre l\'app, Réglages → Données → Restaurer.</li></ol></div>':'')+'</div>';
