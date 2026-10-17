@@ -153,13 +153,15 @@ function weekStrip(){let h='<div class="wk">';const t=today(),dow=(new Date(t+"T
 function goalLine(){const g=goalInfo();if(!g)return"";return'<button class="gline" data-goal>'+I.flag+'<span>'+(g.done?"Objectif "+S[g.g-1].t+" atteint !":"Objectif "+S[g.g-1].t+" · "+g.rem+" p. · vers le "+new Date(g.eta+"T12:00").toLocaleDateString("fr-BE",{day:"numeric",month:"short"}))+'</span>'+I.next+'</button>'}
 function vHome(){
   const name=st.cfg.name.trim(),x=dayState(today());
-  let h='<div class="hello">'+logo()+'<div class="txt"><h1>Salam Aleykoum'+(name?", "+esc(name):"")+'</h1><div class="sub">'+fmtDay(today())+'</div></div><div class="fire">'+I.flame+'<span class="num">'+streak()+'</span></div></div>';
+  const sk=streak();
+  let h='<div class="hd"><div class="hdt">'+(name?'<span class="hs">Salam Aleykoum</span><h1>'+esc(name)+'</h1>':'<h1>Salam Aleykoum</h1>')+'<span class="hdate">'+fmtDay(today())+'</span></div>'
+   +'<div class="stk'+(sk?"":" zero")+'">'+I.flame+'<b class="num">'+sk+'</b><span>jour'+(sk>1?"s":"")+'</span></div></div>';
   if(!x.pr)return h+needSetup();
   const left=x.tot-x.done,pct=x.tot?Math.round(x.done/x.tot*100):100,R=34,C=2*Math.PI*R;
   /* 1. Aujourd'hui */
   if(x.off)h+='<div class="today off"><div class="tring"><span class="moon">'+I.moon+'</span></div><div class="tt"><b>Jour off</b><span>Pas de mémorisation ni de révision aujourd\'hui. Repose-toi bien.</span></div></div>';
-  else h+='<div class="today"><div class="tring"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="'+R+'" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="7"/><circle cx="40" cy="40" r="'+R+'" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+(C*(1-pct/100))+'" transform="rotate(-90 40 40)"/></svg><b class="num">'+pct+'%</b></div>'
-    +'<div class="tt"><b>'+(left?"Révision du jour":"Révision terminée")+'</b><span class="num">'+(left?x.done+" / "+x.tot+" pages · il en reste "+left:"Ma sha Allah, "+x.tot+" pages révisées")+'</span>'
+  else h+='<div class="today"><div class="tring"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="'+R+'" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="7"/><circle cx="40" cy="40" r="'+R+'" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+(C*(1-pct/100))+'" transform="rotate(-90 40 40)"/></svg>'+(pct>=100?'<span class="tdone">'+I.check+'</span>':'<b class="num">'+pct+'%</b>')+'</div>'
+    +'<div class="tt"><b>'+(left?"Révision du jour":"Révision terminée")+'</b><span class="num">'+(left?x.done+" / "+x.tot+" pages · il en reste "+left:"Bravo, tes "+x.tot+" pages sont révisées")+'</span>'
     +'<button class="tgo" data-tab="rev">'+(left?(x.done?"Continuer":"Commencer")+I.next:"Revoir"+I.next)+'</button></div></div>';
   /* 2. Programme du jour */
   if(!x.off){const tp=(a,b)=>b?Math.round(a/b*100):100;
@@ -169,7 +171,7 @@ function vHome(){
   /* 3. Mémorisation */
   const pr=x.pr,cp=pr.total/PAGES*100,np=st.cfg.dir==="up"?pr.p1-1:pr.p2+1,nxt=np>=1&&np<=604?onPage(np):[];
   h+='<div class="sect">Mémorisation</div><div class="card memo2"><div class="mtop2"><div><b class="num">'+cp.toFixed(1)+'<small>%</small></b><span>du Coran mémorisé</span></div><div class="mstat num"><b>'+pr.total+'</b> pages<br><b>'+hizb(pr.total)+'</b> hizb</div></div><div class="prog"><i style="width:'+Math.max(cp,1)+'%"></i></div>'+goalLine()
-   +(nxt.length?'<div class="mnext"><div><span>Prochaine page</span><b class="num">'+np+' · '+nxt.map(s=>s.t).join(", ")+'</b></div><button class="ghost" data-learn="-1" aria-label="Retirer la dernière page">−</button><button class="plusb" data-learn="1" aria-label="J\'ai appris une nouvelle page">'+I.plus+'</button></div>':'<p class="note">Tu as atteint la fin du Mushaf, ma sha Allah.</p>')+'</div>';
+   +(nxt.length?'<div class="mnext"><div><span>Prochaine page</span><b class="num">'+np+' · '+nxt.map(s=>s.t).join(", ")+'</b></div><button class="ghost" data-learn="-1" aria-label="Retirer la dernière page">−</button><button class="plusb" data-learn="1" aria-label="J\'ai appris une nouvelle page">'+I.plus+'</button></div>':'<p class="note">Tu as atteint la fin du Mushaf. Toutes les pages sont mémorisées.</p>')+'</div>';
   /* 4. Cette semaine */
   h+='<div class="sect">Cette semaine</div><div class="card week">'+weekStrip()+'<div class="wkst"><div><b class="num">'+streak()+'</b><span>jours de série</span></div><div><b class="num">'+record()+'</b><span>record</span></div></div></div>';
   return h}
@@ -272,7 +274,7 @@ function vMoi(){
   if(!pr)h+='<p class="note">Configure d\'abord ton programme.</p>';
   else{h+='<div class="fl">Mémoriser jusqu\'à</div><label class="pick"><span class="pt"><b>'+(c.goal&&S[c.goal-1]?S[c.goal-1].t:"Aucun objectif")+'</b>'+(c.goal&&S[c.goal-1]?'<span class="ar">'+S[c.goal-1].a+'</span>':'')+'</span>'+I.chev+'<select id="gsel" aria-label="Objectif"><option value="0">Aucun objectif</option>'+opts.map(s=>'<option value="'+s.id+'"'+(+c.goal===s.id?" selected":"")+'>'+s.id+'. '+s.t+'</option>').join("")+'</select></label>'
     +'<div class="fl">Mon rythme visé</div><label class="numf"><input id="gpace" type="text" inputmode="decimal" value="'+String(c.pace||2).replace(".",",")+'"><span>pages / semaine</span></label>';
-    if(gi&&gi.done)h+='<div class="gres ok">'+I.check+'<span>Objectif atteint, ma sha Allah ! Choisis le suivant.</span></div>';
+    if(gi&&gi.done)h+='<div class="gres ok">'+I.check+'<span>Objectif atteint ! Choisis le suivant.</span></div>';
     else if(gi)h+='<div class="gres"><div class="gbig"><b class="num">'+gi.rem+'</b> pages restantes</div><div>Arrivée prévue vers le <b>'+fmtShort(gi.eta)+'</b></div><div class="gst '+(gi.act===0?"":gi.ahead?"up":"down")+'">'+(gi.act===0?"Ajoute tes nouvelles pages avec le bouton + de l'accueil pour suivre ton rythme.":gi.ahead?"Dans les temps : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.":"Un peu en retard : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.")+'</div></div>'}
   h+='</div>';
   /* Mes jalons */
