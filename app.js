@@ -268,26 +268,72 @@ document.addEventListener("pointerup",cancelLong);document.addEventListener("poi
 document.addEventListener("pointermove",e=>{if(longT&&longXY&&Math.hypot(e.clientX-longXY[0],e.clientY-longXY[1])>10)cancelLong()});
 document.addEventListener("contextmenu",e=>{if(e.target.closest("[data-read]"))e.preventDefault()});
 
-/* Lecteur : texte uthmani d'une page (api.alquran.cloud), gardé en cache pour le hors-ligne */
-const pageCache={};let rd=null;
+/* Lecteur façon mushaf : mise en page Madani (15 lignes) avec les polices QCF de chaque page.
+   Données : api.quran.com (mots + n° de ligne), polices : verses.quran.foundation. Repli : texte alquran.cloud. */
+let rd=null;const qPages={},qFonts={},altCache={};
 const AR=n=>String(n).replace(/\d/g,c=>"٠١٢٣٤٥٦٧٨٩"[c]);
-function getPage(p){if(pageCache[p])return Promise.resolve(pageCache[p]);
-  return fetch("https://api.alquran.cloud/v1/page/"+p+"/quran-uthmani").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>(pageCache[p]=j.data.ayahs))}
+const QAPI="https://api.quran.com/api/v4/verses/by_page/",QFONT="https://verses.quran.foundation/fonts/quran/hafs/v2/woff2/p";
+function fetchV1(p){if(p<1||p>604)return Promise.resolve([]);if(qPages[p])return qPages[p];
+  return qPages[p]=fetch(QAPI+p+"?words=true&word_fields=code_v2,v2_page,line_v2&per_page=50").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>j.verses).catch(e=>{delete qPages[p];throw e})}
+/* Les mots de la page p (mise en page v2) peuvent venir des pages voisines de l'API */
+function pageWords(p){return Promise.all([fetchV1(p-1).catch(()=>[]),fetchV1(p),fetchV1(p+1).catch(()=>[])]).then(all=>{const out=[],seen=new Set();
+  all.flat().forEach(v=>v.words.forEach(w=>{if(w.v2_page===p&&!seen.has(w.id)){seen.add(w.id);out.push({w,v})}}));return out})}
+function loadFont(p){if(qFonts[p])return qFonts[p];
+  const f=new FontFace("qcf"+p,"url("+QFONT+p+".woff2)");return qFonts[p]=f.load().then(ff=>{document.fonts.add(ff);return "qcf"+p}).catch(e=>{delete qFonts[p];throw e})}
 function openReader(id,p){rd={id,p:p||S[id-1].p};$("reader").hidden=false;document.body.style.overflow="hidden";drawReader()}
 function closeReader(){rd=null;$("reader").hidden=true;document.body.style.overflow=""}
 function rdGo(p){if(!rd||p<1||p>604)return;rd.p=p;drawReader();$("rdbody").scrollTop=0}
+const JUZ=["","الأول","الثاني","الثالث","الرابع","الخامس","السادس","السابع","الثامن","التاسع","العاشر","الحادي عشر","الثاني عشر","الثالث عشر","الرابع عشر","الخامس عشر","السادس عشر","السابع عشر","الثامن عشر","التاسع عشر","العشرون","الحادي والعشرون","الثاني والعشرون","الثالث والعشرون","الرابع والعشرون","الخامس والعشرون","السادس والعشرون","السابع والعشرون","الثامن والعشرون","التاسع والعشرون","الثلاثون"];
+function surahBand(c){return'<div class="mband"><svg viewBox="0 0 300 40" preserveAspectRatio="none"><rect x="1.5" y="1.5" width="297" height="37" rx="8" fill="var(--m-band)" stroke="var(--m-gold)" stroke-width="1.6"/><rect x="6" y="6" width="288" height="28" rx="5" fill="none" stroke="var(--m-gold)" stroke-width=".8"/></svg><span class="mbn">سُورَةُ '+S[c-1].a+'</span><i class="mro r"></i><i class="mro l"></i></div>'}
+const BASM='<div class="mbsm">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>';
 function drawReader(){const p=rd.p,s=S[rd.id-1];
-  $("rdhead").innerHTML='<button class="rdx" data-rdclose aria-label="Fermer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="rdt"><b>'+s.t+'</b><span class="num">Page '+p+'</span></div><span class="ar rda">'+s.a+'</span>';
+  $("rdhead").innerHTML='<button class="rdx" data-rdclose aria-label="Fermer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="rdt"><b>'+s.t+'</b><span class="num">Page '+p+' sur 604</span></div><span class="ar rda">'+s.a+'</span>';
   $("rdfoot").innerHTML='<button class="btn" data-rdgo="'+(p+1)+'"'+(p>=604?" disabled":"")+'>‹ Page '+(p+1)+'</button><button class="btn" data-rdgo="'+(p-1)+'"'+(p<=1?" disabled":"")+'>Page '+(p-1)+' ›</button>';
-  $("rdbody").innerHTML='<div class="rdload">Chargement de la page '+p+'…</div>';
-  getPage(p).then(ay=>{if(!rd||rd.p!==p)return;let h="",cur=0;
-    ay.forEach(a=>{const sn=a.surah.number;let t=a.text.replace(/^\ufeff/,"");
-      if(a.numberInSurah===1){h+=(cur?'</p>':'')+'<div class="sh2">'+a.surah.name+'</div>';
-        if(sn!==1&&sn!==9){const w=t.split(" ");if(w[0].indexOf("بِسْمِ")===0||w[0].indexOf("بسم")===0){t=w.slice(4).join(" ");h+='<div class="bsm">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>'}}
-        h+='<p class="qt">';cur=sn}
-      else if(sn!==cur){h+=(cur?'</p>':'')+'<p class="qt">';cur=sn}
-      h+='<span class="'+(sn===rd.id?"":"dim")+'">'+t+' <span class="vn">﴿'+AR(a.numberInSurah)+'﴾</span></span> '});
-    $("rdbody").innerHTML=h+'</p>'}).catch(()=>{if(rd&&rd.p===p)$("rdbody").innerHTML='<div class="rdload">Impossible de charger la page '+p+'. Vérifie ta connexion : une fois ouverte, la page reste disponible hors connexion.</div>'})}
+  $("rdbody").innerHTML='<div class="mpage"><div class="rdload">Chargement de la page '+p+'…</div></div>';
+  Promise.all([pageWords(p),loadFont(p)]).then(([ws,fam])=>{if(!rd||rd.p!==p)return;if(!ws.length)throw 0;
+    const lines={};ws.forEach(o=>{(lines[o.w.line_v2]=lines[o.w.line_v2]||[]).push(o)});
+    Object.values(lines).forEach(a=>a.sort((x,y)=>x.w.id-y.w.id));
+    const first=ws.reduce((m,o)=>o.w.id<m.w.id?o:m),last=ws.reduce((m,o)=>o.w.id>m.w.id?o:m);
+    const maxL=p<=2?Math.max(...Object.keys(lines).map(Number)):15;
+    let rows="",L=1;
+    while(L<=maxL){
+      if(lines[L]){rows+='<div class="mline'+(p<=2?" ctr":"")+'" style="font-family:'+fam+'">'+lines[L].map(o=>'<span>'+o.w.code_v2+'</span>').join("")+'</div>';L++;continue}
+      let e=L;while(e<=maxL&&!lines[e])e++;const run=e-L;
+      let c,startsHere=false;
+      if(e<=maxL){const o=lines[e][0];if(o.v.verse_number===1&&o.w.position===1){c=o.v.chapter_id;startsHere=true}}
+      if(!c&&e>maxL)c=last.v.chapter_id+1;
+      if(c&&c<=114){if(c===1||c===9){rows+=surahBand(c);for(let i=1;i<run;i++)rows+='<div class="mgap"></div>'}
+        else if(run>=2){rows+=surahBand(c)+BASM;for(let i=2;i<run;i++)rows+='<div class="mgap"></div>'}
+        else rows+=startsHere&&L===1?BASM:surahBand(c)}
+      else for(let i=0;i<run;i++)rows+='<div class="mgap"></div>';
+      L=e}
+    const juz=first.v.juz_number;
+    $("rdbody").innerHTML='<div class="mpage"><div class="mtop"><span>'+(juz?"الجزء "+(JUZ[juz]||AR(juz)):"")+'</span><span>سورة '+S[first.v.chapter_id-1].a+'</span></div><div class="mframe"><div class="mlines'+(p<=2?" short":"")+'">'+rows+'</div></div><div class="mnum">'+AR(p)+'</div></div>';
+    fitLines()})
+  .catch(()=>{if(rd&&rd.p===p)drawFallback(p)})}
+/* Taille du texte : la ligne la plus longue occupe toute la largeur du cadre */
+function fitLines(){const box=document.querySelector(".mlines");if(!box)return;const ls=[...box.querySelectorAll(".mline")];if(!ls.length)return;
+  ls.forEach(l=>{l.style.fontSize="20px";l.style.justifyContent="flex-start"});
+  const W=box.clientWidth,max=Math.max(...ls.map(l=>[...l.children].reduce((a,c)=>a+c.getBoundingClientRect().width,0)));
+  const rows=box.children.length||15,body=$("rdbody"),avail=body?body.clientHeight-150:9999;
+  const fs=Math.max(17,Math.min(44,20*W*0.985/max,avail/(rows*1.8+.4)));
+  box.style.setProperty("--mfs",fs+"px");ls.forEach(l=>{l.style.fontSize="";l.style.justifyContent=""})}
+addEventListener("resize",()=>{if(rd)fitLines()});
+/* Repli si la mise en page mushaf n'est pas disponible */
+function drawFallback(p){const get=altCache[p]?Promise.resolve(altCache[p]):fetch("https://api.alquran.cloud/v1/page/"+p+"/quran-uthmani").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>(altCache[p]=j.data.ayahs));
+  get.then(ay=>{if(!rd||rd.p!==p)return;let h="",open=false;
+    ay.forEach(a=>{const sn=a.surah.number;let t=a.text.replace(/^﻿/,"");
+      if(a.numberInSurah===1){if(open)h+='</p>';h+=surahBand(sn);
+        if(sn!==1&&sn!==9){const w=t.split(" ");if(w[0].indexOf("بِسْمِ")===0||w[0].indexOf("بسم")===0){t=w.slice(4).join(" ");h+=BASM}}
+        h+='<p class="qt">';open=true}else if(!open){h+='<p class="qt">';open=true}
+      h+=t+' <span class="vn">﴿'+AR(a.numberInSurah)+'﴾</span> '});
+    $("rdbody").innerHTML='<div class="mpage"><div class="mframe"><div class="mlines">'+h+(open?'</p>':'')+'</div></div><div class="mnum">'+AR(p)+'</div></div>'})
+  .catch(()=>{if(rd&&rd.p===p)$("rdbody").innerHTML='<div class="mpage"><div class="rdload">Impossible de charger la page '+p+'. Vérifie ta connexion : une fois ouverte, la page reste disponible hors connexion.</div></div>'})}
+/* Glisser pour tourner la page (vers la droite = page suivante, comme un mushaf) */
+let swX=null,swY=null;
+document.addEventListener("touchstart",e=>{if(!rd||!e.target.closest("#rdbody"))return;swX=e.touches[0].clientX;swY=e.touches[0].clientY},{passive:true});
+document.addEventListener("touchend",e=>{if(!rd||swX===null)return;const dx=e.changedTouches[0].clientX-swX,dy=e.changedTouches[0].clientY-swY;swX=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5)rdGo(rd.p+(dx>0?1:-1))},{passive:true});
 
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyTheme);
 applyTheme();applyIcon();render();
