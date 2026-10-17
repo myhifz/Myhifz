@@ -1,6 +1,6 @@
 // Mon Hifz : la page et le code se mettent à jour dès qu'il y a internet ; le reste est gardé pour le hors-ligne.
 // Les pages du Coran déjà lues sont dans un cache à part, qui survit aux mises à jour.
-const C="monhifz-v10", Q="monhifz-quran";
+const C="monhifz-v11", Q="monhifz-quran";
 const FILES=["./","index.html","app.js","manifest.json","icons/rose.png","icons/marine.png","icons/vert.png","icons/jaune.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(FILES)));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C&&x!==Q).map(x=>caches.delete(x)))));self.clients.claim()});
