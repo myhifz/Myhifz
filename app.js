@@ -5,11 +5,11 @@ S.forEach((x,i)=>{x.e=i===113?604:Math.max(x.p,S[i+1].p-1)});
 const PAGES=604, PER_HIZB=PAGES/60;
 const KEY="murajaa-v1";
 const THEMES={vert:{n:"Vert",c:["#1A5C46","#3E9C78"],tc:"#F4F5F1"},rose:{n:"Rose",c:["#B23F6E","#E486AB"],tc:"#FBF6F6"},marine:{n:"Bleu marine",c:["#22436F","#4A74B0"],tc:"#F5F4F1"},jaune:{n:"Jaune",c:["#E0A21A","#F5CB4E"],tc:"#FAF8F1"}};
-const DEF={c:"vert",name:"",a:0,b:0,dir:"up",jn:6,d:3,start:"",icon:"rose",p1:0,p2:0,off:[],goal:0,pace:2,hstart:""};
+const DEF={c:"vert",name:"",a:0,b:0,dir:"up",jn:6,d:3,start:"",icon:"rose",p1:0,p2:0,off:[],goal:0,pace:2,hstart:"",mode:"auto"};
 
 let st={log:{},day:{},weak:[],cfg:{...DEF}}, tab="home", draft=null, resetArm=false;
 try{const v=JSON.parse(localStorage.getItem(KEY)||"null");
-  if(v){st.bk=v.bk||"";st.bkSnooze=v.bkSnooze||"";st.log=v.log||{};st.day=v.day||{};st.weak=v.weak||[];st.tp=v.tp;st.learned=v.learned||[];st.got=v.got;st.cfg=Object.assign({...DEF},v.cfg||{});
+  if(v){st.bk=v.bk||"";st.bkSnooze=v.bkSnooze||"";st.log=v.log||{};st.day=v.day||{};st.weak=v.weak||[];st.tp=v.tp;st.learned=v.learned||[];st.got=v.got;st.gotAt=v.gotAt||{};st.pg=v.pg;st.duo=v.duo||null;st.onb=v.onb;st.recapSeen=v.recapSeen||"";st.cfg=Object.assign({...DEF},v.cfg||{});
     // Ancienne version (cases par sourate) : on reprend la plage cochée
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}}}catch(e){}
 // Icône : celle de l'écran d'accueil vient du lien utilisé à l'installation (?icon=N)
@@ -80,7 +80,7 @@ function mark(kind,ids,on){
   const t=today(),before=dayState(t).done;if(!st.day[t]||!st.day[t].sj)st.day[t]={sj:[],so:[],sw:[]};const d=st.day[t];if(!d.sw)d.sw=[];
   ids.forEach(p=>{const i=d[kind].indexOf(p);if(on&&i<0)d[kind].push(p);if(!on&&i>=0)d[kind].splice(i,1)});
   st.log[t]=d.sj.length+d.so.length+d.sw.length; if(!st.log[t])delete st.log[t];
-  const x=dayState(t);d.full=!!(x.tot&&x.done>=x.tot);st.tp=Math.max(0,(st.tp||0)+x.done-before);
+  const x=dayState(t);d.full=!!(x.tot&&x.done>=x.tot);st.pg=st.pg||{};if(x.done)st.pg[t]=x.done;else delete st.pg[t];st.tp=Math.max(0,(st.tp||0)+x.done-before);
   Object.keys(st.day).forEach(k=>{if(diff(t,k)>40)delete st.day[k]});
   save();checkBadges()}
 
@@ -88,8 +88,9 @@ function streak(){let n=0,d=today(),g=0;if(!st.log[d])d=addDays(d,-1);
   while((st.log[d]||isOff(d))&&g++<3000){if(st.log[d])n++;d=addDays(d,-1)}return n}
 function record(){const ks=Object.keys(st.log).filter(k=>st.log[k]).sort();if(!ks.length)return 0;
   let best=0,cur=0,d=ks[0],g=0;while(d<=today()&&g++<3000){if(st.log[d]){cur++;best=Math.max(best,cur)}else if(!isOff(d))cur=0;d=addDays(d,1)}return best}
-function applyTheme(){const c=THEMES[st.cfg.c]?st.cfg.c:"vert";document.documentElement.dataset.c=c;
-  const dark=matchMedia("(prefers-color-scheme: dark)").matches;$("tc").content=dark?getComputedStyle(document.documentElement).getPropertyValue("--paper").trim():THEMES[c].tc}
+function applyTheme(){const c=THEMES[st.cfg.c]?st.cfg.c:"vert",m=st.cfg.mode,root=document.documentElement;root.dataset.c=c;
+  if(m==="light"||m==="dark")root.dataset.mode=m;else delete root.dataset.mode;
+  const dark=m==="dark"||(m!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);$("tc").content=dark?getComputedStyle(document.documentElement).getPropertyValue("--paper").trim():THEMES[c].tc}
 function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,1900)}
 
 /* Icônes : style « duotone » (trait + aplat léger), toutes dessinées sur la même grille */
@@ -194,7 +195,8 @@ function vHome(){
   h+='<div class="sect">Mémorisation</div><div class="card memo2"><div class="mtop2"><div><b class="num">'+cp.toFixed(1)+'<small>%</small></b><span>du Coran mémorisé</span></div><div class="mstat num"><b>'+pr.total+'</b> pages<br><b>'+hizb(pr.total)+'</b> hizb</div></div><div class="prog"><i style="width:'+Math.max(cp,1)+'%"></i></div>'+goalLine()
    +(nxt.length?'<div class="mnext"><div><span>Prochaine page</span><b class="num">'+np+' · '+nxt.map(s=>s.t).join(", ")+'</b></div><button class="ghost" data-learn="-1" aria-label="Retirer la dernière page">−</button><button class="plusb" data-learn="1" aria-label="J\'ai appris une nouvelle page">'+I.plus+'</button></div>':'<p class="note">Tu as atteint la fin du Mushaf. Toutes les pages sont mémorisées.</p>')+'</div>';
   /* 4. Cette semaine */
-  h+='<div class="sect">Cette semaine</div><div class="card week">'+weekStrip()+'<div class="wkline">'+(()=>{const t=today(),dw=(new Date(t+"T12:00").getDay()+6)%7;let a=0;for(let k=0;k<=dw;k++)if(st.log[addDays(t,k-dw)])a++;return'<span><b class="num">'+a+'</b> jour'+(a>1?"s":"")+' actif'+(a>1?"s":"")+' cette semaine</span><span>Record : <b class="num">'+record()+'</b> j</span>'})()+'</div></div>';
+  h+=duoCard();
+  h+='<div class="sect">Cette semaine</div><div class="card week">'+weekStrip()+'<div class="wkline">'+(()=>{const t=today(),dw=(new Date(t+"T12:00").getDay()+6)%7;let a=0;for(let k=0;k<=dw;k++)if(st.log[addDays(t,k-dw)])a++;return'<span><b class="num">'+a+'</b> jour'+(a>1?"s":"")+' actif'+(a>1?"s":"")+' cette semaine</span><span>Record : <b class="num">'+record()+'</b> j</span>'})()+'</div><button class="btn wide" data-act="recap">'+I.chart+'Voir le bilan de la semaine</button></div>';
   return h}
 
 function block(kind,title,tag,pages,list,doneIds,pr,cls){
@@ -313,7 +315,7 @@ function badges(){const pr=program(st.cfg),mem=pr?pr.total:0,rec=record(),tp=Mat
     ["r100","100 pages révisées","Depuis le début",tp,100],["r1000","1 000 pages révisées","Depuis le début",tp,1000]];
   return B.map(([id,t,d,v,n])=>({id,t,d,v:Math.min(v,n),n,ok:v>=n}))}
 function checkBadges(silent){const ok=badges().filter(b=>b.ok).map(b=>b.id);if(!st.got){st.got=ok;save();return}
-  const nw=ok.filter(i=>!st.got.includes(i));if(nw.length){st.got=st.got.concat(nw);save();if(!silent){const b=badges().find(x=>x.id===nw[0]);setTimeout(()=>toast("Nouveau jalon : "+b.t+" !"),400)}}}
+  const nw=ok.filter(i=>!st.got.includes(i));if(nw.length){st.got=st.got.concat(nw);st.gotAt=st.gotAt||{};nw.forEach(i=>st.gotAt[i]=today());save();if(!silent){const b=badges().find(x=>x.id===nw[0]);setTimeout(()=>toast("Nouveau jalon : "+b.t+" !"),400)}}}
 function vMoi(){
   const c=st.cfg,pr=program(c),name=c.name.trim(),hs=c.hstart||firstDay(),bs=badges(),nOk=bs.filter(b=>b.ok).length;
   let h=subHead("Moi");
@@ -330,13 +332,21 @@ function vMoi(){
     if(gi&&gi.done)h+='<div class="gres ok">'+I.check+'<span>Objectif atteint ! Choisis le suivant.</span></div>';
     else if(gi)h+='<div class="gres"><div class="gbig"><b class="num">'+gi.rem+'</b> pages restantes</div><div>Arrivée prévue vers le <b>'+fmtShort(gi.eta)+'</b></div><div class="gst '+(gi.act===0?"":gi.ahead?"up":"down")+'">'+(gi.act===0?"Ajoute tes nouvelles pages avec le bouton + de l'accueil pour suivre ton rythme.":gi.ahead?"Dans les temps : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.":"Un peu en retard : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.")+'</div></div>'}
   h+='</div>';
+  /* Défi à deux */
+  h+='<div class="sect">Défi à deux</div><div class="card">';
+  if(!gh.token)h+='<p class="note" style="margin:0">Pour faire un défi, active d\'abord la sauvegarde automatique GitHub (Réglages → Sauvegarde et restauration). Ton proche doit faire pareil sur son téléphone.</p>';
+  else if(st.duo){h+='<div class="duoset"><b>Avec '+esc((st.duo.data&&st.duo.data.cfg.name)||st.duo.name)+'</b><span>'+(st.duo.err||"Mis à jour "+ago2(st.duo.at?new Date(st.duo.at).toISOString():""))+'</span></div><div class="chips" style="margin-top:12px"><button class="btn" data-act="duoref">Actualiser</button><button class="btn" data-act="duooff">Arrêter le défi</button></div>'}
+  else{if(duoList===null){duoLoadList();h+='<p class="note" style="margin:0">Recherche des autres sauvegardes…</p>'}
+    else if(!duoList.length)h+='<p class="note" style="margin:0">Aucune autre sauvegarde trouvée. Ton proche doit installer l\'app, mettre son prénom et activer la sauvegarde automatique avec la même clé.</p>';
+    else h+='<p class="note" style="margin:0 0 10px">Avec qui veux-tu faire le défi ?</p><div class="chips">'+duoList.map(f=>'<button class="btn" data-duo="'+esc(f.file)+'" data-dn="'+esc(f.name)+'">'+esc(f.name.charAt(0).toUpperCase()+f.name.slice(1))+'</button>').join("")+'</div>'}
+  h+='</div>';
   /* Mes jalons */
   h+='<div class="sect">Mes jalons · '+nOk+'/'+bs.length+'</div><div class="bdg">'+bs.map(b=>'<div class="bd'+(b.ok?" ok":"")+'"><div class="bdi">'+(b.ok?I.medal:I.lock)+'</div><b>'+b.t+'</b><span>'+(b.ok?b.d:b.v+" / "+b.n)+'</span>'+(b.ok?'':'<i><u style="width:'+Math.round(b.v/b.n*100)+'%"></u></i>')+'</div>').join("")+'</div>';
   /* Date de début */
   h+='<div class="sect">Mon parcours</div><div class="card"><div class="fl" style="margin-top:0">Date de début du hifdh</div><input class="field" id="hst" type="date" max="'+today()+'" value="'+hs+'"><div class="note" style="margin-top:8px">Début le '+fmtShort(hs)+' · il y a '+since(hs)+'.</div></div>';
   return h}
 function restoreFrom(v){if(!v||(!v.cfg&&!v.s))throw 0;
-    const keep={bk:[st.bk,v.saved,v.bk].filter(Boolean).sort().pop()||""};st={log:v.log||{},day:v.day||{},weak:v.weak||[],tp:v.tp||0,learned:v.learned||[],got:v.got,cfg:Object.assign({...DEF},v.cfg||{})};
+    const keep={bk:[st.bk,v.saved,v.bk].filter(Boolean).sort().pop()||""};st={log:v.log||{},day:v.day||{},weak:v.weak||[],tp:v.tp||0,learned:v.learned||[],got:v.got,gotAt:v.gotAt||{},pg:v.pg||{},duo:v.duo||null,onb:1,cfg:Object.assign({...DEF},v.cfg||{})};
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}
     if(ICONS[URL_ICON])st.cfg.icon=URL_ICON;if(!ICONS[st.cfg.icon])st.cfg.icon="rose";
     Object.assign(st,keep);save();draft=null;applyTheme();applyIcon();toast("Données restaurées");render()}
@@ -357,7 +367,7 @@ const ghSave=()=>{try{localStorage.setItem(GHK,JSON.stringify(gh))}catch(e){}};
 const GH_REPO="myhifz/Myhifz";
 const slug=s=>(s||"moi").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"moi";
 const b64e=t=>btoa(unescape(encodeURIComponent(t))),b64d=t=>decodeURIComponent(escape(atob(t.replace(/\s/g,""))));
-function ghPayload(){const o=JSON.parse(JSON.stringify(st));if(o.cfg)o.cfg.photo="";o.app="monhifz";o.saved=new Date().toISOString();return JSON.stringify(o,null,1)}
+function ghPayload(){const o=JSON.parse(JSON.stringify(st));if(o.cfg)o.cfg.photo="";if(o.duo)o.duo={file:o.duo.file,name:o.duo.name};o.app="monhifz";o.saved=new Date().toISOString();return JSON.stringify(o,null,1)}
 function ghApi(path,opt){return fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+path,Object.assign({cache:"no-store"},opt,{headers:{"Authorization":"Bearer "+gh.token,"Accept":"application/vnd.github+json"}}))}
 let ghBusy=false,ghTimer=null;
 function ghPush(force){if(!gh.token||!gh.file||!navigator.onLine||ghBusy)return Promise.resolve(false);ghBusy=true;
@@ -383,6 +393,70 @@ function ghCard(){
     +'<li>Nom : « Mon Hifz ». Expiration : la plus longue possible.</li><li><b>Repository access</b> : <b>Only select repositories</b> → <b>Myhifz</b>.</li><li><b>Permissions → Contents</b> : <b>Read and write</b>.</li><li><b>Generate token</b>, copie la clé et colle-la ici :</li></ol>'
     +'<input class="field" id="ghtok" type="password" autocomplete="off" placeholder="github_pat_…"><button class="btn pri wide" data-act="ghon">Activer la sauvegarde automatique</button>'
     +'<p class="note" style="margin:10px 0 0">La clé reste uniquement sur ce téléphone. Les sauvegardes sont visibles publiquement dans le dépôt, sans ta photo.</p></div>'}
+/* ===== Statistiques par personne (moi ou un proche) ===== */
+function offOf(c,date){return(c&&c.off||[]).includes(new Date(date+"T12:00").getDay())}
+function streakOf(d){let n=0,day=today(),g=0;const L=d.log||{};if(!L[day])day=addDays(day,-1);while((L[day]||offOf(d.cfg,day))&&g++<3000){if(L[day])n++;day=addDays(day,-1)}return n}
+function weekOf(d,end){end=end||today();let pages=0,active=0,learned=0;const per=[];
+  for(let k=6;k>=0;k--){const day=addDays(end,-k),p=(d.pg||{})[day]||0;per.push({day,p,on:!!(d.log||{})[day],off:offOf(d.cfg,day)});pages+=p;if((d.log||{})[day])active++}
+  (d.learned||[]).forEach(e=>{if(diff(end,e.d)>=0&&diff(end,e.d)<7)learned+=e.n});
+  return{pages,active,learned:Math.max(0,learned),per}}
+function memOf(d){try{const r=pageRange(d.cfg||{});return r?r[1]-r[0]+1:0}catch(e){return 0}}
+
+/* ===== Bilan de la semaine ===== */
+function recapHtml(){const w=weekOf(st),pw=weekOf(st,addDays(today(),-7)),t=today(),from=addDays(t,-6);
+  const nb=Object.entries(st.gotAt||{}).filter(([,d])=>diff(t,d)>=0&&diff(t,d)<7).map(([id])=>badges().find(b=>b.id===id)).filter(Boolean);
+  const max=Math.max(1,...w.per.map(x=>x.p)),delta=pw.pages?Math.round((w.pages-pw.pages)/pw.pages*100):null;
+  const f=d=>new Date(d+"T12:00").toLocaleDateString("fr-BE",{day:"numeric",month:"short"});
+  return'<div class="sheet-in"><button class="shx" data-act="recapclose" aria-label="Fermer">×</button><span class="ddk">Bilan de la semaine</span><h2>'+f(from)+' – '+f(t)+'</h2>'
+   +'<div class="rk"><div><b class="num cnt" data-n="'+w.pages+'">0</b><span>pages révisées</span></div><div><b class="num cnt" data-n="'+w.learned+'">0</b><span>pages apprises</span></div><div><b class="num cnt" data-n="'+w.active+'">0</b><span>jours actifs sur 7</span></div><div><b class="num cnt" data-n="'+streakOf(st)+'">0</b><span>jours de série</span></div></div>'
+   +'<div class="rbars">'+w.per.map((x,k)=>'<div class="rb'+(x.off?" off":"")+'"><i style="--h:'+(x.p/max*100)+'%;--k:'+k+'"></i><span>'+DOW[new Date(x.day+"T12:00").getDay()].charAt(0)+'</span></div>').join("")+'</div>'
+   +(delta===null?'':'<div class="rdelta '+(delta>=0?"up":"down")+'">'+(delta>=0?"+":"")+delta+' % de pages révisées par rapport à la semaine d\'avant</div>')
+   +(nb.length?'<div class="rnew"><span>Nouveaux jalons</span>'+nb.map(b=>'<i>'+I.medal+b.t+'</i>').join("")+'</div>':'')+'</div>'}
+function openRecap(){const s=$("sheet");s.innerHTML=recapHtml();s.hidden=false;document.body.classList.add("sheet-open");st.recapSeen=today();save();
+  const red=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  s.querySelectorAll(".cnt").forEach(e=>{const n=+e.dataset.n;if(red){e.textContent=n;return}const t0=performance.now(),go=x=>{const k=Math.min(1,(x-t0)/900);e.textContent=Math.round(n*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(go)};requestAnimationFrame(go)})}
+function closeRecap(){const s=$("sheet");s.hidden=true;document.body.classList.remove("sheet-open")}
+
+/* ===== Défi à deux (via les sauvegardes GitHub publiques) ===== */
+let duoList=null,duoBusy=false;
+function duoFetch(force){if(!st.duo||duoBusy)return;if(!force&&st.duo.at&&Date.now()-st.duo.at<6e5)return;duoBusy=true;
+  fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+st.duo.file,{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}})
+   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if(tab==="home"||sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})
+   .catch(e=>{st.duo.err="Impossible de lire la sauvegarde de "+st.duo.name;save()}).finally(()=>{duoBusy=false})}
+function duoLoadList(){fetch("https://api.github.com/repos/"+GH_REPO+"/contents/sauvegardes",{cache:"no-store"}).then(r=>r.ok?r.json():[]).then(a=>{duoList=(Array.isArray(a)?a:[]).filter(f=>/\.json$/.test(f.name)&&"sauvegardes/"+f.name!==gh.file).map(f=>({file:f.path,name:f.name.replace(/\.json$/,"").replace(/-/g," ")}));if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}}).catch(()=>{duoList=[]})}
+function duoCard(){if(!st.duo||!st.duo.data)return"";const o=st.duo.data,me=weekOf(st),him=weekOf(o),nm=esc(o.cfg.name||st.duo.name);
+  const row=(lab,a,b)=>{const m=Math.max(1,a,b);return'<div class="dr"><span class="drl">'+lab+'</span><div class="drb"><i class="me" style="--w:'+(a/m*100)+'%"></i><b class="num">'+a+'</b></div><div class="drb"><i class="ot" style="--w:'+(b/m*100)+'%"></i><b class="num">'+b+'</b></div></div>'};
+  const sa=me.pages+streakOf(st)*2,sb=him.pages+streakOf(o)*2,lead=sa===sb?"Égalité cette semaine":sa>sb?"Tu mènes cette semaine":nm+" mène cette semaine";
+  return'<div class="sect">Défi à deux</div><div class="card duo2"><div class="dh"><span class="dp me">'+(st.cfg.photo?'<img src="'+st.cfg.photo+'" alt="">':esc((st.cfg.name||"Moi").charAt(0)))+'</span><b>Toi</b><span class="vs">VS</span><b>'+nm+'</b><span class="dp ot">'+esc(nm.charAt(0).toUpperCase())+'</span></div>'
+   +row("Pages révisées",me.pages,him.pages)+row("Jours de série",streakOf(st),streakOf(o))+row("Jours actifs",me.active,him.active)
+   +'<div class="dlead">'+I.medal+lead+'</div></div>'}
+
+/* ===== Premier lancement ===== */
+let ob=null;
+function needOnb(){return!st.onb&&!program(st.cfg)}
+function vOnb(){if(!ob)ob={step:0,cfg:{...DEF,a:78,b:114,c:st.cfg.c||"vert",off:[]}};const c=ob.cfg,n=5,s=ob.step;
+  let h='<div class="onb"><div class="obdots">'+Array.from({length:n},(_,k)=>'<i class="'+(k<=s?"on":"")+'"></i>').join("")+'</div><div class="obp" key="'+s+'">';
+  if(s===0)h+='<div class="obhero">'+GEO+'<img src="icons/'+(ICONS[c.c]?c.c:"rose")+'.png" alt=""></div><h1>Bienvenue</h1><p class="sub">Mon Hifz t\'aide à réviser ce que tu as mémorisé, jour après jour.</p><div class="fl">Ton prénom</div><input class="field" id="obname" type="text" maxlength="24" autocomplete="given-name" placeholder="Prénom" value="'+esc(c.name||"")+'"><label class="linkb obrest">Déjà utilisé ? Restaurer une sauvegarde<input type="file" id="obfile" accept=".json,application/json,text/plain" class="vh"></label>';
+  if(s===1){const pr=program(c);h+='<h1>Ce que tu connais</h1><p class="sub">De quelle sourate à quelle sourate ?</p><div class="fl">De :</div>'+sel("oa",c.a)+'<div class="fl">À :</div>'+sel("ob",c.b)+'<div class="pill">'+I.doc+'<span class="num">'+pr.total+' pages · '+hizb(pr.total)+' hizb</span></div><div class="fl">Dans quel sens ?</div><div class="seg" style="margin-top:0"><button class="'+(c.dir==="down"?"on":"")+'" data-obdir="down">Al-Fatiha → An-Nas</button><button class="'+(c.dir==="up"?"on":"")+'" data-obdir="up">An-Nas → Al-Fatiha</button></div>'}
+  if(s===2){const pr=program(c),per=pr.old.length?pr.k:0;h+='<h1>Ton rythme</h1><p class="sub">Tu pourras le changer quand tu veux.</p><div class="lt">Hifdh al-Jadid</div><div class="ld">Pages récentes à réviser chaque jour.</div><label class="numf"><input id="objn" type="number" inputmode="numeric" min="0" value="'+c.jn+'"><span>pages</span></label><div class="lt" style="margin-top:16px">Hifdh</div><div class="ld">En combien de jours tout revoir ?</div><label class="numf"><input id="obd" type="number" inputmode="numeric" min="1" max="60" value="'+c.d+'"><span>jours</span></label><div class="pill" id="obper">'+I.calc+'<span>Soit environ <b class="num">'+(pr.jadid.length+per)+' pages</b> par jour</span></div><div class="lt" style="margin-top:16px">Jour off</div><div class="days">'+DAYS.map(([k,l])=>'<button class="dy '+(c.off.includes(k)?"on":"")+'" data-oboff="'+k+'">'+l+'</button>').join("")+'</div>'}
+  if(s===3)h+='<h1>Ta couleur</h1><p class="sub">Choisis l\'ambiance de ton app.</p><div class="themes obth">'+Object.entries(THEMES).map(([k,t])=>'<button class="th '+(c.c===k?"on":"")+'" data-obc="'+k+'"><i style="background:linear-gradient(135deg,'+t.c[0]+','+t.c[1]+')"></i>'+t.n+'</button>').join("")+'</div>';
+  if(s===4){const pr=program(c),A=S[pr.a-1],B=S[pr.b-1],o=c.dir==="up"?[B,A]:[A,B];h+='<div class="obok">'+I.check+'</div><h1>C\'est prêt'+(c.name?", "+esc(c.name):"")+'</h1><p class="sub">Voici ton programme.</p><div class="card sum" style="margin-top:16px">'+[["Sourates",o[0].t+" → "+o[1].t],["Pages mémorisées",pr.total],["Hifdh al-Jadid",pr.jadid.length+" p./jour"],["Hifdh","~"+(pr.old.length?pr.k:0)+" p./jour"],["Jour off",c.off.length?DAYS.filter(([k])=>c.off.includes(k)).map(([,l])=>l).join(", "):"Aucun"]].map(r=>'<div class="sr"><span>'+r[0]+'</span><b class="num">'+r[1]+'</b></div>').join("")+'</div>'}
+  h+='</div><div class="obnav">'+(s>0?'<button class="btn" data-obgo="-1">Retour</button>':'<span></span>')+'<button class="btn pri" data-obgo="1">'+(s===4?"Commencer":"Continuer")+I.next+'</button></div></div>';
+  return h}
+function onbBind(){const c=ob.cfg,re=()=>render();
+  if($("obname"))$("obname").oninput=e=>{c.name=e.target.value};
+  if($("oa"))$("oa").onchange=e=>{c.a=+e.target.value;re()};
+  if($("ob"))$("ob").onchange=e=>{c.b=+e.target.value;re()};
+  if($("objn"))$("objn").oninput=e=>{c.jn=Math.max(0,+e.target.value||0)};
+  if($("obd"))$("obd").oninput=e=>{c.d=Math.max(1,Math.min(60,+e.target.value||1))};
+  ["objn","obd"].forEach(id=>{if($(id))$(id).onchange=re});
+  if($("obfile"))$("obfile").onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{restoreFrom(JSON.parse(r.result));st.onb=1;save();ob=null;go("home")}catch(x){toast("Ce fichier n'est pas une sauvegarde Mon Hifz")}};r.readAsText(f)}}
+function onbClick(d){const c=ob.cfg;
+  if(d.obgo){const n=+d.obgo;if(n>0&&ob.step===4){st.cfg={...st.cfg,...c,start:today(),hstart:st.cfg.hstart||today()};st.onb=1;save();applyTheme();ob=null;go("home");toast("Bismillah, bonne révision !");return}ob.step=Math.max(0,Math.min(4,ob.step+n));render();scrollTo(0,0);return true}
+  if(d.obdir){c.dir=d.obdir;render();return true}
+  if(d.oboff!==undefined){const k=+d.oboff,i=c.off.indexOf(k);if(i<0&&c.off.length>=6)return true;if(i<0)c.off.push(k);else c.off.splice(i,1);render();return true}
+  if(d.obc){c.c=d.obc;st.cfg.c=d.obc;applyTheme();render();return true}
+  return false}
 function vSet(){
   if(!draft)initDraft();
   const pr=program(draft),per=pr&&pr.old.length?pr.k:0;
@@ -405,6 +479,8 @@ function vSet(){
     return h+saveBar()}
   if(sub==="look"){
     let h=subHead("Apparence","Les changements s'appliquent tout de suite.");
+    const md=st.cfg.mode||"auto";
+    h+='<div class="card">'+head(I.moon,"Mode","Clair, sombre ou comme ton iPhone.",1)+'<div class="seg3">'+[["auto","Auto"],["light","Clair"],["dark","Sombre"]].map(([k,l])=>'<button class="'+(md===k?"on":"")+'" data-mode="'+k+'">'+l+'</button>').join("")+'</div></div>';
     h+='<div class="card">'+head(I.palette,"Couleur","Choisis le thème de l'app.",1)+'<div class="themes">'+Object.entries(THEMES).map(([k,t])=>'<button class="th '+(st.cfg.c===k?"on":"")+'" data-theme-c="'+k+'"><i style="background:linear-gradient(135deg,'+t.c[0]+','+t.c[1]+')"></i>'+t.n+'</button>').join("")+'</div></div>';
     const ic=st.cfg.icon,link="myhifz.github.io/Myhifz/?icon="+ic;
     h+='<div class="card">'+head(I.book,"Icône de l'app","Choisis le logo de ton écran d'accueil.",1)+'<div class="icons">'+Object.entries(ICONS).map(([k,n])=>'<button class="ico '+(ic===k?"on":"")+'" data-icon="'+k+'" aria-label="Icône '+n+'"><img src="icons/'+k+'.png" alt=""><span>'+n+'</span></button>').join("")+'</div>'
@@ -434,7 +510,10 @@ function vSet(){
   return h}
 
 function render(){
+  const onb=needOnb();document.body.classList.toggle("onbm",onb);
+  if(onb){$("app").innerHTML=vOnb();onbBind();return}
   $("app").innerHTML=tab==="home"?vHome():tab==="rev"?vRev():tab==="plan"?vPlan():vSet();
+  if(tab==="home"){duoFetch();if(new Date().getDay()===5&&st.recapSeen!==today()&&Object.keys(st.log).length>=2)setTimeout(()=>{if(tab==="home"&&$("sheet").hidden)openRecap()},900)}
   document.body.classList.toggle("onset",tab==="set");
   if(tab==="home")animateHome();else homeShown=false;
   if(tab==="rev")animateRev();else{revShown=false;revPrevW=null;revPrevDone=null}
@@ -462,7 +541,14 @@ function go(t){draft=null;resetArm=false;sub=null;tab=t;try{localStorage.setItem
 
 document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
+  if(ob&&onbClick(d))return;
   if(d.tab)go(d.tab);
+  else if(d.mode){st.cfg.mode=d.mode;save();applyTheme();const y=scrollY;render();scrollTo(0,y)}
+  else if(d.act==="recap"){openRecap()}
+  else if(d.act==="recapclose"){closeRecap()}
+  else if(d.duo){st.duo={file:d.duo,name:d.dn,at:0,data:null,err:""};save();duoFetch(true);const y=scrollY;render();scrollTo(0,y)}
+  else if(d.act==="duoref"){duoFetch(true);toast("Actualisation…")}
+  else if(d.act==="duooff"){st.duo=null;save();duoList=null;const y=scrollY;render();scrollTo(0,y)}
   else if(d.goto){go("rev");const el=$("blk-"+d.goto);if(el){const y=el.getBoundingClientRect().top+scrollY-14-(parseFloat(getComputedStyle(document.documentElement).paddingTop)||0);scrollTo({top:Math.max(0,y),behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),1200)}}
   else if(d.goal!==undefined){tab="set";sub="profile";draft=null;render();scrollTo(0,0)}
   else if(d.pday){planPrev=planSel;planSel=d.pday;if(d.pday.slice(0,7)!==planMonth)planMonth=d.pday.slice(0,7);const y=scrollY;render();scrollTo(0,y);planPrev=null}
@@ -487,7 +573,7 @@ document.addEventListener("click",e=>{
     if(first)go("home");else{sub=null;render();scrollTo(0,0)}}
   else if(d.act==="nophoto"){st.cfg.photo="";save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="reset"){if(!resetArm){resetArm=true;const y=scrollY;render();scrollTo(0,y);return}
-    st={log:{},day:{},weak:[],tp:0,learned:[],got:[],cfg:{...DEF,c:st.cfg.c,icon:st.cfg.icon}};save();draft=null;resetArm=false;toast("Données effacées");render()}
+    st={log:{},day:{},weak:[],tp:0,learned:[],got:[],gotAt:{},pg:{},cfg:{...DEF,c:st.cfg.c,icon:st.cfg.icon,mode:st.cfg.mode}};save();draft=null;resetArm=false;toast("Données effacées");render()}
   else if(d.act==="export"){const txt=JSON.stringify(st),ta=$("expt");ta.value=txt;const fb=()=>{ta.hidden=false;ta.select();toast("Sélectionne et copie le texte")};
     if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast("Sauvegarde copiée"),fb);else fb()}
   else if(d.act==="showimp"){$("imp").hidden=false}
@@ -581,6 +667,8 @@ document.addEventListener("touchend",e=>{if(!rd||swX===null)return;const dx=e.ch
 
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyTheme);
 if(st.tp===undefined){st.tp=Object.keys(st.day).reduce((a,k)=>{try{return a+dayState(k).done}catch(e){return a}},0)}
+if(program(st.cfg))st.onb=1;
+if(!st.pg){st.pg={};Object.keys(st.day).forEach(k=>{try{const n=dayState(k).done;if(n)st.pg[k]=n}catch(e){}})}
 checkBadges(true);
 applyTheme();applyIcon();render();
 let shownDay=today();
