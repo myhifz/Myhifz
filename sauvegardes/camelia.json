@@ -50,9 +50,12 @@
  ],
  "gotAt": {},
  "pg": {},
- "duo": null,
+ "duo": {
+  "file": "sauvegardes/soulaimane.json",
+  "name": "soulaimane"
+ },
  "onb": 1,
  "recapSeen": "2026-10-17",
  "app": "monhifz",
- "saved": "2026-10-17T11:35:20.227Z"
+ "saved": "2026-10-17T11:37:58.393Z"
 }
