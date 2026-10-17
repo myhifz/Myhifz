@@ -408,6 +408,7 @@ function ghPush(force){if(!gh.token||!gh.file||!navigator.onLine||ghBusy)return 
     .catch(e=>{gh.err=e===401||e===403?"Clé refusée : vérifie qu'elle a l'accès « Contents : Read and write » sur Myhifz.":e===404?"Dépôt introuvable : la clé doit donner accès à Myhifz.":"Envoi impossible pour l'instant, nouvel essai plus tard.";ghSave();if(force)toast(gh.err);return false})
     .finally(()=>{ghBusy=false})}
 function ghSchedule(){if(!gh.token)return;clearTimeout(ghTimer);ghTimer=setTimeout(()=>ghPush(),15000)}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&typeof duoFetch==="function"&&tab==="home")duoFetch()});
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&ghTimer){clearTimeout(ghTimer);ghTimer=null;ghPush()}});
 function ghRestore(){if(!gh.token)return;toast("Récupération…");ghApi(gh.file).then(r=>{if(!r.ok)throw r.status;return r.json()}).then(j=>{gh.sha=j.sha;ghSave();const photo=st.cfg.photo;restoreFrom(JSON.parse(b64d(j.content)));if(photo&&!st.cfg.photo){st.cfg.photo=photo;save()}})
   .catch(e=>toast(e===404?"Aucune sauvegarde trouvée sur GitHub":"Récupération impossible"))}
@@ -449,8 +450,8 @@ function closeRecap(){const s=$("sheet");s.hidden=true;document.body.classList.r
 
 /* ===== Défi à deux (via les sauvegardes GitHub publiques) ===== */
 let duoList=null,duoBusy=false;
-function duoFetch(force){if(!st.duo||duoBusy)return;if(!force&&st.duo.at&&Date.now()-st.duo.at<6e5)return;duoBusy=true;
-  fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+st.duo.file,{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}})
+function duoFetch(force){if(!st.duo||duoBusy)return;if(!force&&st.duo.at&&Date.now()-st.duo.at<6e4)return;duoBusy=true;
+  fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+st.duo.file+"?t="+Date.now(),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}})
    .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if(tab==="home"||sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})
    .catch(e=>{st.duo.err="Impossible de lire la sauvegarde de "+st.duo.name;save()}).finally(()=>{duoBusy=false})}
 let duoListErr="";
@@ -605,7 +606,7 @@ document.addEventListener("click",e=>{
     const ch=pageRange(old)+""!==r+""||old.dir!==draft.dir||+old.jn!==+draft.jn||+old.d!==+draft.d||(old.off||[]).slice().sort()+""!==draft.off.slice().sort()+"";
     const first=!st.cfg.start;if(old.dir!==draft.dir)draft.goal=0;st.cfg={...draft,c:st.cfg.c,icon:st.cfg.icon,name:st.cfg.name};if(ch||first)st.cfg.start=today();save();draft=null;toast("Programme enregistré");
     if(first)go("home");else{sub=null;render();scrollTo(0,0)}}
-  else if(d.act==="sharephoto"){st.cfg.sharePhoto=!st.cfg.sharePhoto;save();toast(st.cfg.sharePhoto?"Ta photo sera visible dans le défi":"Ta photo n'est plus partagée");const y=scrollY;render();scrollTo(0,y)}
+  else if(d.act==="sharephoto"){st.cfg.sharePhoto=!st.cfg.sharePhoto;save();clearTimeout(ghTimer);ghPush();toast(st.cfg.sharePhoto?"Ta photo sera visible dans le défi":"Ta photo n'est plus partagée");const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="nophoto"){st.cfg.photo="";save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="reset"){if(!resetArm){resetArm=true;const y=scrollY;render();scrollTo(0,y);return}
     st={log:{},day:{},weak:[],tp:0,learned:[],got:[],gotAt:{},pg:{},cfg:{...DEF,c:st.cfg.c,icon:st.cfg.icon,mode:st.cfg.mode}};save();draft=null;resetArm=false;toast("Données effacées");render()}
