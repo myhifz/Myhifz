@@ -21,7 +21,7 @@ if(!ICONS[st.cfg.icon])st.cfg.icon="rose";
 function applyIcon(){document.querySelectorAll('link[rel="apple-touch-icon"],link[rel="icon"]').forEach(l=>l.href="icons/"+st.cfg.icon+".png")}
 const logo=()=>'<div class="logo"><img src="icons/'+st.cfg.icon+'.png" alt=""></div>';
 try{const t=localStorage.getItem(KEY+"-tab");if(["home","rev","plan","set"].includes(t))tab=t}catch(e){}
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){};if(typeof ghSchedule==="function")ghSchedule()};
 
 const pad=n=>String(n).padStart(2,"0");
 const ds=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
@@ -129,6 +129,7 @@ const I={
  medal:D(24,'<circle cx="12" cy="14" r="6"/><path d="M8.5 9.2L6 3h4l2 4 2-4h4l-2.5 6.2"/><path d="M12 11.4l.8 1.6 1.7.2-1.3 1.2.3 1.7-1.5-.8-1.5.8.3-1.7-1.3-1.2 1.7-.2z" fill="currentColor" stroke="none"/>','<circle cx="12" cy="14" r="6"/>'),
  lock:D(22,'<rect x="5" y="10.5" width="14" height="10" rx="3"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>','<rect x="5" y="10.5" width="14" height="10" rx="3"/>'),
  cam:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.7l1.3-2h5l1.3 2h1.7A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><circle cx="12" cy="12.5" r="3.3"/></svg>',
+ git:D(24,'<circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="9" r="2.2"/><path d="M6 8.2v7.6M18 11.2c0 3.5-3.5 4.3-9.8 5.6"/>'),
  check:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
 };
 
@@ -314,7 +315,42 @@ function saveFile(){const t=today(),name="MonHifz-sauvegarde-"+t+".json",txt=JSO
   if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:"Sauvegarde Mon Hifz"}).then(done).catch(e=>{if(e&&e.name!=="AbortError")dl()});return}
   dl();function dl(){const u=URL.createObjectURL(new Blob([txt],{type:"application/json"})),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);done()}}
 function bkAge(){return st.bk?diff(today(),st.bk):null}
-function needBackup(){if(!program(st.cfg))return false;const a=bkAge();if(st.bkSnooze&&diff(today(),st.bkSnooze)<3)return false;return a===null?Object.keys(st.log).length>=3:a>=7}
+function needBackup(){if(!program(st.cfg))return false;if(gh.token&&!gh.err)return false;const a=bkAge();if(st.bkSnooze&&diff(today(),st.bkSnooze)<3)return false;return a===null?Object.keys(st.log).length>=3:a>=7}
+/* Sauvegarde automatique sur GitHub (dépôt public de l'app, dossier sauvegardes/).
+   La clé reste sur ce téléphone (clé à part) et la photo n'est jamais envoyée. */
+const GHK=KEY+"-github";
+let gh={token:"",file:"",last:"",sha:"",err:""};
+try{Object.assign(gh,JSON.parse(localStorage.getItem(GHK)||"{}"))}catch(e){}
+const ghSave=()=>{try{localStorage.setItem(GHK,JSON.stringify(gh))}catch(e){}};
+const GH_REPO="myhifz/Myhifz";
+const slug=s=>(s||"moi").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"moi";
+const b64e=t=>btoa(unescape(encodeURIComponent(t))),b64d=t=>decodeURIComponent(escape(atob(t.replace(/\s/g,""))));
+function ghPayload(){const o=JSON.parse(JSON.stringify(st));if(o.cfg)o.cfg.photo="";o.app="monhifz";o.saved=new Date().toISOString();return JSON.stringify(o,null,1)}
+function ghApi(path,opt){return fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+path,Object.assign({cache:"no-store"},opt,{headers:{"Authorization":"Bearer "+gh.token,"Accept":"application/vnd.github+json"}}))}
+let ghBusy=false,ghTimer=null;
+function ghPush(force){if(!gh.token||!gh.file||!navigator.onLine||ghBusy)return Promise.resolve(false);ghBusy=true;
+  const put=sha=>ghApi(gh.file,{method:"PUT",keepalive:true,body:JSON.stringify({message:"Sauvegarde auto "+today(),content:b64e(ghPayload()),sha:sha||undefined})});
+  const getSha=()=>ghApi(gh.file).then(r=>r.status===404?"":r.ok?r.json().then(j=>j.sha):Promise.reject(r.status));
+  return (gh.sha?Promise.resolve(gh.sha):getSha()).then(put).then(r=>r.status===409||r.status===422?getSha().then(put):r)
+    .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(j=>{gh.sha=j.content.sha;gh.last=new Date().toISOString();gh.err="";ghSave();st.bk=today();try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){};return true})
+    .catch(e=>{gh.err=e===401||e===403?"Clé refusée : vérifie qu'elle a l'accès « Contents : Read and write » sur Myhifz.":e===404?"Dépôt introuvable : la clé doit donner accès à Myhifz.":"Envoi impossible pour l'instant, nouvel essai plus tard.";ghSave();if(force)toast(gh.err);return false})
+    .finally(()=>{ghBusy=false})}
+function ghSchedule(){if(!gh.token)return;clearTimeout(ghTimer);ghTimer=setTimeout(()=>ghPush(),15000)}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&ghTimer){clearTimeout(ghTimer);ghTimer=null;ghPush()}});
+function ghRestore(){if(!gh.token)return;toast("Récupération…");ghApi(gh.file).then(r=>{if(!r.ok)throw r.status;return r.json()}).then(j=>{gh.sha=j.sha;ghSave();const photo=st.cfg.photo;restoreFrom(JSON.parse(b64d(j.content)));if(photo&&!st.cfg.photo){st.cfg.photo=photo;save()}})
+  .catch(e=>toast(e===404?"Aucune sauvegarde trouvée sur GitHub":"Récupération impossible"))}
+function ago2(iso){if(!iso)return"jamais";const m=Math.round((Date.now()-new Date(iso))/60000);if(m<1)return"à l'instant";if(m<60)return"il y a "+m+" min";const h=Math.round(m/60);if(h<24)return"il y a "+h+" h";return"il y a "+Math.round(h/24)+" j"}
+function ghCard(){
+  if(gh.token)return'<div class="card">'+head(I.git,"Sauvegarde automatique","Sur GitHub, après chaque changement.",1)
+    +'<div class="bkst '+(gh.err?"warn":"ok")+'">'+(gh.err||"Activée · dernière sauvegarde "+ago2(gh.last))+'</div>'
+    +'<div class="note" style="margin-top:10px">Fichier : <b>'+gh.file+'</b> dans ton dépôt public Myhifz. Ta photo n\'est jamais envoyée.</div>'
+    +'<div class="chips" style="margin-top:12px"><button class="btn pri" data-act="ghnow">Sauvegarder maintenant</button><button class="btn" data-act="ghget">Récupérer depuis GitHub</button></div>'
+    +'<button class="linkb" style="margin-top:10px" data-act="ghoff">Désactiver</button></div>';
+  return'<div class="card">'+head(I.git,"Sauvegarde automatique","Sur GitHub : plus besoin d\'y penser.",1)
+    +'<ol class="steps"><li>Sur github.com, ouvre <b>Settings → Developer settings → Personal access tokens → Fine-grained tokens</b>, puis <b>Generate new token</b>.<div class="lk"><span class="num">github.com/settings/personal-access-tokens/new</span><button class="btn" data-act="ghlink">Copier</button></div></li>'
+    +'<li>Nom : « Mon Hifz ». Expiration : la plus longue possible.</li><li><b>Repository access</b> : <b>Only select repositories</b> → <b>Myhifz</b>.</li><li><b>Permissions → Contents</b> : <b>Read and write</b>.</li><li><b>Generate token</b>, copie la clé et colle-la ici :</li></ol>'
+    +'<input class="field" id="ghtok" type="password" autocomplete="off" placeholder="github_pat_…"><button class="btn pri wide" data-act="ghon">Activer la sauvegarde automatique</button>'
+    +'<p class="note" style="margin:10px 0 0">La clé reste uniquement sur ce téléphone. Les sauvegardes sont visibles publiquement dans le dépôt, sans ta photo.</p></div>'}
 function vSet(){
   if(!draft)initDraft();
   const pr=program(draft),per=pr&&pr.old.length?pr.k:0;
@@ -346,7 +382,7 @@ function vSet(){
   if(sub==="data"){
     let h=subHead("Données","Tes données restent sur ce téléphone.");
     const a=bkAge();
-    h+='<div class="card">'+head(I.cloud,"Sauvegarde","Enregistre un fichier dans Fichiers ou iCloud Drive.",1)
+    h+=ghCard()+'<div class="card">'+head(I.cloud,gh.token?"Sauvegarde manuelle":"Sauvegarde dans Fichiers","Enregistre un fichier dans Fichiers ou iCloud Drive.",1)
      +'<div class="bkst '+(a===null||a>=7?"warn":"ok")+'">'+(a===null?"Aucune sauvegarde pour l\'instant":a===0?"Dernière sauvegarde : aujourd\'hui":"Dernière sauvegarde : il y a "+a+" jour"+(a>1?"s":""))+'</div>'
      +'<button class="btn pri wide" data-act="savefile">'+I.cloud+'Sauvegarder dans Fichiers</button>'
      +'<p class="note" style="margin:10px 0 0">Dans le menu qui s\'ouvre, choisis « Enregistrer dans Fichiers », puis iCloud Drive.</p>'
@@ -362,7 +398,7 @@ function vSet(){
   let h='<div class="hello">'+logo()+'<div class="txt"><h1>Réglages</h1><div class="sub">Configure ta méthode de révision</div></div></div>';
   h+='<div class="lbl">Méthode</div><div class="card list">'+setRow("prog",I.book,"Mon programme",progVal)+setRow("rev",I.loop,"Révision",revVal+' · Jour off : '+offVal)+'</div>';
   h+='<div class="lbl">Personnalisation</div><div class="card list">'+setRow("look",I.palette,"Apparence",THEMES[c.c]?THEMES[c.c].n:"Vert",1)+setRow("profile",I.user,"Moi",(c.name.trim()?esc(c.name.trim())+" · ":"")+badges().filter(b=>b.ok).length+" jalons")+'</div>';
-  h+='<div class="lbl">Données</div><div class="card list">'+setRow("data",I.cloud,"Sauvegarde et restauration",bkAge()===null?"Jamais sauvegardé":bkAge()===0?"Sauvegardé aujourd\'hui":"Il y a "+bkAge()+" j",1)+'</div>';
+  h+='<div class="lbl">Données</div><div class="card list">'+setRow("data",I.cloud,"Sauvegarde et restauration",gh.token?(gh.err?"Sauvegarde auto : erreur":"Auto · "+ago2(gh.last)):bkAge()===null?"Jamais sauvegardé":bkAge()===0?"Sauvegardé aujourd\'hui":"Il y a "+bkAge()+" j",1)+'</div>';
   return h}
 
 function render(){
@@ -422,6 +458,13 @@ document.addEventListener("click",e=>{
   else if(d.act==="showimp"){$("imp").hidden=false}
   else if(d.act==="import"){try{restoreFrom(JSON.parse($("impt").value))}catch(x){toast("Colle la sauvegarde complète")}}
   else if(d.act==="savefile"){saveFile()}
+  else if(d.act==="ghlink"){const t="https://github.com/settings/personal-access-tokens/new";if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>toast("Lien copié"),()=>toast("Copie le lien à la main"))}
+  else if(d.act==="ghon"){const t=($("ghtok").value||"").trim();if(!/^(github_pat_|ghp_)/.test(t)){toast("Colle la clé qui commence par github_pat_");return}
+    gh={token:t,file:"sauvegardes/"+slug(st.cfg.name)+".json",last:"",sha:"",err:""};ghSave();toast("Connexion…");
+    ghPush(true).then(ok=>{if(ok)toast("Sauvegarde automatique activée");const y=scrollY;render();scrollTo(0,y)})}
+  else if(d.act==="ghnow"){toast("Envoi…");ghPush(true).then(ok=>{if(ok)toast("Sauvegardé sur GitHub");const y=scrollY;render();scrollTo(0,y)})}
+  else if(d.act==="ghget"){ghRestore()}
+  else if(d.act==="ghoff"){gh={token:"",file:"",last:"",sha:"",err:""};ghSave();toast("Sauvegarde automatique désactivée");const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="later"){st.bkSnooze=today();save();const y=scrollY;render();scrollTo(0,y)}
 });
 /* Appui long sur le nom d'une sourate : « à renforcer » */
