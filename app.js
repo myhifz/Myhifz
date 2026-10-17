@@ -230,9 +230,9 @@ function vRev(){
   if(!x.off&&x.tot&&x.done<x.tot){const p=Math.round(x.done/x.tot*100);h+='<div class="rvp"><div class="rvt"><b class="num">'+x.done+'<small> / '+x.tot+' pages</small></b><span class="num">'+p+'%</span></div><div class="rvbar"><i data-w="'+p+'" style="width:'+p+'%"></i></div></div>'}
   if(x.off)return h+'<div class="card empty"><div class="ar">راحة</div><p>Jour off : rien à mémoriser ni à réviser aujourd\'hui.</p></div>';
   if(x.tot&&x.done===x.tot){let nd=addDays(today(),1),g=0;while(isOff(nd)&&g++<7)nd=addDays(nd,1);const nO=janbFor(x.pr,nd);
-    h+='<div class="fin" id="fin"><div class="fbadge">'+I.check+'</div><h2>Révision du jour terminée</h2><p>Qu\'Allah la fasse fructifier dans ton cœur.</p>'
-     +'<div class="fst"><div><b class="num">'+x.tot+'</b><span>pages</span></div><div><b class="num">'+(new Set(x.Js.concat(x.Os).map(y=>y.s.id))).size+'</b><span>sourates</span></div><div><b class="num">'+streak()+'</b><span>jours de suite</span></div></div>'
-     +(nO.length?'<div class="fnext">'+(diff(nd,today())===1?"Demain":fmtDay(nd).split(" ")[0])+' · Hifdh p. '+Math.min(...nO)+'–'+Math.max(...nO)+'</div>':'')+'</div>'}
+    const ns=(new Set(x.Js.concat(x.Os).map(y=>y.s.id))).size,sk=streak();
+    h+='<div class="fin" id="fin">'+GEO+'<div class="fbadge">'+I.check+'</div><div class="fx"><h2>Révision terminée</h2><p class="num">'+x.tot+' pages · '+ns+' sourates · '+sk+' jour'+(sk>1?"s":"")+' de suite</p>'
+     +(nO.length?'<span class="fnext">'+(diff(nd,today())===1?"Demain":fmtDay(nd).split(" ")[0])+' · Hifdh p. '+Math.min(...nO)+'–'+Math.max(...nO)+'</span>':'')+'</div></div>'}
   h+=block("sj","Hifdh al-Jadid","Chaque jour",x.J,x.Js,x.d.sj,x.pr,"n");
   h+=block("so","Hifdh","Cycle de "+x.pr.d+" j",x.O,x.Os,x.d.so,x.pr,"o");
   h+=weakBlock(x);

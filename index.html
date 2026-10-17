@@ -390,19 +390,23 @@ nav button.on .duo-f{opacity:.32}
 .ico span{font-size:12px!important}
 .si.s2{background:var(--acc-soft)!important;color:var(--acc)!important}
 /* Révision terminée */
-.fin{position:relative;overflow:hidden;border-radius:26px;padding:26px 20px 20px;text-align:center;color:var(--on-h);background:linear-gradient(135deg,var(--h1),var(--h2));box-shadow:0 14px 32px -14px var(--h1)}
-.fin::before{content:"";position:absolute;inset:0;opacity:.55;background-image:radial-gradient(circle,var(--acc2) 2.2px,transparent 2.6px),radial-gradient(circle,currentColor 1.6px,transparent 2px),radial-gradient(circle,var(--acc2) 1.6px,transparent 2px);background-size:68px 74px,52px 46px,90px 60px;background-position:6px 10px,30px 26px,60px 4px}
-.fin>*{position:relative}
-.fbadge{width:66px;height:66px;margin:0 auto 12px;border-radius:50%;display:grid;place-items:center;background:var(--acc2);color:var(--on-acc2);box-shadow:0 0 0 7px rgba(255,255,255,.18),0 10px 22px -8px rgba(0,0,0,.35)}
-.fbadge svg{width:32px;height:32px}
-.fin h2{margin:0;font-size:23px;font-weight:800;letter-spacing:-.01em}
-.fin p{margin:4px 0 0;opacity:.88;font-size:15px}
-.fst{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}
-.fst div{background:rgba(255,255,255,.16);border-radius:16px;padding:10px 4px}
-.fst b{display:block;font-size:22px;font-weight:800;line-height:1.15}
-.fst span{font-size:12px;opacity:.85}
-.fnext{margin-top:12px;font-size:14px;font-weight:700;background:rgba(0,0,0,.14);border-radius:999px;padding:9px 14px;display:inline-flex;gap:6px;align-items:center}
-@media (prefers-reduced-motion:no-preference){.fbadge{animation:pop .5s cubic-bezier(.2,1.6,.4,1)}@keyframes pop{from{transform:scale(.4)}}}
+.fin{position:relative;overflow:hidden;isolation:isolate;display:flex;align-items:center;gap:14px;border-radius:22px;padding:16px;color:var(--on-h);background:linear-gradient(135deg,var(--h1),var(--h2));box-shadow:0 10px 24px -12px var(--h1)}
+.fin>*:not(.geo):not(.cf){position:relative}
+.fin .geo{opacity:.12}
+.fbadge{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--acc2);color:var(--on-acc2);box-shadow:0 0 0 5px rgba(255,255,255,.18)}
+.fbadge svg{width:26px;height:26px}
+.fx{min-width:0;display:flex;flex-direction:column;gap:2px}
+.fin h2{margin:0;font-size:18px;font-weight:800}
+.fin p{margin:0;font-size:14px;opacity:.9}
+.fnext{align-self:flex-start;margin-top:6px;font-size:13px;font-weight:700;background:rgba(0,0,0,.14);border-radius:999px;padding:5px 11px}
+.fin::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.22) 50%,transparent 65%);transform:translateX(-120%);pointer-events:none}
+@media (prefers-reduced-motion:no-preference){
+  .fbadge{animation:pop .5s cubic-bezier(.2,1.6,.4,1),breathe 3.2s ease-in-out .6s infinite}
+  @keyframes pop{from{transform:scale(.4)}}
+  @keyframes breathe{0%,100%{box-shadow:0 0 0 5px rgba(255,255,255,.18)}50%{box-shadow:0 0 0 9px rgba(255,255,255,.08)}}
+  .fin::after{animation:shine 5s ease-in-out 1s infinite}
+  @keyframes shine{0%{transform:translateX(-120%)}35%,100%{transform:translateX(120%)}}
+}
 /* Moi */
 .me{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
 .av{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;font-size:32px;font-weight:800;color:var(--on-h);background:linear-gradient(135deg,var(--h1),var(--h2));box-shadow:0 10px 24px -10px var(--h1)}
@@ -614,6 +618,6 @@ nav svg{width:24px;height:24px}
 <div class="reader" id="reader" hidden><div class="rdh" id="rdhead"></div><div class="rdb" id="rdbody"></div><div class="rdf" id="rdfoot"></div></div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="app.js?v=32"></script>
+<script src="app.js?v=33"></script>
 </body>
 </html>
