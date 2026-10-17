@@ -130,9 +130,12 @@
  "pg": {
   "2026-10-17": 8
  },
- "duo": null,
+ "duo": {
+  "file": "sauvegardes/camelia.json",
+  "name": "Camélia"
+ },
  "onb": 1,
  "recapSeen": "2026-10-17",
  "app": "monhifz",
- "saved": "2026-10-17T11:33:54.770Z"
+ "saved": "2026-10-17T11:38:07.662Z"
 }
