@@ -365,7 +365,7 @@ function vMoi(){
   if(!gh.token)h+='<p class="note" style="margin:0">Pour faire un défi, active d\'abord la sauvegarde automatique GitHub (Réglages → Sauvegarde et restauration). Ton proche doit faire pareil sur son téléphone.</p>';
   else if(st.duo){h+='<div class="duoset"><b>Avec '+esc((st.duo.data&&st.duo.data.cfg.name)||st.duo.name)+'</b><span>'+(st.duo.err||"Mis à jour "+ago2(st.duo.at?new Date(st.duo.at).toISOString():""))+'</span></div><div class="chips" style="margin-top:12px"><button class="btn" data-act="duoref">Actualiser</button><button class="btn" data-act="duooff">Arrêter le défi</button></div>'}
   else{if(duoList===null){duoLoadList();h+='<p class="note" style="margin:0">Recherche des autres sauvegardes…</p>'}
-    else if(!duoList.length)h+='<p class="note" style="margin:0">Aucune autre sauvegarde trouvée. Ton proche doit installer l\'app, mettre son prénom et activer la sauvegarde automatique avec la même clé.</p>';
+    else if(!duoList.length)h+='<p class="note" style="margin:0">'+(duoListErr||'Aucune autre sauvegarde trouvée. Ton proche doit mettre son prénom, puis activer la sauvegarde automatique avec la même clé.')+'</p><button class="btn wide" data-act="duolist">Actualiser la liste</button>';
     else h+='<p class="note" style="margin:0 0 10px">Avec qui veux-tu faire le défi ?</p><div class="chips">'+duoList.map(f=>'<button class="btn" data-duo="'+esc(f.file)+'" data-dn="'+esc(f.name)+'">'+esc(f.name.charAt(0).toUpperCase()+f.name.slice(1))+'</button>').join("")+'</div>'}
   h+='</div>';
   /* Mes jalons */
@@ -451,7 +451,8 @@ function duoFetch(force){if(!st.duo||duoBusy)return;if(!force&&st.duo.at&&Date.n
   fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+st.duo.file,{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}})
    .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if(tab==="home"||sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})
    .catch(e=>{st.duo.err="Impossible de lire la sauvegarde de "+st.duo.name;save()}).finally(()=>{duoBusy=false})}
-function duoLoadList(){fetch("https://api.github.com/repos/"+GH_REPO+"/contents/sauvegardes",{cache:"no-store"}).then(r=>r.ok?r.json():[]).then(a=>{duoList=(Array.isArray(a)?a:[]).filter(f=>/\.json$/.test(f.name)&&"sauvegardes/"+f.name!==gh.file).map(f=>({file:f.path,name:f.name.replace(/\.json$/,"").replace(/-/g," ")}));if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}}).catch(()=>{duoList=[]})}
+let duoListErr="";
+function duoLoadList(){duoListErr="";fetch("https://api.github.com/repos/"+GH_REPO+"/contents/sauvegardes?t="+Date.now(),{cache:"no-store"}).then(r=>{if(r.status===404)return[];if(!r.ok)throw r.status;return r.json()}).then(a=>{duoList=(Array.isArray(a)?a:[]).filter(f=>/\.json$/.test(f.name)&&"sauvegardes/"+f.name!==gh.file).map(f=>({file:f.path,name:f.name.replace(/\.json$/,"").replace(/-/g," ")}));duoList.forEach(f=>fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+f.file,{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.cfg&&d.cfg.name){f.name=d.cfg.name;if(sub==="profile"&&!st.duo){const y=scrollY;render();scrollTo(0,y)}}}).catch(()=>{}));if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}}).catch(e=>{duoList=[];duoListErr=e===403?"GitHub limite les demandes pour l'instant, réessaie dans quelques minutes.":"Impossible de joindre GitHub. Vérifie ta connexion.";if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})}
 function duoCard(){if(!st.duo||!st.duo.data)return"";const o=st.duo.data,me=weekOf(st),him=weekOf(o),nm=esc(o.cfg.name||st.duo.name);
   const row=(lab,a,b)=>{const m=Math.max(1,a,b);return'<div class="dr"><span class="drl">'+lab+'</span><div class="drb"><i class="me" style="--w:'+(a/m*100)+'%"></i><b class="num">'+a+'</b></div><div class="drb"><i class="ot" style="--w:'+(b/m*100)+'%"></i><b class="num">'+b+'</b></div></div>'};
   const sa=me.pages+streakOf(st)*2,sb=him.pages+streakOf(o)*2,lead=sa===sb?"Égalité cette semaine":sa>sb?"Tu mènes cette semaine":nm+" mène cette semaine";
@@ -577,13 +578,14 @@ document.addEventListener("click",e=>{
   else if(d.act==="recap"){openRecap()}
   else if(d.act==="recapclose"){closeRecap()}
   else if(d.duo){st.duo={file:d.duo,name:d.dn,at:0,data:null,err:""};save();duoFetch(true);const y=scrollY;render();scrollTo(0,y)}
+  else if(d.act==="duolist"){duoList=null;const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="duoref"){duoFetch(true);toast("Actualisation…")}
   else if(d.act==="duooff"){st.duo=null;save();duoList=null;const y=scrollY;render();scrollTo(0,y)}
   else if(d.goto){go("rev");const el=$("blk-"+d.goto);if(el){const y=el.getBoundingClientRect().top+scrollY-14-(parseFloat(getComputedStyle(document.documentElement).paddingTop)||0);scrollTo({top:Math.max(0,y),behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),1200)}}
   else if(d.goal!==undefined){tab="set";sub="profile";draft=null;render();scrollTo(0,0)}
   else if(d.pday){planPrev=planSel;planSel=d.pday;if(d.pday.slice(0,7)!==planMonth)planMonth=d.pday.slice(0,7);const y=scrollY;render();scrollTo(0,y);planPrev=null}
   else if(d.mon){const [Y,M]=planMonth.split("-").map(Number),nd=new Date(Y,M-1+ +d.mon,1);planMonth=nd.getFullYear()+"-"+pad(nd.getMonth()+1);const y=scrollY;render();scrollTo(0,y);const g=document.querySelector(".calg");if(g&&!matchMedia("(prefers-reduced-motion: reduce)").matches){g.classList.add("draw")}}
-  else if(d.sub!==undefined){sub=d.sub||null;draft=null;resetArm=false;render();scrollTo(0,0)}
+  else if(d.sub!==undefined){if(d.sub==="profile")duoList=null;sub=d.sub||null;draft=null;resetArm=false;render();scrollTo(0,0)}
   else if(d.su){const id=+d.su,k=d.k,on=!dayRec(today())[k].includes(id);revTap=on?{id,k}:null;mark(k,[id],on);const y=scrollY;render();scrollTo(0,y);
     const x=dayState(today());if(on&&x.tot&&x.done===x.tot)toast("Révision du jour terminée !")}
   else if(d.all){revTap=d.on==="1"?{k:d.all,all:true}:null;const x=dayState(today());mark(d.all,(d.all==="sj"?x.Js:d.all==="so"?x.Os:x.W).map(y=>y.s.id),d.on==="1");const y=scrollY;render();scrollTo(0,y)}
