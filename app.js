@@ -5,11 +5,11 @@ S.forEach((x,i)=>{x.e=i===113?604:Math.max(x.p,S[i+1].p-1)});
 const PAGES=604, PER_HIZB=PAGES/60;
 const KEY="murajaa-v1";
 const THEMES={vert:{n:"Vert",c:["#1A5C46","#3E9C78"],tc:"#F4F5F1"},rose:{n:"Rose",c:["#B23F6E","#E486AB"],tc:"#FBF6F6"},marine:{n:"Bleu marine",c:["#22436F","#4A74B0"],tc:"#F5F4F1"},jaune:{n:"Jaune",c:["#E0A21A","#F5CB4E"],tc:"#FAF8F1"}};
-const DEF={c:"vert",name:"",a:0,b:0,dir:"up",jn:6,d:3,start:"",icon:"rose",p1:0,p2:0,off:[]};
+const DEF={c:"vert",name:"",a:0,b:0,dir:"up",jn:6,d:3,start:"",icon:"rose",p1:0,p2:0,off:[],goal:0,pace:2,hstart:""};
 
 let st={log:{},day:{},weak:[],cfg:{...DEF}}, tab="home", draft=null, resetArm=false;
 try{const v=JSON.parse(localStorage.getItem(KEY)||"null");
-  if(v){st.log=v.log||{};st.day=v.day||{};st.weak=v.weak||[];st.cfg=Object.assign({...DEF},v.cfg||{});
+  if(v){st.log=v.log||{};st.day=v.day||{};st.weak=v.weak||[];st.tp=v.tp;st.learned=v.learned||[];st.got=v.got;st.cfg=Object.assign({...DEF},v.cfg||{});
     // Ancienne version (cases par sourate) : on reprend la plage cochée
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}}}catch(e){}
 // Icône : celle de l'écran d'accueil vient du lien utilisé à l'installation (?icon=N)
@@ -77,12 +77,12 @@ function dayState(date){
   const jd=donePages(J,Js,d.sj),od=donePages(O,Os,d.so);
   return{pr,off,J,O,Js,Os,W,jd,od,done:jd+od,tot:J.length+O.length,d}}
 function mark(kind,ids,on){
-  const t=today();if(!st.day[t]||!st.day[t].sj)st.day[t]={sj:[],so:[],sw:[]};const d=st.day[t];if(!d.sw)d.sw=[];
+  const t=today(),before=dayState(t).done;if(!st.day[t]||!st.day[t].sj)st.day[t]={sj:[],so:[],sw:[]};const d=st.day[t];if(!d.sw)d.sw=[];
   ids.forEach(p=>{const i=d[kind].indexOf(p);if(on&&i<0)d[kind].push(p);if(!on&&i>=0)d[kind].splice(i,1)});
   st.log[t]=d.sj.length+d.so.length+d.sw.length; if(!st.log[t])delete st.log[t];
-  const x=dayState(t);d.full=!!(x.tot&&x.done>=x.tot);
+  const x=dayState(t);d.full=!!(x.tot&&x.done>=x.tot);st.tp=Math.max(0,(st.tp||0)+x.done-before);
   Object.keys(st.day).forEach(k=>{if(diff(t,k)>40)delete st.day[k]});
-  save()}
+  save();checkBadges()}
 
 function streak(){let n=0,d=today(),g=0;if(!st.log[d])d=addDays(d,-1);
   while((st.log[d]||isOff(d))&&g++<3000){if(st.log[d])n++;d=addDays(d,-1)}return n}
@@ -126,6 +126,8 @@ const I={
  flag:D(20,P.flag,'<path d="M5.5 4.5h11.2l-2 4 2 4H5.5z"/>'),
  next:'<svg class="chv" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
  prev:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
+ medal:D(24,'<circle cx="12" cy="14" r="6"/><path d="M8.5 9.2L6 3h4l2 4 2-4h4l-2.5 6.2"/><path d="M12 11.4l.8 1.6 1.7.2-1.3 1.2.3 1.7-1.5-.8-1.5.8.3-1.7-1.3-1.2 1.7-.2z" fill="currentColor" stroke="none"/>','<circle cx="12" cy="14" r="6"/>'),
+ lock:D(22,'<rect x="5" y="10.5" width="14" height="10" rx="3"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>','<rect x="5" y="10.5" width="14" height="10" rx="3"/>'),
  check:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
 };
 
@@ -134,7 +136,8 @@ function learn(delta){
   const r=pageRange(st.cfg);if(!r)return;let[p1,p2]=r;
   if(st.cfg.dir==="up"){p1=Math.min(Math.max(1,p1-delta),p2)}else{p2=Math.max(Math.min(604,p2+delta),p1)}
   if(p1===r[0]&&p2===r[1]){toast(delta>0?"Tu es déjà à la fin du Mushaf":"Il faut garder au moins une page");return}
-  st.cfg.p1=p1;st.cfg.p2=p2;st.cfg.a=onPage(p1)[0].id;st.cfg.b=onPage(p2).slice(-1)[0].id;save();
+  st.cfg.p1=p1;st.cfg.p2=p2;st.cfg.a=onPage(p1)[0].id;st.cfg.b=onPage(p2).slice(-1)[0].id;
+  st.learned=(st.learned||[]).concat({d:today(),n:delta>0?1:-1}).slice(-400);save();checkBadges();
   const np=st.cfg.dir==="up"?p1:p2;
   toast(delta>0?"Page "+np+" ajoutée · "+onPage(np).map(s=>s.t).join(", "):"Dernière page retirée")}
 function needSetup(){return'<div class="card empty"><div class="ar">بسم الله</div><p>Indique dans Réglages les sourates que tu connais et ton rythme de révision.</p><div class="chips" style="justify-content:center;margin-top:16px"><button class="btn pri" data-tab="set">Configurer mon programme</button></div></div>'}
@@ -147,6 +150,7 @@ function weekStrip(){let h='<div class="wk">';const t=today(),dow=(new Date(t+"T
   for(let i=0;i<7;i++){const d=addDays(t,i-dow),s=d>t?"future":dayStatus(d);
     h+='<div class="wd '+s+(d===t?" now":"")+'"><span>'+DOW[new Date(d+"T12:00").getDay()].charAt(0)+'</span><i>'+(s==="full"?I.check:s==="off"?"–":"")+'</i></div>'}
   return h+'</div>'}
+function goalLine(){const g=goalInfo();if(!g)return"";return'<button class="gline" data-goal>'+I.flag+'<span>'+(g.done?"Objectif "+S[g.g-1].t+" atteint !":"Objectif "+S[g.g-1].t+" · "+g.rem+" p. · vers le "+new Date(g.eta+"T12:00").toLocaleDateString("fr-BE",{day:"numeric",month:"short"}))+'</span>'+I.next+'</button>'}
 function vHome(){
   const name=st.cfg.name.trim(),x=dayState(today());
   let h='<div class="hello">'+logo()+'<div class="txt"><h1>Salam Aleykoum'+(name?", "+esc(name):"")+'</h1><div class="sub">'+fmtDay(today())+'</div></div><div class="fire">'+I.flame+'<span class="num">'+streak()+'</span></div></div>';
@@ -164,7 +168,7 @@ function vHome(){
     if(x.W.length){const n=x.W.filter(y=>x.d.sw.includes(y.s.id)).length;h+='<button class="weakchip" data-tab="rev">'+I.flag+'<span>À renforcer</span><b class="num">'+n+'/'+x.W.length+'</b>'+I.next+'</button>'}}
   /* 3. Mémorisation */
   const pr=x.pr,cp=pr.total/PAGES*100,np=st.cfg.dir==="up"?pr.p1-1:pr.p2+1,nxt=np>=1&&np<=604?onPage(np):[];
-  h+='<div class="sect">Mémorisation</div><div class="card memo2"><div class="mtop2"><div><b class="num">'+cp.toFixed(1)+'<small>%</small></b><span>du Coran mémorisé</span></div><div class="mstat num"><b>'+pr.total+'</b> pages<br><b>'+hizb(pr.total)+'</b> hizb</div></div><div class="prog"><i style="width:'+Math.max(cp,1)+'%"></i></div>'
+  h+='<div class="sect">Mémorisation</div><div class="card memo2"><div class="mtop2"><div><b class="num">'+cp.toFixed(1)+'<small>%</small></b><span>du Coran mémorisé</span></div><div class="mstat num"><b>'+pr.total+'</b> pages<br><b>'+hizb(pr.total)+'</b> hizb</div></div><div class="prog"><i style="width:'+Math.max(cp,1)+'%"></i></div>'+goalLine()
    +(nxt.length?'<div class="mnext"><div><span>Prochaine page</span><b class="num">'+np+' · '+nxt.map(s=>s.t).join(", ")+'</b></div><button class="ghost" data-learn="-1" aria-label="Retirer la dernière page">−</button><button class="plusb" data-learn="1" aria-label="J\'ai appris une nouvelle page">'+I.plus+'</button></div>':'<p class="note">Tu as atteint la fin du Mushaf, ma sha Allah.</p>')+'</div>';
   /* 4. Cette semaine */
   h+='<div class="sect">Cette semaine</div><div class="card week">'+weekStrip()+'<div class="wkst"><div><b class="num">'+streak()+'</b><span>jours de série</span></div><div><b class="num">'+record()+'</b><span>record</span></div></div></div>';
@@ -237,6 +241,45 @@ const dirty=()=>!!draft&&(progKey(draft)!==progKey(st.cfg)||!st.cfg.start);
 function setRow(id,icon,title,val,soft){return'<button class="srw" data-sub="'+id+'"><span class="si sm'+(soft?" s2":"")+'">'+icon+'</span><span class="srt">'+title+(val?'<span class="srv">'+val+'</span>':'')+'</span>'+I.next+'</button>'}
 function subHead(t,s){return'<div class="subh"><button class="back" data-sub="">'+I.prev+'Réglages</button><h1>'+t+'</h1>'+(s?'<div class="sub">'+s+'</div>':'')+'</div>'}
 function saveBar(){return'<div class="savebar" id="savebar"'+(dirty()?"":" hidden")+'><button class="savebtn" data-act="save">'+I.save+'Sauvegarder</button></div>'}
+/* Moi : chiffres, objectif, jalons, date de début */
+function pace28(){const t=today();return Math.max(0,(st.learned||[]).filter(e=>diff(t,e.d)<28).reduce((a,e)=>a+e.n,0))/4}
+function goalInfo(){const pr=program(st.cfg),g=+st.cfg.goal;if(!pr||!g)return null;
+  const up=st.cfg.dir==="up",tp=up?S[g-1].p:S[g-1].e,rem=up?pr.p1-tp:tp-pr.p2,pace=Math.max(.25,+st.cfg.pace||2);
+  if(rem<=0)return{g,rem:0,done:true};
+  const eta=addDays(today(),Math.ceil(rem/pace*7)),act=pace28();
+  return{g,rem,pace,eta,act,ahead:act>=pace}}
+const fmtShort=d=>new Date(d+"T12:00").toLocaleDateString("fr-BE",{day:"numeric",month:"long",year:"numeric"});
+function since(d){const n=diff(today(),d);if(n<1)return"aujourd'hui";if(n<31)return n+" jour"+(n>1?"s":"");const m=Math.floor(n/30.4);if(m<12)return m+" mois";const y=Math.floor(m/12),r=m%12;return y+" an"+(y>1?"s":"")+(r?" et "+r+" mois":"")}
+function badges(){const pr=program(st.cfg),mem=pr?pr.total:0,rec=record(),tp=Math.round(st.tp||0);
+  const amma=pr?Math.max(0,Math.min(pr.p2,604)-Math.max(pr.p1,582)+1):0;
+  const B=[["first","Premier pas","Une première révision",tp,1],["hizb","Premier hizb","10 pages mémorisées",mem,10],["juz","Premier juz","20 pages mémorisées",mem,20],["amma","Juz 'Amma","Pages 582 à 604",amma,23],
+    ["juz5","5 juz","100 pages mémorisées",mem,100],["moitie","Moitié du Coran","302 pages",mem,302],["hafidh","Hafidh","Les 604 pages",mem,604],
+    ["s7","7 jours de suite","Série de 7 jours",rec,7],["s30","30 jours de suite","Série de 30 jours",rec,30],["s100","100 jours de suite","Série de 100 jours",rec,100],
+    ["r100","100 pages révisées","Depuis le début",tp,100],["r1000","1 000 pages révisées","Depuis le début",tp,1000]];
+  return B.map(([id,t,d,v,n])=>({id,t,d,v:Math.min(v,n),n,ok:v>=n}))}
+function checkBadges(silent){const ok=badges().filter(b=>b.ok).map(b=>b.id);if(!st.got){st.got=ok;save();return}
+  const nw=ok.filter(i=>!st.got.includes(i));if(nw.length){st.got=st.got.concat(nw);save();if(!silent){const b=badges().find(x=>x.id===nw[0]);setTimeout(()=>toast("Nouveau jalon : "+b.t+" !"),400)}}}
+function vMoi(){
+  const c=st.cfg,pr=program(c),name=c.name.trim(),hs=c.hstart||firstDay(),bs=badges(),nOk=bs.filter(b=>b.ok).length;
+  let h=subHead("Moi");
+  h+='<div class="card me"><div class="av">'+(name?esc(name.charAt(0).toUpperCase()):I.user)+'</div><input class="field" id="nm" type="text" maxlength="24" autocomplete="given-name" placeholder="Ton prénom" value="'+esc(c.name)+'"><div class="note">En hifdh depuis '+since(hs)+(pr?' · '+pr.total+' pages mémorisées':'')+'</div></div>';
+  /* Mes chiffres */
+  h+='<div class="sect">Mes chiffres</div><div class="kp"><div class="card"><b class="num">'+Math.round(st.tp||0)+'</b><span>pages révisées</span></div><div class="card"><b class="num">'+Object.keys(st.log).length+'</b><span>jours actifs</span></div><div class="card"><b class="num">'+record()+'</b><span>meilleure série</span></div><div class="card"><b class="num">'+pace28().toFixed(1).replace(".",",").replace(",0","")+'</b><span>pages apprises / semaine</span></div></div>';
+  /* Mon objectif */
+  const gi=goalInfo(),up=c.dir==="up";
+  const opts=pr?S.filter(s=>up?s.id<pr.a:s.id>pr.b):[];if(up)opts.reverse();
+  h+='<div class="sect">Mon objectif</div><div class="card goal">';
+  if(!pr)h+='<p class="note">Configure d\'abord ton programme.</p>';
+  else{h+='<div class="fl">Mémoriser jusqu\'à</div><label class="pick"><span class="pt"><b>'+(c.goal&&S[c.goal-1]?S[c.goal-1].t:"Aucun objectif")+'</b>'+(c.goal&&S[c.goal-1]?'<span class="ar">'+S[c.goal-1].a+'</span>':'')+'</span>'+I.chev+'<select id="gsel" aria-label="Objectif"><option value="0">Aucun objectif</option>'+opts.map(s=>'<option value="'+s.id+'"'+(+c.goal===s.id?" selected":"")+'>'+s.id+'. '+s.t+'</option>').join("")+'</select></label>'
+    +'<div class="fl">Mon rythme visé</div><label class="numf"><input id="gpace" type="number" inputmode="decimal" min="0.25" max="50" step="0.5" value="'+(c.pace||2)+'"><span>pages / semaine</span></label>';
+    if(gi&&gi.done)h+='<div class="gres ok">'+I.check+'<span>Objectif atteint, ma sha Allah ! Choisis le suivant.</span></div>';
+    else if(gi)h+='<div class="gres"><div class="gbig"><b class="num">'+gi.rem+'</b> pages restantes</div><div>Arrivée prévue vers le <b>'+fmtShort(gi.eta)+'</b></div><div class="gst '+(gi.act===0?"":gi.ahead?"up":"down")+'">'+(gi.act===0?"Ajoute tes nouvelles pages avec le bouton + de l'accueil pour suivre ton rythme.":gi.ahead?"Dans les temps : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.":"Un peu en retard : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.")+'</div></div>'}
+  h+='</div>';
+  /* Mes jalons */
+  h+='<div class="sect">Mes jalons · '+nOk+'/'+bs.length+'</div><div class="bdg">'+bs.map(b=>'<div class="bd'+(b.ok?" ok":"")+'"><div class="bdi">'+(b.ok?I.medal:I.lock)+'</div><b>'+b.t+'</b><span>'+(b.ok?b.d:b.v+" / "+b.n)+'</span>'+(b.ok?'':'<i><u style="width:'+Math.round(b.v/b.n*100)+'%"></u></i>')+'</div>').join("")+'</div>';
+  /* Date de début */
+  h+='<div class="sect">Mon parcours</div><div class="card"><div class="fl" style="margin-top:0">Date de début du hifdh</div><input class="field" id="hst" type="date" max="'+today()+'" value="'+hs+'"><div class="note" style="margin-top:8px">Début le '+fmtShort(hs)+' · il y a '+since(hs)+'.</div></div>';
+  return h}
 function vSet(){
   if(!draft)initDraft();
   const pr=program(draft),per=pr&&pr.old.length?pr.k:0;
@@ -264,8 +307,7 @@ function vSet(){
     h+='<div class="card">'+head(I.book,"Icône de l'app","Choisis le logo de ton écran d'accueil.",1)+'<div class="icons">'+Object.entries(ICONS).map(([k,n])=>'<button class="ico '+(ic===k?"on":"")+'" data-icon="'+k+'" aria-label="Icône '+n+'"><img src="icons/'+k+'.png" alt=""><span>'+n+'</span></button>').join("")+'</div>'
      +(ic!==INSTALLED_ICON?'<div class="howto"><b>Pour l\'avoir sur ton écran d\'accueil :</b><ol><li>Copie ta sauvegarde (Réglages → Données).</li><li>Supprime l\'icône actuelle de l\'écran d\'accueil.</li><li>Ouvre ce lien dans Safari :<div class="lk"><span class="num">'+link+'</span><button class="btn" data-act="copylink">Copier</button></div></li><li>Partager → « Sur l\'écran d\'accueil ».</li><li>Ouvre l\'app, Réglages → Données → Restaurer.</li></ol></div>':'')+'</div>';
     return h}
-  if(sub==="profile"){
-    return subHead("Profil")+'<div class="card">'+head(I.user,"Ton prénom","Affiché sur l'accueil (facultatif). Enregistré automatiquement.",1)+'<input class="field" id="nm" type="text" maxlength="24" autocomplete="given-name" placeholder="Prénom" value="'+esc(st.cfg.name)+'"></div>'}
+  if(sub==="profile")return vMoi();
   if(sub==="data"){
     let h=subHead("Données","Tes données restent sur ce téléphone.");
     h+='<div class="card">'+head(I.cloud,"Sauvegarde","Copie une sauvegarde de temps en temps et garde-la dans tes notes.",1)+'<div class="chips" style="margin-top:14px"><button class="btn pri" data-act="export">Copier la sauvegarde</button><button class="btn" data-act="showimp">Restaurer</button></div><div id="imp" hidden><textarea id="impt" placeholder="Colle ta sauvegarde ici"></textarea><div class="chips" style="margin-top:10px"><button class="btn pri" data-act="import">Restaurer ces données</button></div></div><textarea id="expt" hidden readonly></textarea></div>';
@@ -278,7 +320,7 @@ function vSet(){
   const offVal=(c.off||[]).length?DAYS.filter(([n])=>c.off.includes(n)).map(([,l])=>l).join(", "):"Aucun";
   let h='<div class="hello">'+logo()+'<div class="txt"><h1>Réglages</h1><div class="sub">Configure ta méthode de révision</div></div></div>';
   h+='<div class="lbl">Méthode</div><div class="card list">'+setRow("prog",I.book,"Mon programme",progVal)+setRow("rev",I.loop,"Révision",revVal+' · Jour off : '+offVal)+'</div>';
-  h+='<div class="lbl">Personnalisation</div><div class="card list">'+setRow("look",I.palette,"Apparence",THEMES[c.c]?THEMES[c.c].n:"Vert",1)+setRow("profile",I.user,"Profil",c.name.trim()?esc(c.name.trim()):"—",1)+'</div>';
+  h+='<div class="lbl">Personnalisation</div><div class="card list">'+setRow("look",I.palette,"Apparence",THEMES[c.c]?THEMES[c.c].n:"Vert",1)+setRow("profile",I.user,"Moi",(c.name.trim()?esc(c.name.trim())+" · ":"")+badges().filter(b=>b.ok).length+" jalons")+'</div>';
   h+='<div class="lbl">Données</div><div class="card list">'+setRow("data",I.cloud,"Sauvegarde et restauration","",1)+'</div>';
   return h}
 
@@ -294,12 +336,16 @@ function render(){
     if($("jn"))$("jn").oninput=e=>{draft.jn=Math.max(0,+e.target.value||0);upd()};
     if($("dd"))$("dd").oninput=e=>{draft.d=Math.max(1,Math.min(60,+e.target.value||1));upd()};
     if($("nm"))$("nm").oninput=e=>{st.cfg.name=e.target.value;save()};
+    if($("gsel"))$("gsel").onchange=e=>{st.cfg.goal=+e.target.value;save();re()};
+    if($("gpace"))$("gpace").onchange=e=>{st.cfg.pace=Math.max(.25,Math.min(50,+String(e.target.value).replace(",",".")||2));save();re()};
+    if($("hst"))$("hst").onchange=e=>{if(e.target.value&&e.target.value<=today()){st.cfg.hstart=e.target.value;save();re()}};
   }}
 function go(t){draft=null;resetArm=false;sub=null;tab=t;try{localStorage.setItem(KEY+"-tab",t)}catch(e){}render();scrollTo(0,0)}
 
 document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
   if(d.tab)go(d.tab);
+  else if(d.goal!==undefined){tab="set";sub="profile";draft=null;render();scrollTo(0,0)}
   else if(d.pday){planSel=d.pday;const y=scrollY;render();scrollTo(0,y)}
   else if(d.sub!==undefined){sub=d.sub||null;draft=null;resetArm=false;render();scrollTo(0,0)}
   else if(d.su){const id=+d.su,k=d.k,on=!dayRec(today())[k].includes(id);mark(k,[id],on);const y=scrollY;render();scrollTo(0,y);
@@ -319,12 +365,12 @@ document.addEventListener("click",e=>{
     const first=!st.cfg.start;st.cfg={...draft,c:st.cfg.c,icon:st.cfg.icon,name:st.cfg.name};if(ch||first)st.cfg.start=today();save();draft=null;toast("Programme enregistré");
     if(first)go("home");else{sub=null;render();scrollTo(0,0)}}
   else if(d.act==="reset"){if(!resetArm){resetArm=true;const y=scrollY;render();scrollTo(0,y);return}
-    st={log:{},day:{},weak:[],cfg:{...DEF,c:st.cfg.c,icon:st.cfg.icon}};save();draft=null;resetArm=false;toast("Données effacées");render()}
+    st={log:{},day:{},weak:[],tp:0,learned:[],got:[],cfg:{...DEF,c:st.cfg.c,icon:st.cfg.icon}};save();draft=null;resetArm=false;toast("Données effacées");render()}
   else if(d.act==="export"){const txt=JSON.stringify(st),ta=$("expt");ta.value=txt;const fb=()=>{ta.hidden=false;ta.select();toast("Sélectionne et copie le texte")};
     if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast("Sauvegarde copiée"),fb);else fb()}
   else if(d.act==="showimp"){$("imp").hidden=false}
   else if(d.act==="import"){try{const v=JSON.parse($("impt").value);if(!v.cfg&&!v.s)throw 0;
-    st={log:v.log||{},day:v.day||{},weak:v.weak||[],cfg:Object.assign({...DEF},v.cfg||{})};
+    st={log:v.log||{},day:v.day||{},weak:v.weak||[],tp:v.tp||0,learned:v.learned||[],got:v.got,cfg:Object.assign({...DEF},v.cfg||{})};
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}
     if(ICONS[URL_ICON])st.cfg.icon=URL_ICON;if(!ICONS[st.cfg.icon])st.cfg.icon="rose";
     save();draft=null;applyTheme();applyIcon();toast("Données restaurées");render()}catch(x){toast("Colle la sauvegarde complète")}}
@@ -407,6 +453,8 @@ document.addEventListener("touchend",e=>{if(!rd||swX===null)return;const dx=e.ch
   if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5)rdGo(rd.p+(dx>0?1:-1))},{passive:true});
 
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyTheme);
+if(st.tp===undefined){st.tp=Object.keys(st.day).reduce((a,k)=>{try{return a+dayState(k).done}catch(e){return a}},0)}
+checkBadges(true);
 applyTheme();applyIcon();render();
 let shownDay=today();
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&today()!==shownDay){shownDay=today();if(tab!=="set")render()}});
