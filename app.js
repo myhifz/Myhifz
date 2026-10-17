@@ -80,6 +80,7 @@ function mark(kind,ids,on){
   const t=today();if(!st.day[t]||!st.day[t].sj)st.day[t]={sj:[],so:[],sw:[]};const d=st.day[t];if(!d.sw)d.sw=[];
   ids.forEach(p=>{const i=d[kind].indexOf(p);if(on&&i<0)d[kind].push(p);if(!on&&i>=0)d[kind].splice(i,1)});
   st.log[t]=d.sj.length+d.so.length+d.sw.length; if(!st.log[t])delete st.log[t];
+  const x=dayState(t);d.full=!!(x.tot&&x.done>=x.tot);
   Object.keys(st.day).forEach(k=>{if(diff(t,k)>40)delete st.day[k]});
   save()}
 
@@ -118,6 +119,7 @@ const I={
 function learn(delta){
   const r=pageRange(st.cfg);if(!r)return;let[p1,p2]=r;
   if(st.cfg.dir==="up"){p1=Math.min(Math.max(1,p1-delta),p2)}else{p2=Math.max(Math.min(604,p2+delta),p1)}
+  if(p1===r[0]&&p2===r[1]){toast(delta>0?"Tu es déjà à la fin du Mushaf":"Il faut garder au moins une page");return}
   st.cfg.p1=p1;st.cfg.p2=p2;st.cfg.a=onPage(p1)[0].id;st.cfg.b=onPage(p2).slice(-1)[0].id;save();
   const np=st.cfg.dir==="up"?p1:p2;
   toast(delta>0?"Page "+np+" ajoutée · "+onPage(np).map(s=>s.t).join(", "):"Dernière page retirée")}
@@ -146,7 +148,7 @@ function memoCard(pr){
 function statsCards(x){let h='';
   h+='<div class="card"><div class="ctitle">'+I.chart+'Tes statistiques</div><div class="sgrid"><div><b class="num">'+x.pr.total+'</b><span>Pages</span></div><div><b class="num">'+streak()+'</b><span>Série</span></div><div><b class="num">'+record()+'</b><span>Record</span></div></div></div>';
   const cp=x.pr.total/PAGES*100;let cells="";
-  for(let i=29;i>=0;i--){const d=addDays(today(),-i),n=st.log[d]||0;cells+='<i class="'+(n&&n>=x.tot?"l2":n?"l1":isOff(d)?"off":"")+'"></i>'}
+  for(let i=29;i>=0;i--){const d=addDays(today(),-i),n=st.log[d]||0,f=st.day[d]&&st.day[d].full;cells+='<i class="'+(f?"l2":n?"l1":isOff(d)?"off":"")+'"></i>'}
   h+='<div class="card"><div class="row" style="justify-content:space-between"><div class="ctitle">Coran mémorisé</div><b class="num" style="font-size:22px">'+cp.toFixed(1)+' %</b></div><div class="note num" style="margin-top:2px">'+x.pr.total+' / '+PAGES+' pages · '+hizb(x.pr.total)+' hizb</div><div class="prog"><i style="width:'+cp+'%"></i></div><div class="note" style="margin-top:16px">30 derniers jours</div><div class="heat">'+cells+'</div></div>';
   return h}
 
@@ -195,11 +197,11 @@ function vSet(){
   h+='<div class="card">'+head(I.loop,"Boucles de révision","Comment veux-tu répartir tes révisions ?")
    +'<div class="bh" style="margin-top:18px"><div class="lt">Hifdh al-Jadid</div><span class="tag">Chaque jour</span></div><div class="ld">Nombre de pages récentes à réviser tous les jours.</div><label class="numf"><input id="jn" type="number" inputmode="numeric" min="0" max="'+pr.total+'" value="'+draft.jn+'"><span>pages</span></label>'
    +'<hr><div class="bh"><div class="lt">Hifdh</div><span class="tag">Cycle</span></div><div class="ld">En combien de jours veux-tu réviser le reste de ce que tu connais ?</div><label class="numf"><input id="dd" type="number" inputmode="numeric" min="1" max="60" value="'+draft.d+'"><span>jours</span></label>'
-   +'<div class="pill">'+I.calc+'<span>'+(pr.old.length?'Soit environ <b class="num">'+per+' page'+(per>1?"s":"")+'</b> par jour':'Tout est déjà dans Hifdh al-Jadid')+'</span></div></div>';
+   +'<div class="pill" id="perp">'+I.calc+'<span>'+(pr.old.length?'Soit environ <b class="num">'+per+' page'+(per>1?"s":"")+'</b> par jour':'Tout est déjà dans Hifdh al-Jadid')+'</span></div></div>';
   const DAYS=[[1,"Lun"],[2,"Mar"],[3,"Mer"],[4,"Jeu"],[5,"Ven"],[6,"Sam"],[0,"Dim"]];
   h+='<div class="card">'+head(I.moon,"Jour off","Les jours où tu ne mémorises et ne révises rien.")+'<div class="days">'+DAYS.map(([n,l])=>'<button class="dy '+(draft.off.includes(n)?"on":"")+'" data-off="'+n+'">'+l+'</button>').join("")+'</div><div class="note" style="margin-top:10px">'+(draft.off.length?draft.off.length+' jour'+(draft.off.length>1?"s":"")+' off par semaine. Le cycle de Hifdh fait une pause ces jours-là.':'Aucun jour off pour l\'instant.')+'</div></div>';
   const A=S[pr.a-1],B=S[pr.b-1],ord=draft.dir==="up"?[B,A]:[A,B];
-  h+='<div class="card sum"><div class="ctitle">'+I.chart+'Résumé de ton programme</div>'
+  h+='<div class="card sum" id="sumc"><div class="ctitle">'+I.chart+'Résumé de ton programme</div>'
    +[["Sourates",ord[0].t+" → "+ord[1].t],["Pages mémorisées",pr.total+" pages"],["Hizb mémorisés",'<span style="color:var(--acc2)">'+hizb(pr.total)+" hizb</span>"],["Hifdh al-Jadid",pr.jadid.length+" pages/jour"],["Hifdh","~"+per+" pages/jour"],["Jour off",draft.off.length?DAYS.filter(([n])=>draft.off.includes(n)).map(([,l])=>l).join(", "):"Aucun"],["Total quotidien",'<b style="font-size:20px">~'+(pr.jadid.length+per)+" pages</b>"]]
      .map(r=>'<div class="sr"><span>'+r[0]+'</span><b class="num">'+r[1]+'</b></div>').join("")+'</div>';
   h+='<div class="card">'+head(I.palette,"Couleur","Choisis le thème de l'app.",1)+'<div class="themes">'+Object.entries(THEMES).map(([k,t])=>'<button class="th '+(st.cfg.c===k?"on":"")+'" data-theme-c="'+k+'"><i style="background:linear-gradient(135deg,'+t.c[0]+','+t.c[1]+')"></i>'+t.n+'</button>').join("")+'</div></div>';
@@ -220,8 +222,9 @@ function render(){
     const re=()=>{const y=scrollY;render();scrollTo(0,y)};
     $("fa").onchange=e=>{draft.a=+e.target.value;draft.p1=draft.p2=0;re()};
     $("fb").onchange=e=>{draft.b=+e.target.value;draft.p1=draft.p2=0;re()};
-    $("jn").onchange=e=>{draft.jn=Math.max(0,+e.target.value||0);re()};
-    $("dd").onchange=e=>{draft.d=Math.max(1,Math.min(60,+e.target.value||1));re()};
+    const upd=()=>{const tmp=document.createElement("div");tmp.innerHTML=vSet();["perp","sumc"].forEach(id=>{const n=tmp.querySelector("#"+id);if(n&&$(id))$(id).replaceWith(n)})};
+    $("jn").oninput=e=>{draft.jn=Math.max(0,+e.target.value||0);upd()};
+    $("dd").oninput=e=>{draft.d=Math.max(1,Math.min(60,+e.target.value||1));upd()};
     $("nm").oninput=e=>{draft.name=e.target.value};
   }}
 function go(t){if(t!=="set"){draft=null;resetArm=false}tab=t;try{localStorage.setItem(KEY+"-tab",t)}catch(e){}render();scrollTo(0,0)}
@@ -233,7 +236,7 @@ document.addEventListener("click",e=>{
     const x=dayState(today());if(on&&x.tot&&x.done===x.tot)toast("Révision du jour terminée !")}
   else if(d.all){const x=dayState(today());mark(d.all,(d.all==="sj"?x.Js:d.all==="so"?x.Os:x.W).map(y=>y.s.id),d.on==="1");const y=scrollY;render();scrollTo(0,y)}
   else if(d.learn){learn(+d.learn);const y=scrollY;render();scrollTo(0,y)}
-  else if(d.off!==undefined){const n=+d.off,i=draft.off.indexOf(n);if(i<0)draft.off.push(n);else draft.off.splice(i,1);const y=scrollY;render();scrollTo(0,y)}
+  else if(d.off!==undefined){const n=+d.off,i=draft.off.indexOf(n);if(i<0&&draft.off.length>=6){toast("Garde au moins un jour de révision");return}if(i<0)draft.off.push(n);else draft.off.splice(i,1);const y=scrollY;render();scrollTo(0,y)}
   else if(d.read){if(longFired){longFired=false;return}openReader(+d.read,+d.lo)}
   else if(d.rdgo){rdGo(+d.rdgo)}
   else if(d.rdclose!==undefined){closeReader()}
@@ -252,7 +255,8 @@ document.addEventListener("click",e=>{
   else if(d.act==="import"){try{const v=JSON.parse($("impt").value);if(!v.cfg&&!v.s)throw 0;
     st={log:v.log||{},day:v.day||{},weak:v.weak||[],cfg:Object.assign({...DEF},v.cfg||{})};
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}
-    save();draft=null;applyTheme();toast("Données restaurées");render()}catch(x){toast("Colle la sauvegarde complète")}}
+    if(ICONS[URL_ICON])st.cfg.icon=URL_ICON;if(!ICONS[st.cfg.icon])st.cfg.icon="rose";
+    save();draft=null;applyTheme();applyIcon();toast("Données restaurées");render()}catch(x){toast("Colle la sauvegarde complète")}}
 });
 /* Appui long sur le nom d'une sourate : « à renforcer » */
 let longT=null,longFired=false,longXY=null;
@@ -287,4 +291,6 @@ function drawReader(){const p=rd.p,s=S[rd.id-1];
 
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyTheme);
 applyTheme();applyIcon();render();
+let shownDay=today();
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&today()!==shownDay){shownDay=today();if(tab!=="set")render()}});
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
