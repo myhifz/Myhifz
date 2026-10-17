@@ -113,6 +113,8 @@ const I={
  moon:'<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>',
  plus:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
  flag:'<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M5 21V4h11l-1.5 4L16 12H7v9z"/></svg>',
+ next:'<svg class="chv" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+ prev:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
  check:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M5 12l5 5L20 7"/></svg>'
 };
 
@@ -188,30 +190,58 @@ function sel(id,val){
   return'<label class="pick"><span class="pn num">'+s.id+'.</span><span class="pt"><b>'+s.t+'</b><span class="ar">'+s.a+'</span></span>'+I.chev+'<select id="'+id+'" aria-label="Sourate">'+S.map(x=>'<option value="'+x.id+'"'+(x.id===s.id?" selected":"")+'>'+x.id+'. '+x.t+'</option>').join("")+'</select></label>'}
 function head(icon,t,s,soft){return'<div class="sh"><div class="si'+(soft?" s2":"")+'">'+icon+'</div><div><div class="st">'+t+'</div><div class="ss">'+s+'</div></div></div>'}
 
+/* Réglages : une liste courte, chaque ligne ouvre sa page */
+const DAYS=[[1,"Lun"],[2,"Mar"],[3,"Mer"],[4,"Jeu"],[5,"Ven"],[6,"Sam"],[0,"Dim"]];
+let sub=null;
+function initDraft(){draft={...st.cfg,a:st.cfg.a||78,b:st.cfg.b||114,off:(st.cfg.off||[]).slice()}}
+function progKey(c){return[pageRange(c)+"",c.dir,+c.jn,+c.d,(c.off||[]).slice().sort()+""].join("|")}
+const dirty=()=>!!draft&&(progKey(draft)!==progKey(st.cfg)||!st.cfg.start);
+function setRow(id,icon,title,val,soft){return'<button class="srw" data-sub="'+id+'"><span class="si sm'+(soft?" s2":"")+'">'+icon+'</span><span class="srt">'+title+(val?'<span class="srv">'+val+'</span>':'')+'</span>'+I.next+'</button>'}
+function subHead(t,s){return'<div class="subh"><button class="back" data-sub="">'+I.prev+'Réglages</button><h1>'+t+'</h1>'+(s?'<div class="sub">'+s+'</div>':'')+'</div>'}
+function saveBar(){return'<div class="savebar" id="savebar"'+(dirty()?"":" hidden")+'><button class="savebtn" data-act="save">'+I.save+'Sauvegarder</button></div>'}
 function vSet(){
-  if(!draft)draft={...st.cfg,a:st.cfg.a||78,b:st.cfg.b||114,off:(st.cfg.off||[]).slice()};
+  if(!draft)initDraft();
   const pr=program(draft),per=pr&&pr.old.length?pr.k:0;
+  if(sub==="prog"){
+    let h=subHead("Mon programme","Ce que tu connais et dans quel sens tu l'as appris.");
+    h+='<div class="card">'+head(I.book,"Sourates mémorisées","De quelle sourate à quelle sourate connais-tu ?")+'<div class="fl">De :</div>'+sel("fa",draft.a)+'<div class="fl">À :</div>'+sel("fb",draft.b)+'<div class="pill">'+I.doc+'<span class="num">Pages '+pr.p1+' → '+pr.p2+' · '+pr.total+' pages · '+hizb(pr.total)+' hizb</span></div></div>';
+    h+='<div class="card">'+head(I.dir,"Sens d'apprentissage","Dans quel sens as-tu mémorisé ?")+'<div class="seg"><button class="'+(draft.dir==="down"?"on":"")+'" data-dir="down"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 4v16M6 14l6 6 6-6"/></svg>Al-Fatiha → An-Nas</button><button class="'+(draft.dir==="up"?"on":"")+'" data-dir="up"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 20V4M6 10l6-6 6 6"/></svg>An-Nas → Al-Fatiha</button></div></div>';
+    return h+saveBar()}
+  if(sub==="rev"){
+    let h=subHead("Révision","Ton rythme de chaque jour.");
+    h+='<div class="card">'+head(I.loop,"Boucles de révision","Comment veux-tu répartir tes révisions ?")
+     +'<div class="bh" style="margin-top:18px"><div class="lt">Hifdh al-Jadid</div><span class="tag">Chaque jour</span></div><div class="ld">Nombre de pages récentes à réviser tous les jours.</div><label class="numf"><input id="jn" type="number" inputmode="numeric" min="0" max="'+pr.total+'" value="'+draft.jn+'"><span>pages</span></label>'
+     +'<hr><div class="bh"><div class="lt">Hifdh</div><span class="tag">Cycle</span></div><div class="ld">En combien de jours veux-tu réviser le reste de ce que tu connais ?</div><label class="numf"><input id="dd" type="number" inputmode="numeric" min="1" max="60" value="'+draft.d+'"><span>jours</span></label>'
+     +'<div class="pill" id="perp">'+I.calc+'<span>'+(pr.old.length?'Soit environ <b class="num">'+per+' page'+(per>1?"s":"")+'</b> par jour':'Tout est déjà dans Hifdh al-Jadid')+'</span></div></div>';
+    h+='<div class="card">'+head(I.moon,"Jour off","Les jours où tu ne mémorises et ne révises rien.")+'<div class="days">'+DAYS.map(([n,l])=>'<button class="dy '+(draft.off.includes(n)?"on":"")+'" data-off="'+n+'">'+l+'</button>').join("")+'</div><div class="note" style="margin-top:10px">'+(draft.off.length?draft.off.length+' jour'+(draft.off.length>1?"s":"")+' off par semaine. Le cycle de Hifdh fait une pause ces jours-là.':'Aucun jour off pour l\'instant.')+'</div></div>';
+    const A=S[pr.a-1],B=S[pr.b-1],ord=draft.dir==="up"?[B,A]:[A,B];
+    h+='<div class="card sum" id="sumc"><div class="ctitle">'+I.chart+'Résumé de ton programme</div>'
+     +[["Sourates",ord[0].t+" → "+ord[1].t],["Pages mémorisées",pr.total+" pages"],["Hizb mémorisés",'<span style="color:var(--acc2)">'+hizb(pr.total)+" hizb</span>"],["Hifdh al-Jadid",pr.jadid.length+" pages/jour"],["Hifdh","~"+per+" pages/jour"],["Jour off",draft.off.length?DAYS.filter(([n])=>draft.off.includes(n)).map(([,l])=>l).join(", "):"Aucun"],["Total quotidien",'<b style="font-size:20px">~'+(pr.jadid.length+per)+" pages</b>"]]
+       .map(r=>'<div class="sr"><span>'+r[0]+'</span><b class="num">'+r[1]+'</b></div>').join("")+'</div>';
+    return h+saveBar()}
+  if(sub==="look"){
+    let h=subHead("Apparence","Les changements s'appliquent tout de suite.");
+    h+='<div class="card">'+head(I.palette,"Couleur","Choisis le thème de l'app.",1)+'<div class="themes">'+Object.entries(THEMES).map(([k,t])=>'<button class="th '+(st.cfg.c===k?"on":"")+'" data-theme-c="'+k+'"><i style="background:linear-gradient(135deg,'+t.c[0]+','+t.c[1]+')"></i>'+t.n+'</button>').join("")+'</div></div>';
+    const ic=st.cfg.icon,link="myhifz.github.io/Myhifz/?icon="+ic;
+    h+='<div class="card">'+head(I.book,"Icône de l'app","Choisis le logo de ton écran d'accueil.",1)+'<div class="icons">'+Object.entries(ICONS).map(([k,n])=>'<button class="ico '+(ic===k?"on":"")+'" data-icon="'+k+'" aria-label="Icône '+n+'"><img src="icons/'+k+'.png" alt=""><span>'+n+'</span></button>').join("")+'</div>'
+     +(ic!==INSTALLED_ICON?'<div class="howto"><b>Pour l\'avoir sur ton écran d\'accueil :</b><ol><li>Copie ta sauvegarde (Réglages → Données).</li><li>Supprime l\'icône actuelle de l\'écran d\'accueil.</li><li>Ouvre ce lien dans Safari :<div class="lk"><span class="num">'+link+'</span><button class="btn" data-act="copylink">Copier</button></div></li><li>Partager → « Sur l\'écran d\'accueil ».</li><li>Ouvre l\'app, Réglages → Données → Restaurer.</li></ol></div>':'')+'</div>';
+    return h}
+  if(sub==="profile"){
+    return subHead("Profil")+'<div class="card">'+head(I.user,"Ton prénom","Affiché sur l'accueil (facultatif). Enregistré automatiquement.",1)+'<input class="field" id="nm" type="text" maxlength="24" autocomplete="given-name" placeholder="Prénom" value="'+esc(st.cfg.name)+'"></div>'}
+  if(sub==="data"){
+    let h=subHead("Données","Tes données restent sur ce téléphone.");
+    h+='<div class="card">'+head(I.cloud,"Sauvegarde","Copie une sauvegarde de temps en temps et garde-la dans tes notes.",1)+'<div class="chips" style="margin-top:14px"><button class="btn pri" data-act="export">Copier la sauvegarde</button><button class="btn" data-act="showimp">Restaurer</button></div><div id="imp" hidden><textarea id="impt" placeholder="Colle ta sauvegarde ici"></textarea><div class="chips" style="margin-top:10px"><button class="btn pri" data-act="import">Restaurer ces données</button></div></div><textarea id="expt" hidden readonly></textarea></div>';
+    h+='<div class="card"><div class="ctitle" style="color:var(--hard)">'+I.trash+'Zone sensible</div><p class="note">Efface ton programme, tes révisions et ta série. La couleur et l\'icône sont gardées.</p><button class="reset" data-act="reset">'+(resetArm?"Touche encore pour tout effacer":"Réinitialiser toutes les données")+'</button></div>';
+    return h}
+  /* Liste principale */
+  const c=st.cfg,cp=program(c),configured=!!cp;
+  const progVal=configured?(()=>{const A=S[cp.a-1],B=S[cp.b-1],o=c.dir==="up"?[B,A]:[A,B];return o[0].t+" → "+o[1].t})():"À configurer";
+  const revVal=configured?cp.jadid.length+" + ~"+(cp.old.length?cp.k:0)+" p./jour":"—";
+  const offVal=(c.off||[]).length?DAYS.filter(([n])=>c.off.includes(n)).map(([,l])=>l).join(", "):"Aucun";
   let h='<div class="hello">'+logo()+'<div class="txt"><h1>Réglages</h1><div class="sub">Configure ta méthode de révision</div></div></div>';
-  h+='<div class="card">'+head(I.book,"Sourates mémorisées","De quelle sourate à quelle sourate connais-tu ?")+'<div class="fl">De :</div>'+sel("fa",draft.a)+'<div class="fl">À :</div>'+sel("fb",draft.b)+'<div class="pill">'+I.doc+'<span class="num">Pages '+pr.p1+' → '+pr.p2+' · '+pr.total+' pages · '+hizb(pr.total)+' hizb</span></div></div>';
-  h+='<div class="card">'+head(I.dir,"Sens d'apprentissage","Dans quel sens as-tu mémorisé ?")+'<div class="seg"><button class="'+(draft.dir==="down"?"on":"")+'" data-dir="down"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 4v16M6 14l6 6 6-6"/></svg>Al-Fatiha → An-Nas</button><button class="'+(draft.dir==="up"?"on":"")+'" data-dir="up"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 20V4M6 10l6-6 6 6"/></svg>An-Nas → Al-Fatiha</button></div></div>';
-  h+='<div class="card">'+head(I.loop,"Boucles de révision","Comment veux-tu répartir tes révisions ?")
-   +'<div class="bh" style="margin-top:18px"><div class="lt">Hifdh al-Jadid</div><span class="tag">Chaque jour</span></div><div class="ld">Nombre de pages récentes à réviser tous les jours.</div><label class="numf"><input id="jn" type="number" inputmode="numeric" min="0" max="'+pr.total+'" value="'+draft.jn+'"><span>pages</span></label>'
-   +'<hr><div class="bh"><div class="lt">Hifdh</div><span class="tag">Cycle</span></div><div class="ld">En combien de jours veux-tu réviser le reste de ce que tu connais ?</div><label class="numf"><input id="dd" type="number" inputmode="numeric" min="1" max="60" value="'+draft.d+'"><span>jours</span></label>'
-   +'<div class="pill" id="perp">'+I.calc+'<span>'+(pr.old.length?'Soit environ <b class="num">'+per+' page'+(per>1?"s":"")+'</b> par jour':'Tout est déjà dans Hifdh al-Jadid')+'</span></div></div>';
-  const DAYS=[[1,"Lun"],[2,"Mar"],[3,"Mer"],[4,"Jeu"],[5,"Ven"],[6,"Sam"],[0,"Dim"]];
-  h+='<div class="card">'+head(I.moon,"Jour off","Les jours où tu ne mémorises et ne révises rien.")+'<div class="days">'+DAYS.map(([n,l])=>'<button class="dy '+(draft.off.includes(n)?"on":"")+'" data-off="'+n+'">'+l+'</button>').join("")+'</div><div class="note" style="margin-top:10px">'+(draft.off.length?draft.off.length+' jour'+(draft.off.length>1?"s":"")+' off par semaine. Le cycle de Hifdh fait une pause ces jours-là.':'Aucun jour off pour l\'instant.')+'</div></div>';
-  const A=S[pr.a-1],B=S[pr.b-1],ord=draft.dir==="up"?[B,A]:[A,B];
-  h+='<div class="card sum" id="sumc"><div class="ctitle">'+I.chart+'Résumé de ton programme</div>'
-   +[["Sourates",ord[0].t+" → "+ord[1].t],["Pages mémorisées",pr.total+" pages"],["Hizb mémorisés",'<span style="color:var(--acc2)">'+hizb(pr.total)+" hizb</span>"],["Hifdh al-Jadid",pr.jadid.length+" pages/jour"],["Hifdh","~"+per+" pages/jour"],["Jour off",draft.off.length?DAYS.filter(([n])=>draft.off.includes(n)).map(([,l])=>l).join(", "):"Aucun"],["Total quotidien",'<b style="font-size:20px">~'+(pr.jadid.length+per)+" pages</b>"]]
-     .map(r=>'<div class="sr"><span>'+r[0]+'</span><b class="num">'+r[1]+'</b></div>').join("")+'</div>';
-  h+='<div class="card">'+head(I.palette,"Couleur","Choisis le thème de l'app.",1)+'<div class="themes">'+Object.entries(THEMES).map(([k,t])=>'<button class="th '+(st.cfg.c===k?"on":"")+'" data-theme-c="'+k+'"><i style="background:linear-gradient(135deg,'+t.c[0]+','+t.c[1]+')"></i>'+t.n+'</button>').join("")+'</div></div>';
-  const ic=st.cfg.icon,link="myhifz.github.io/Myhifz/?icon="+ic;
-  h+='<div class="card">'+head(I.book,"Icône de l'app","Choisis le logo de ton écran d'accueil.",1)+'<div class="icons">'+Object.entries(ICONS).map(([k,n])=>'<button class="ico '+(ic===k?"on":"")+'" data-icon="'+k+'" aria-label="Icône '+n+'"><img src="icons/'+k+'.png" alt=""><span>'+n+'</span></button>').join("")+'</div>'
-   +(ic!==INSTALLED_ICON?'<div class="howto"><b>Pour l\'avoir sur ton écran d\'accueil :</b><ol><li>Copie ta sauvegarde (plus bas).</li><li>Supprime l\'icône actuelle de l\'écran d\'accueil.</li><li>Ouvre ce lien dans Safari :<div class="lk"><span class="num">'+link+'</span><button class="btn" data-act="copylink">Copier</button></div></li><li>Partager → « Sur l\'écran d\'accueil ».</li><li>Ouvre l\'app, Réglages → Restaurer.</li></ol></div>':'')+'</div>';
-  h+='<div class="card">'+head(I.user,"Ton prénom","Affiché sur l'accueil (facultatif).",1)+'<input class="field" id="nm" type="text" maxlength="24" autocomplete="given-name" placeholder="Prénom" value="'+esc(draft.name)+'"></div>';
-  h+='<div class="card">'+head(I.cloud,"Sauvegarde","Tes données restent sur ce téléphone. Garde une copie dans tes notes.",1)+'<div class="chips" style="margin-top:14px"><button class="btn pri" data-act="export">Copier la sauvegarde</button><button class="btn" data-act="showimp">Restaurer</button></div><div id="imp" hidden><textarea id="impt" placeholder="Colle ta sauvegarde ici"></textarea><div class="chips" style="margin-top:10px"><button class="btn pri" data-act="import">Restaurer ces données</button></div></div><textarea id="expt" hidden readonly></textarea></div>';
-  h+='<button class="reset" data-act="reset">'+I.trash+(resetArm?"Touche encore pour tout effacer":"Réinitialiser toutes les données")+'</button>';
-  h+='<div class="savebar"><button class="savebtn" data-act="save">'+I.save+'Sauvegarder</button></div>';
+  h+='<div class="lbl">Méthode</div><div class="card list">'+setRow("prog",I.book,"Mon programme",progVal)+setRow("rev",I.loop,"Révision",revVal+' · Jour off : '+offVal)+'</div>';
+  h+='<div class="lbl">Personnalisation</div><div class="card list">'+setRow("look",I.palette,"Apparence",THEMES[c.c]?THEMES[c.c].n:"Vert",1)+setRow("profile",I.user,"Profil",c.name.trim()?esc(c.name.trim()):"—",1)+'</div>';
+  h+='<div class="lbl">Données</div><div class="card list">'+setRow("data",I.cloud,"Sauvegarde et restauration","",1)+'</div>';
   return h}
 
 function render(){
@@ -220,18 +250,19 @@ function render(){
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
   if(tab==="set"){
     const re=()=>{const y=scrollY;render();scrollTo(0,y)};
-    $("fa").onchange=e=>{draft.a=+e.target.value;draft.p1=draft.p2=0;re()};
-    $("fb").onchange=e=>{draft.b=+e.target.value;draft.p1=draft.p2=0;re()};
-    const upd=()=>{const tmp=document.createElement("div");tmp.innerHTML=vSet();["perp","sumc"].forEach(id=>{const n=tmp.querySelector("#"+id);if(n&&$(id))$(id).replaceWith(n)})};
-    $("jn").oninput=e=>{draft.jn=Math.max(0,+e.target.value||0);upd()};
-    $("dd").oninput=e=>{draft.d=Math.max(1,Math.min(60,+e.target.value||1));upd()};
-    $("nm").oninput=e=>{draft.name=e.target.value};
+    if($("fa"))$("fa").onchange=e=>{draft.a=+e.target.value;draft.p1=draft.p2=0;re()};
+    if($("fb"))$("fb").onchange=e=>{draft.b=+e.target.value;draft.p1=draft.p2=0;re()};
+    const upd=()=>{const tmp=document.createElement("div");tmp.innerHTML=vSet();["perp","sumc"].forEach(id=>{const n=tmp.querySelector("#"+id);if(n&&$(id))$(id).replaceWith(n)});if($("savebar"))$("savebar").hidden=!dirty()};
+    if($("jn"))$("jn").oninput=e=>{draft.jn=Math.max(0,+e.target.value||0);upd()};
+    if($("dd"))$("dd").oninput=e=>{draft.d=Math.max(1,Math.min(60,+e.target.value||1));upd()};
+    if($("nm"))$("nm").oninput=e=>{st.cfg.name=e.target.value;save()};
   }}
-function go(t){if(t!=="set"){draft=null;resetArm=false}tab=t;try{localStorage.setItem(KEY+"-tab",t)}catch(e){}render();scrollTo(0,0)}
+function go(t){draft=null;resetArm=false;sub=null;tab=t;try{localStorage.setItem(KEY+"-tab",t)}catch(e){}render();scrollTo(0,0)}
 
 document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
   if(d.tab)go(d.tab);
+  else if(d.sub!==undefined){sub=d.sub||null;draft=null;resetArm=false;render();scrollTo(0,0)}
   else if(d.su){const id=+d.su,k=d.k,on=!dayRec(today())[k].includes(id);mark(k,[id],on);const y=scrollY;render();scrollTo(0,y);
     const x=dayState(today());if(on&&x.tot&&x.done===x.tot)toast("Révision du jour terminée !")}
   else if(d.all){const x=dayState(today());mark(d.all,(d.all==="sj"?x.Js:d.all==="so"?x.Os:x.W).map(y=>y.s.id),d.on==="1");const y=scrollY;render();scrollTo(0,y)}
@@ -246,7 +277,8 @@ document.addEventListener("click",e=>{
   else if(d.themeC){st.cfg.c=d.themeC;draft.c=d.themeC;save();applyTheme();const y=scrollY;render();scrollTo(0,y);toast("Thème "+THEMES[d.themeC].n)}
   else if(d.act==="save"){const old=st.cfg,r=pageRange(draft);draft.p1=r[0];draft.p2=r[1];
     const ch=pageRange(old)+""!==r+""||old.dir!==draft.dir||+old.jn!==+draft.jn||+old.d!==+draft.d||(old.off||[]).slice().sort()+""!==draft.off.slice().sort()+"";
-    st.cfg={...draft,c:st.cfg.c,icon:st.cfg.icon};if(ch||!st.cfg.start)st.cfg.start=today();save();draft=null;toast("Programme enregistré");go("home")}
+    const first=!st.cfg.start;st.cfg={...draft,c:st.cfg.c,icon:st.cfg.icon,name:st.cfg.name};if(ch||first)st.cfg.start=today();save();draft=null;toast("Programme enregistré");
+    if(first)go("home");else{sub=null;render();scrollTo(0,0)}}
   else if(d.act==="reset"){if(!resetArm){resetArm=true;const y=scrollY;render();scrollTo(0,y);return}
     st={log:{},day:{},weak:[],cfg:{...DEF,c:st.cfg.c,icon:st.cfg.icon}};save();draft=null;resetArm=false;toast("Données effacées");render()}
   else if(d.act==="export"){const txt=JSON.stringify(st),ta=$("expt");ta.value=txt;const fb=()=>{ta.hidden=false;ta.select();toast("Sélectionne et copie le texte")};
