@@ -152,16 +152,34 @@ function weekStrip(){let h='<div class="wk">';const t=today(),dow=(new Date(t+"T
     h+='<div class="wd '+s+(d===t?" now":"")+'"><span>'+DOW[new Date(d+"T12:00").getDay()].charAt(0)+'</span><i>'+(s==="full"?I.check:s==="off"?"–":"")+'</i></div>'}
   return h+'</div>'}
 function goalLine(){const g=goalInfo();if(!g)return"";return'<button class="gline" data-goal>'+I.flag+'<span>'+(g.done?"Objectif "+S[g.g-1].t+" atteint !":"Objectif "+S[g.g-1].t+" · "+g.rem+" p. · vers le "+new Date(g.eta+"T12:00").toLocaleDateString("fr-BE",{day:"numeric",month:"short"}))+'</span>'+I.next+'</button>'}
+const GEO='<svg class="geo" aria-hidden="true"><defs><pattern id="g8" width="56" height="56" patternUnits="userSpaceOnUse"><g fill="none" stroke="currentColor" stroke-width="1.1"><rect x="16" y="16" width="24" height="24"/><rect x="16" y="16" width="24" height="24" transform="rotate(45 28 28)"/><circle cx="28" cy="28" r="5"/><path d="M0 0l8 8M56 0l-8 8M0 56l8-8M56 56l-8-8"/></g></pattern></defs><rect width="200%" height="200%" fill="url(#g8)"/></svg>';
+/* Animations de l'accueil : valeurs précédentes pour animer seulement ce qui change */
+let prevPct=null,prevSk=null,prevMem=null,homeShown=false;
+function animateHome(){
+  const red=matchMedia("(prefers-reduced-motion: reduce)").matches,app=$("app");
+  if(!homeShown&&!red)app.classList.add("cascade");homeShown=true;setTimeout(()=>app.classList.remove("cascade"),1400);
+  /* 2. cercle et chiffres */
+  const ring=document.querySelector(".tring circle.arc"),num=document.querySelector(".tring b");
+  if(ring&&num){const to=+ring.dataset.pct,from=prevPct===null?0:prevPct,C=+ring.dataset.c;
+    if(!red&&from!==to){ring.style.transition="none";ring.style.strokeDashoffset=C*(1-from/100);ring.getBoundingClientRect();
+      ring.style.transition="stroke-dashoffset .9s cubic-bezier(.3,.7,.2,1)";ring.style.strokeDashoffset=C*(1-to/100);
+      const t0=performance.now(),step=n=>{const k=Math.min(1,(n-t0)/900),e=1-Math.pow(1-k,3);num.textContent=Math.round(from+(to-from)*e)+"%";if(k<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
+    prevPct=to}
+  const done=document.querySelector(".tdone");if(done){if(prevPct!==null&&prevPct<100&&!red)done.classList.add("burst");prevPct=100}
+  /* barres : se remplissent depuis zéro */
+  if(!red)document.querySelectorAll(".dtb i,.memo2 .prog i").forEach(b=>{const w=b.style.width;b.style.transition="none";b.style.width="0";b.getBoundingClientRect();b.style.transition="width .9s cubic-bezier(.3,.7,.2,1) .15s";b.style.width=w});
+  /* 4. série qui augmente */
+  const sk=document.querySelector(".stk");if(sk){const v=+sk.dataset.v;if(prevSk!==null&&v>prevSk&&!red)sk.classList.add("up");prevSk=v}}
 function vHome(){
   const name=st.cfg.name.trim(),x=dayState(today());
   const sk=streak();
   let h='<div class="hd"><div class="hdt">'+(name?'<span class="hs">Salam Aleykoum</span><h1>'+esc(name)+'</h1>':'<h1>Salam Aleykoum</h1>')+'<span class="hdate">'+fmtDay(today())+'</span></div>'
-   +'<div class="stk'+(sk?"":" zero")+'">'+I.flame+'<b class="num">'+sk+'</b><span>jour'+(sk>1?"s":"")+'</span></div></div>';
+   +'<div class="stk'+(sk?"":" zero")+'" data-v="'+sk+'">'+I.flame+'<b class="num">'+sk+'</b><span>jour'+(sk>1?"s":"")+'</span></div></div>';
   if(!x.pr)return h+needSetup();
   const left=x.tot-x.done,pct=x.tot?Math.round(x.done/x.tot*100):100,R=34,C=2*Math.PI*R;
   /* 1. Aujourd'hui */
-  if(x.off)h+='<div class="today off"><div class="tring"><span class="moon">'+I.moon+'</span></div><div class="tt"><b>Jour off</b><span>Pas de mémorisation ni de révision aujourd\'hui. Repose-toi bien.</span></div></div>';
-  else h+='<div class="today"><div class="tring">'+(pct>=100?'<span class="tdone">'+I.check+'</span>':'<svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="'+R+'" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="7"/><circle cx="40" cy="40" r="'+R+'" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+(C*(1-pct/100))+'" transform="rotate(-90 40 40)"/></svg><b class="num">'+pct+'%</b>')+'</div>'
+  if(x.off)h+='<div class="today off">'+GEO+'<div class="tring"><span class="moon">'+I.moon+'</span></div><div class="tt"><b>Jour off</b><span>Pas de mémorisation ni de révision aujourd\'hui. Repose-toi bien.</span></div></div>';
+  else h+='<div class="today">'+GEO+'<div class="tring">'+(pct>=100?'<span class="tdone">'+I.check+'</span>':'<svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="'+R+'" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="7"/><circle class="arc" data-pct="'+pct+'" data-c="'+C+'" cx="40" cy="40" r="'+R+'" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+(C*(1-pct/100))+'" transform="rotate(-90 40 40)"/></svg><b class="num">'+pct+'%</b>')+'</div>'
     +'<div class="tt"><b>'+(left?"Révision du jour":"Révision terminée")+'</b><span class="num">'+(left?x.done+" / "+x.tot+" pages · il en reste "+left:"Bravo, tes "+x.tot+" pages sont révisées")+'</span>'
     +'<button class="tgo" data-tab="rev">'+(left?(x.done?"Continuer":"Commencer")+I.next:"Revoir"+I.next)+'</button></div></div>';
   /* 2. Programme du jour */
@@ -330,6 +348,7 @@ function vSet(){
 function render(){
   $("app").innerHTML=tab==="home"?vHome():tab==="rev"?vRev():tab==="plan"?vPlan():vSet();
   document.body.classList.toggle("onset",tab==="set");
+  if(tab==="home")animateHome();else homeShown=false;
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
   if(tab==="set"){
     const re=()=>{const y=scrollY;render();scrollTo(0,y)};
@@ -359,7 +378,8 @@ document.addEventListener("click",e=>{
   else if(d.su){const id=+d.su,k=d.k,on=!dayRec(today())[k].includes(id);mark(k,[id],on);const y=scrollY;render();scrollTo(0,y);
     const x=dayState(today());if(on&&x.tot&&x.done===x.tot)toast("Révision du jour terminée !")}
   else if(d.all){const x=dayState(today());mark(d.all,(d.all==="sj"?x.Js:d.all==="so"?x.Os:x.W).map(y=>y.s.id),d.on==="1");const y=scrollY;render();scrollTo(0,y)}
-  else if(d.learn){learn(+d.learn);const y=scrollY;render();scrollTo(0,y)}
+  else if(d.learn){const before=program(st.cfg).total;learn(+d.learn);const y=scrollY;render();scrollTo(0,y);
+    const after=program(st.cfg).total;if(after!==before&&!matchMedia("(prefers-reduced-motion: reduce)").matches){const btn=document.querySelector(d.learn==="1"?".plusb":".ghost");if(btn){const r=btn.getBoundingClientRect(),f=document.createElement("div");f.className="fly"+(after<before?" neg":"");f.textContent=(after>before?"+1":"−1")+" page";f.style.left=(r.left+r.width/2)+"px";f.style.top=(r.top)+"px";document.body.appendChild(f);setTimeout(()=>f.remove(),1100);btn.classList.add("bump");setTimeout(()=>btn.classList.remove("bump"),400)}}}
   else if(d.off!==undefined){const n=+d.off,i=draft.off.indexOf(n);if(i<0&&draft.off.length>=6){toast("Garde au moins un jour de révision");return}if(i<0)draft.off.push(n);else draft.off.splice(i,1);const y=scrollY;render();scrollTo(0,y)}
   else if(d.read){if(longFired){longFired=false;return}openReader(+d.read,+d.lo)}
   else if(d.rdgo){rdGo(+d.rdgo)}
