@@ -5,11 +5,11 @@ S.forEach((x,i)=>{x.e=i===113?604:Math.max(x.p,S[i+1].p-1)});
 const PAGES=604, PER_HIZB=PAGES/60;
 const KEY="murajaa-v1";
 const THEMES={vert:{n:"Vert",c:["#1F5A47","#6DBB9C"],tc:"#F2F4F0"},rose:{n:"Rose",c:["#B23F6E","#F09DBD"],tc:"#FBF2F5"},marine:{n:"Bleu marine",c:["#26467A","#7FA3D8"],tc:"#F1F4F9"}};
-const DEF={c:"vert",name:"",a:0,b:0,dir:"up",jn:6,d:3,start:"",icon:"rose"};
+const DEF={c:"vert",name:"",a:0,b:0,dir:"up",jn:6,d:3,start:"",icon:"rose",p1:0,p2:0,off:[]};
 
-let st={log:{},day:{},cfg:{...DEF}}, tab="home", draft=null, resetArm=false;
+let st={log:{},day:{},weak:[],cfg:{...DEF}}, tab="home", draft=null, resetArm=false;
 try{const v=JSON.parse(localStorage.getItem(KEY)||"null");
-  if(v){st.log=v.log||{};st.day=v.day||{};st.cfg=Object.assign({...DEF},v.cfg||{});
+  if(v){st.log=v.log||{};st.day=v.day||{};st.weak=v.weak||[];st.cfg=Object.assign({...DEF},v.cfg||{});
     // Ancienne version (cases par sourate) : on reprend la plage cochée
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}}}catch(e){}
 // Icône : celle de l'écran d'accueil vient du lien utilisé à l'installation (?icon=N)
@@ -34,49 +34,59 @@ const fmtDay=s=>{const d=new Date(s+"T12:00").toLocaleDateString("fr-BE",{weekda
 const hizb=n=>(n/PER_HIZB).toFixed(1).replace(/\.0$/,"");
 
 /* Programme : pages mémorisées dans l'ordre d'apprentissage, puis découpage */
+function pageRange(c){
+  if(c.p1&&c.p2)return[Math.min(c.p1,c.p2),Math.max(c.p1,c.p2)];
+  if(!c.a||!c.b)return null;const a=Math.min(c.a,c.b),b=Math.max(c.a,c.b);return[S[a-1].p,S[b-1].e]}
 function program(c){
-  if(!c.a||!c.b)return null;
-  const a=Math.min(c.a,c.b),b=Math.max(c.a,c.b);
-  const p1=S[a-1].p,p2=S[b-1].e,pages=[];for(let p=p1;p<=p2;p++)pages.push(p);
+  const r=pageRange(c);if(!r)return null;
+  const p1=r[0],p2=r[1],pages=[];
+  const a=onPage(p1)[0].id,b=onPage(p2).slice(-1)[0].id;for(let p=p1;p<=p2;p++)pages.push(p);
   const learned=c.dir==="up"?pages.slice().reverse():pages; // du plus ancien au plus récent
   const jn=Math.max(0,Math.min(+c.jn||0,learned.length));
   const jadid=learned.slice(learned.length-jn).sort((x,y)=>x-y);
   const old=learned.slice(0,learned.length-jn);
   const d=Math.max(1,Math.min(+c.d||1,old.length||1));
   const k=old.length?Math.ceil(old.length/d):0;
-  return{a,b,total:pages.length,jadid,old,d,k}}
+  return{a,b,p1,p2,total:pages.length,jadid,old,d,k}}
+const isOff=date=>(st.cfg.off||[]).includes(new Date(date+"T12:00").getDay());
+function workIndex(date){const s=st.cfg.start||date;let n=0,d=s;const dir=diff(date,s)>=0?1:-1;
+  while(d!==date){if(!isOff(d))n+=dir;d=addDays(d,dir)}return n}
 function janbFor(pr,date){
-  if(!pr||!pr.old.length)return[];
-  const i=((diff(date,st.cfg.start||date)%pr.d)+pr.d)%pr.d;
+  if(!pr||!pr.old.length||isOff(date))return[];
+  const i=((workIndex(date)%pr.d)+pr.d)%pr.d;
   return pr.old.slice(i*pr.k,(i+1)*pr.k).sort((x,y)=>x-y)}
 function onPage(p){return S.filter(s=>s.p<=p&&s.e>=p)}
 function label(pages,pr){
   if(!pages.length)return"";
   const lo=Math.min(...pages),hi=Math.max(...pages);
-  const inR=s=>!pr||(s.id>=pr.a&&s.id<=pr.b);
+  const inR=s=>!pr||(s.e>=pr.p1&&s.p<=pr.p2);
   const f=onPage(lo).filter(inR)[0]||onPage(lo)[0],l=onPage(hi).filter(inR).slice(-1)[0]||onPage(hi).slice(-1)[0];
   return(lo===hi?"Page "+lo:"Pages "+lo+" → "+hi)+" · "+(f.id===l.id?f.t:f.t+" → "+l.t)}
 
 /* Sourates couvertes par des pages (dans la plage mémorisée) */
 function surahsFor(pages,pr){if(!pages.length||!pr)return[];const lo=Math.min(...pages),hi=Math.max(...pages);
-  return S.filter(s=>s.id>=pr.a&&s.id<=pr.b&&s.p<=hi&&s.e>=lo).map(s=>({s,lo:Math.max(s.p,lo),hi:Math.min(s.e,hi)}))}
+  return S.filter(s=>s.e>=pr.p1&&s.p<=pr.p2&&s.p<=hi&&s.e>=lo).map(s=>({s,lo:Math.max(s.p,lo),hi:Math.min(s.e,hi)}))}
 /* Une page compte comme faite quand toutes ses sourates du jour sont cochées */
 function donePages(pages,list,ids){return pages.filter(p=>list.filter(x=>x.lo<=p&&x.hi>=p).every(x=>ids.includes(x.s.id))).length}
-function dayRec(date){const d=st.day[date];return d&&d.sj?d:{sj:[],so:[]}}
+function dayRec(date){const d=st.day[date];return d&&d.sj?Object.assign({sw:[]},d):{sj:[],so:[],sw:[]}}
 function dayState(date){
-  const pr=program(st.cfg),d=dayRec(date);
-  const J=pr?pr.jadid:[],O=janbFor(pr,date),Js=surahsFor(J,pr),Os=surahsFor(O,pr);
+  const pr=program(st.cfg),d=dayRec(date),off=isOff(date);
+  const J=pr&&!off?pr.jadid:[],O=janbFor(pr,date),Js=surahsFor(J,pr),Os=surahsFor(O,pr);
+  const inDay=new Set(Js.concat(Os).map(x=>x.s.id));
+  const W=off?[]:st.weak.filter(id=>!inDay.has(id)).sort((a,b)=>a-b).map(id=>({s:S[id-1],lo:S[id-1].p,hi:S[id-1].e}));
   const jd=donePages(J,Js,d.sj),od=donePages(O,Os,d.so);
-  return{pr,J,O,Js,Os,jd,od,done:jd+od,tot:J.length+O.length,d}}
+  return{pr,off,J,O,Js,Os,W,jd,od,done:jd+od,tot:J.length+O.length,d}}
 function mark(kind,ids,on){
-  const t=today();if(!st.day[t]||!st.day[t].sj)st.day[t]={sj:[],so:[]};const d=st.day[t];
+  const t=today();if(!st.day[t]||!st.day[t].sj)st.day[t]={sj:[],so:[],sw:[]};const d=st.day[t];if(!d.sw)d.sw=[];
   ids.forEach(p=>{const i=d[kind].indexOf(p);if(on&&i<0)d[kind].push(p);if(!on&&i>=0)d[kind].splice(i,1)});
-  st.log[t]=d.sj.length+d.so.length; if(!st.log[t])delete st.log[t];
+  st.log[t]=d.sj.length+d.so.length+d.sw.length; if(!st.log[t])delete st.log[t];
   Object.keys(st.day).forEach(k=>{if(diff(t,k)>40)delete st.day[k]});
   save()}
 
-function streak(){let n=0,d=today();if(!st.log[d])d=addDays(d,-1);while(st.log[d]){n++;d=addDays(d,-1)}return n}
-function record(){let best=0,cur=0,prev=null;Object.keys(st.log).filter(k=>st.log[k]).sort().forEach(k=>{cur=prev&&diff(k,prev)===1?cur+1:1;best=Math.max(best,cur);prev=k});return best}
+function streak(){let n=0,d=today(),g=0;if(!st.log[d])d=addDays(d,-1);
+  while((st.log[d]||isOff(d))&&g++<3000){if(st.log[d])n++;d=addDays(d,-1)}return n}
+function record(){const ks=Object.keys(st.log).filter(k=>st.log[k]).sort();if(!ks.length)return 0;
+  let best=0,cur=0,d=ks[0],g=0;while(d<=today()&&g++<3000){if(st.log[d]){cur++;best=Math.max(best,cur)}else if(!isOff(d))cur=0;d=addDays(d,1)}return best}
 function applyTheme(){const c=THEMES[st.cfg.c]?st.cfg.c:"vert";document.documentElement.dataset.c=c;
   const dark=matchMedia("(prefers-color-scheme: dark)").matches;$("tc").content=dark?getComputedStyle(document.documentElement).getPropertyValue("--paper").trim():THEMES[c].tc}
 function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,1900)}
@@ -99,9 +109,18 @@ const I={
  palette:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.8 1.2-1.7-.5-1.1.2-2.3 1.4-2.3H17a4 4 0 0 0 4-4c0-5.5-4-10-9-10z"/><circle cx="7.5" cy="11" r="1.2" fill="currentColor"/><circle cx="10" cy="7" r="1.2" fill="currentColor"/><circle cx="14.5" cy="7" r="1.2" fill="currentColor"/></svg>',
  user:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
  cloud:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 18a4.5 4.5 0 0 1-.6-9A6 6 0 0 1 18 9.5a4.3 4.3 0 0 1-1 8.5z"/><path d="M12 11v6M9.5 14.5L12 17l2.5-2.5"/></svg>',
+ moon:'<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>',
+ plus:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+ flag:'<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M5 21V4h11l-1.5 4L16 12H7v9z"/></svg>',
  check:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M5 12l5 5L20 7"/></svg>'
 };
 
+function learn(delta){
+  const r=pageRange(st.cfg);if(!r)return;let[p1,p2]=r;
+  if(st.cfg.dir==="up"){p1=Math.min(Math.max(1,p1-delta),p2)}else{p2=Math.max(Math.min(604,p2+delta),p1)}
+  st.cfg.p1=p1;st.cfg.p2=p2;st.cfg.a=onPage(p1)[0].id;st.cfg.b=onPage(p2).slice(-1)[0].id;save();
+  const np=st.cfg.dir==="up"?p1:p2;
+  toast(delta>0?"Page "+np+" ajoutée · "+onPage(np).map(s=>s.t).join(", "):"Dernière page retirée")}
 function needSetup(){return'<div class="card empty"><div class="ar">بسم الله</div><p>Indique dans Réglages les sourates que tu connais et ton rythme de révision.</p><div class="chips" style="justify-content:center;margin-top:16px"><button class="btn pri" data-tab="set">Configurer mon programme</button></div></div>'}
 
 function vHome(){
@@ -110,15 +129,24 @@ function vHome(){
   if(!x.pr)return h+needSetup();
   const left=x.tot-x.done,pct=x.tot?Math.round(x.done/x.tot*100):100;
   const msg=left?["En cours","Continue sur ta lancée ! Il te reste "+left+" page"+(left>1?"s":"")+" à réviser aujourd'hui."]:["Terminé","Ma sha Allah, ta révision du jour est faite."];
+  if(x.off){h+='<div class="card status"><div class="ic">'+I.moon+'</div><div><b>Jour off</b><span>Pas de mémorisation ni de révision aujourd\'hui. Repose-toi bien.</span></div></div>'+memoCard(x.pr);
+    return h+statsCards(x)}
   h+='<button class="card status" data-tab="rev"><div class="ic">'+I.drop+'</div><div><b>'+msg[0]+'</b><span>'+msg[1]+'</span></div></button>';
   const R=70,C=2*Math.PI*R;
   h+='<div class="hero"><div class="t">Progression du jour</div><div class="ring"><svg viewBox="0 0 170 170"><circle cx="85" cy="85" r="'+R+'" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.22)" stroke-width="8"/><circle cx="85" cy="85" r="'+R+'" fill="none" stroke="rgba(255,255,255,.92)" stroke-width="8" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+(C*(1-pct/100))+'"/></svg><div class="in"><div class="p num">'+pct+'%</div><div class="s num">'+x.done+'/'+x.tot+' pages</div></div></div><div class="hbar"><i style="width:'+pct+'%"></i></div></div>';
   const tp=(a,b)=>b?Math.round(a/b*100):100;
   h+='<div class="tiles"><button class="card tile n" data-tab="rev"><div class="ic">'+I.star+'</div><div class="p num">'+tp(x.jd,x.J.length)+'%</div><div class="k">Hifdh al-Jadid</div><div class="s num">'+x.jd+'/'+x.J.length+' pages</div><div class="tbar"><i style="width:'+tp(x.jd,x.J.length)+'%"></i></div></button>'
     +'<button class="card tile o" data-tab="rev"><div class="ic">'+I.stack+'</div><div class="p num">'+tp(x.od,x.O.length)+'%</div><div class="k">Hifdh</div><div class="s num">'+x.od+'/'+x.O.length+' pages</div><div class="tbar"><i style="width:'+tp(x.od,x.O.length)+'%"></i></div></button></div>';
+  h+=memoCard(x.pr);
+  return h+statsCards(x)}
+function memoCard(pr){
+  const np=st.cfg.dir==="up"?pr.p1-1:pr.p2+1,nxt=np>=1&&np<=604?onPage(np):[];
+  return'<div class="card memo"><div class="bh"><div class="ctitle">'+I.plus+'Mémorisation</div><span class="tag num">'+pr.total+' pages</span></div><div class="rng num">Pages '+pr.p1+' → '+pr.p2+' · '+label([pr.p1,pr.p2],pr).split(" · ")[1]+'</div>'
+   +(nxt.length?'<div class="mrow"><button class="btn pri grow" data-learn="1">J\'ai appris une nouvelle page</button><button class="btn" data-learn="-1" aria-label="Retirer la dernière page">−</button></div><div class="note" style="margin-top:8px">Prochaine page : '+np+' · '+nxt.map(s=>s.t).join(", ")+'</div>':'<p class="note">Tu as atteint la fin du Mushaf, ma sha Allah.</p>')+'</div>'}
+function statsCards(x){let h='';
   h+='<div class="card"><div class="ctitle">'+I.chart+'Tes statistiques</div><div class="sgrid"><div><b class="num">'+x.pr.total+'</b><span>Pages</span></div><div><b class="num">'+streak()+'</b><span>Série</span></div><div><b class="num">'+record()+'</b><span>Record</span></div></div></div>';
   const cp=x.pr.total/PAGES*100;let cells="";
-  for(let i=29;i>=0;i--){const d=addDays(today(),-i),n=st.log[d]||0;cells+='<i class="'+(n&&n>=x.tot?"l2":n?"l1":"")+'"></i>'}
+  for(let i=29;i>=0;i--){const d=addDays(today(),-i),n=st.log[d]||0;cells+='<i class="'+(n&&n>=x.tot?"l2":n?"l1":isOff(d)?"off":"")+'"></i>'}
   h+='<div class="card"><div class="row" style="justify-content:space-between"><div class="ctitle">Coran mémorisé</div><b class="num" style="font-size:22px">'+cp.toFixed(1)+' %</b></div><div class="note num" style="margin-top:2px">'+x.pr.total+' / '+PAGES+' pages · '+hizb(x.pr.total)+' hizb</div><div class="prog"><i style="width:'+cp+'%"></i></div><div class="note" style="margin-top:16px">30 derniers jours</div><div class="heat">'+cells+'</div></div>';
   return h}
 
@@ -126,16 +154,22 @@ function block(kind,title,tag,pages,list,doneIds,pr,cls){
   if(!pages.length)return'<div class="card"><div class="bh"><div class="ctitle">'+title+'</div><span class="tag">'+tag+'</span></div><p class="note" style="margin:8px 0 0">Rien pour aujourd\'hui.</p></div>';
   const n=list.filter(x=>doneIds.includes(x.s.id)).length,all=n===list.length;
   return'<div class="card blk '+cls+'"><div class="bh"><div class="ctitle">'+title+'</div><span class="tag">'+tag+'</span></div><div class="rng num">'+(pages.length>1?"Pages "+Math.min(...pages)+" → "+Math.max(...pages):"Page "+pages[0])+' · '+pages.length+' page'+(pages.length>1?"s":"")+'</div><div class="sus">'+list.map(x=>{const on=doneIds.includes(x.s.id),part=x.lo!==x.s.p||x.hi!==x.s.e;
-    return'<button class="su '+(on?"on":"")+'" data-su="'+x.s.id+'" data-k="'+kind+'"><span class="sc">'+(on?I.check:"")+'</span><span class="sn"><b>'+x.s.t+'</b><span class="num">'+(x.lo===x.hi?"p. "+x.lo:"p. "+x.lo+"–"+x.hi)+(part?" · partie":"")+'</span></span><span class="ar">'+x.s.a+'</span></button>'}).join("")+'</div><div class="bf"><span class="note num">'+n+'/'+list.length+' sourate'+(list.length>1?"s":"")+'</span><button class="btn '+(all?"":"pri")+'" data-all="'+kind+'" data-on="'+(all?0:1)+'">'+(all?"Annuler":"Tout marquer comme fait")+'</button></div></div>'}
+    return suRow(x,kind,on,part)}).join("")+'</div><div class="bf"><span class="note num">'+n+'/'+list.length+' sourate'+(list.length>1?"s":"")+'</span><button class="btn '+(all?"":"pri")+'" data-all="'+kind+'" data-on="'+(all?0:1)+'">'+(all?"Annuler":"Tout marquer comme fait")+'</button></div></div>'}
 
+function suRow(x,kind,on,part){const w=st.weak.includes(x.s.id);
+  return'<div class="su '+(on?"on":"")+(w?" weak":"")+'"><button class="sc" data-su="'+x.s.id+'" data-k="'+kind+'" aria-label="Cocher '+x.s.t+'">'+(on?I.check:"")+'</button><button class="sb" data-read="'+x.s.id+'" data-lo="'+x.lo+'"><span class="sn"><b>'+x.s.t+'</b><span class="num">'+(x.lo===x.hi?"p. "+x.lo:"p. "+x.lo+"–"+x.hi)+(part?" · partie":"")+(w?' · <em>à renforcer</em>':"")+'</span></span><span class="ar">'+x.s.a+'</span></button></div>'}
+function weakBlock(x){if(!x.W.length)return"";const ids=x.d.sw,n=x.W.filter(y=>ids.includes(y.s.id)).length,all=n===x.W.length;
+  return'<div class="card blk w"><div class="bh"><div class="ctitle">'+I.flag+'À renforcer</div><span class="tag">Chaque jour</span></div><div class="rng">Les sourates que tu as marquées comme difficiles.</div><div class="sus">'+x.W.map(y=>suRow(y,"sw",ids.includes(y.s.id),false)).join("")+'</div><div class="bf"><span class="note num">'+n+'/'+x.W.length+'</span><button class="btn '+(all?"":"pri")+'" data-all="sw" data-on="'+(all?0:1)+'">'+(all?"Annuler":"Tout marquer comme fait")+'</button></div></div>'}
 function vRev(){
   const x=dayState(today());
   let h='<div><h1>Révision</h1><div class="sub">'+fmtDay(today())+'</div></div>';
   if(!x.pr)return h+needSetup();
+  if(x.off)return h+'<div class="card empty"><div class="ar">راحة</div><p>Jour off : rien à mémoriser ni à réviser aujourd\'hui.</p></div>';
   if(x.tot&&x.done===x.tot)h+='<div class="card empty" style="padding:18px"><div class="ar">ما شاء الله</div><p>Tout est fait pour aujourd\'hui. Qu\'Allah te le facilite.</p></div>';
   h+=block("sj","Hifdh al-Jadid","Chaque jour",x.J,x.Js,x.d.sj,x.pr,"n");
   h+=block("so","Hifdh","Cycle de "+x.pr.d+" j",x.O,x.Os,x.d.so,x.pr,"o");
-  return h+'<p class="note">Touche une sourate quand tu l\'as récitée.</p>'}
+  h+=weakBlock(x);
+  return h+'<p class="note">Touche la case quand tu as récité. Touche le nom pour lire la page. Appui long sur le nom : « à renforcer ».</p>'}
 
 function vPlan(){
   const pr=program(st.cfg);
@@ -144,8 +178,8 @@ function vPlan(){
   h+='<div class="card"><div class="bh"><div class="ctitle">Hifdh al-Jadid</div><span class="tag">Chaque jour</span></div><div class="rng">'+(pr.jadid.length?label(pr.jadid,pr):"Aucune page")+'</div></div><div class="lbl">Hifdh</div><div class="card plist">';
   const n=Math.max(7,pr.d);
   for(let i=0;i<n;i++){const d=addDays(today(),i),O=janbFor(pr,d),Os=surahsFor(O,pr),dd=dayRec(d),ok=Os.length&&Os.every(y=>dd.so.includes(y.s.id));
-    h+='<div class="prow'+(i===0?" now":"")+'"><div class="pd"><b>'+(i===0?"Aujourd'hui":i===1?"Demain":fmtDay(d).split(" ").slice(0,2).join(" "))+'</b></div><div class="pr num">'+(O.length?label(O,pr):"Repos")+'</div>'+(ok?'<span class="okb">'+I.check+'</span>':"")+'</div>'}
-  return h+'</div><p class="note">Le cycle recommence tous les '+pr.d+' jours. Tu peux changer le rythme dans Réglages.</p>'}
+    h+='<div class="prow'+(i===0?" now":"")+(isOff(d)?" offd":"")+'"><div class="pd"><b>'+(i===0?"Aujourd'hui":i===1?"Demain":fmtDay(d).split(" ").slice(0,2).join(" "))+'</b></div><div class="pr num">'+(isOff(d)?"Jour off":O.length?label(O,pr):"Repos")+'</div>'+(ok?'<span class="okb">'+I.check+'</span>':"")+'</div>'}
+  return h+'</div><p class="note">Le cycle recommence tous les '+pr.d+' jours de révision'+((st.cfg.off||[]).length?' (les jours off ne comptent pas)':'')+'. Tu peux changer le rythme dans Réglages.</p>'}
 
 function sel(id,val){
   const s=S[(val||1)-1];
@@ -153,18 +187,20 @@ function sel(id,val){
 function head(icon,t,s,soft){return'<div class="sh"><div class="si'+(soft?" s2":"")+'">'+icon+'</div><div><div class="st">'+t+'</div><div class="ss">'+s+'</div></div></div>'}
 
 function vSet(){
-  if(!draft)draft={...st.cfg,a:st.cfg.a||78,b:st.cfg.b||114};
+  if(!draft)draft={...st.cfg,a:st.cfg.a||78,b:st.cfg.b||114,off:(st.cfg.off||[]).slice()};
   const pr=program(draft),per=pr&&pr.old.length?pr.k:0;
   let h='<div class="hello">'+logo()+'<div class="txt"><h1>Réglages</h1><div class="sub">Configure ta méthode de révision</div></div></div>';
-  h+='<div class="card">'+head(I.book,"Sourates mémorisées","De quelle sourate à quelle sourate connais-tu ?")+'<div class="fl">De :</div>'+sel("fa",draft.a)+'<div class="fl">À :</div>'+sel("fb",draft.b)+'<div class="pill">'+I.doc+'<span class="num">'+pr.total+' pages · '+hizb(pr.total)+' hizb</span></div></div>';
+  h+='<div class="card">'+head(I.book,"Sourates mémorisées","De quelle sourate à quelle sourate connais-tu ?")+'<div class="fl">De :</div>'+sel("fa",draft.a)+'<div class="fl">À :</div>'+sel("fb",draft.b)+'<div class="pill">'+I.doc+'<span class="num">Pages '+pr.p1+' → '+pr.p2+' · '+pr.total+' pages · '+hizb(pr.total)+' hizb</span></div></div>';
   h+='<div class="card">'+head(I.dir,"Sens d'apprentissage","Dans quel sens as-tu mémorisé ?")+'<div class="seg"><button class="'+(draft.dir==="down"?"on":"")+'" data-dir="down"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 4v16M6 14l6 6 6-6"/></svg>Al-Fatiha → An-Nas</button><button class="'+(draft.dir==="up"?"on":"")+'" data-dir="up"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 20V4M6 10l6-6 6 6"/></svg>An-Nas → Al-Fatiha</button></div></div>';
   h+='<div class="card">'+head(I.loop,"Boucles de révision","Comment veux-tu répartir tes révisions ?")
    +'<div class="bh" style="margin-top:18px"><div class="lt">Hifdh al-Jadid</div><span class="tag">Chaque jour</span></div><div class="ld">Nombre de pages récentes à réviser tous les jours.</div><label class="numf"><input id="jn" type="number" inputmode="numeric" min="0" max="'+pr.total+'" value="'+draft.jn+'"><span>pages</span></label>'
    +'<hr><div class="bh"><div class="lt">Hifdh</div><span class="tag">Cycle</span></div><div class="ld">En combien de jours veux-tu réviser le reste de ce que tu connais ?</div><label class="numf"><input id="dd" type="number" inputmode="numeric" min="1" max="60" value="'+draft.d+'"><span>jours</span></label>'
    +'<div class="pill">'+I.calc+'<span>'+(pr.old.length?'Soit environ <b class="num">'+per+' page'+(per>1?"s":"")+'</b> par jour':'Tout est déjà dans Hifdh al-Jadid')+'</span></div></div>';
+  const DAYS=[[1,"Lun"],[2,"Mar"],[3,"Mer"],[4,"Jeu"],[5,"Ven"],[6,"Sam"],[0,"Dim"]];
+  h+='<div class="card">'+head(I.moon,"Jour off","Les jours où tu ne mémorises et ne révises rien.")+'<div class="days">'+DAYS.map(([n,l])=>'<button class="dy '+(draft.off.includes(n)?"on":"")+'" data-off="'+n+'">'+l+'</button>').join("")+'</div><div class="note" style="margin-top:10px">'+(draft.off.length?draft.off.length+' jour'+(draft.off.length>1?"s":"")+' off par semaine. Le cycle de Hifdh fait une pause ces jours-là.':'Aucun jour off pour l\'instant.')+'</div></div>';
   const A=S[pr.a-1],B=S[pr.b-1],ord=draft.dir==="up"?[B,A]:[A,B];
   h+='<div class="card sum"><div class="ctitle">'+I.chart+'Résumé de ton programme</div>'
-   +[["Sourates",ord[0].t+" → "+ord[1].t],["Pages mémorisées",pr.total+" pages"],["Hizb mémorisés",'<span style="color:var(--acc2)">'+hizb(pr.total)+" hizb</span>"],["Hifdh al-Jadid",pr.jadid.length+" pages/jour"],["Hifdh","~"+per+" pages/jour"],["Total quotidien",'<b style="font-size:20px">~'+(pr.jadid.length+per)+" pages</b>"]]
+   +[["Sourates",ord[0].t+" → "+ord[1].t],["Pages mémorisées",pr.total+" pages"],["Hizb mémorisés",'<span style="color:var(--acc2)">'+hizb(pr.total)+" hizb</span>"],["Hifdh al-Jadid",pr.jadid.length+" pages/jour"],["Hifdh","~"+per+" pages/jour"],["Jour off",draft.off.length?DAYS.filter(([n])=>draft.off.includes(n)).map(([,l])=>l).join(", "):"Aucun"],["Total quotidien",'<b style="font-size:20px">~'+(pr.jadid.length+per)+" pages</b>"]]
      .map(r=>'<div class="sr"><span>'+r[0]+'</span><b class="num">'+r[1]+'</b></div>').join("")+'</div>';
   h+='<div class="card">'+head(I.palette,"Couleur","Choisis le thème de l'app.",1)+'<div class="themes">'+Object.entries(THEMES).map(([k,t])=>'<button class="th '+(st.cfg.c===k?"on":"")+'" data-theme-c="'+k+'"><i style="background:linear-gradient(135deg,'+t.c[0]+','+t.c[1]+')"></i>'+t.n+'</button>').join("")+'</div></div>';
   const ic=st.cfg.icon,link="myhifz.github.io/Myhifz/?icon="+ic;
@@ -182,8 +218,8 @@ function render(){
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
   if(tab==="set"){
     const re=()=>{const y=scrollY;render();scrollTo(0,y)};
-    $("fa").onchange=e=>{draft.a=+e.target.value;re()};
-    $("fb").onchange=e=>{draft.b=+e.target.value;re()};
+    $("fa").onchange=e=>{draft.a=+e.target.value;draft.p1=draft.p2=0;re()};
+    $("fb").onchange=e=>{draft.b=+e.target.value;draft.p1=draft.p2=0;re()};
     $("jn").onchange=e=>{draft.jn=Math.max(0,+e.target.value||0);re()};
     $("dd").onchange=e=>{draft.d=Math.max(1,Math.min(60,+e.target.value||1));re()};
     $("nm").oninput=e=>{draft.name=e.target.value};
@@ -195,23 +231,60 @@ document.addEventListener("click",e=>{
   if(d.tab)go(d.tab);
   else if(d.su){const id=+d.su,k=d.k,on=!dayRec(today())[k].includes(id);mark(k,[id],on);const y=scrollY;render();scrollTo(0,y);
     const x=dayState(today());if(on&&x.tot&&x.done===x.tot)toast("Révision du jour terminée !")}
-  else if(d.all){const x=dayState(today());mark(d.all,(d.all==="sj"?x.Js:x.Os).map(y=>y.s.id),d.on==="1");const y=scrollY;render();scrollTo(0,y)}
+  else if(d.all){const x=dayState(today());mark(d.all,(d.all==="sj"?x.Js:d.all==="so"?x.Os:x.W).map(y=>y.s.id),d.on==="1");const y=scrollY;render();scrollTo(0,y)}
+  else if(d.learn){learn(+d.learn);const y=scrollY;render();scrollTo(0,y)}
+  else if(d.off!==undefined){const n=+d.off,i=draft.off.indexOf(n);if(i<0)draft.off.push(n);else draft.off.splice(i,1);const y=scrollY;render();scrollTo(0,y)}
+  else if(d.read){if(longFired){longFired=false;return}openReader(+d.read,+d.lo)}
+  else if(d.rdgo){rdGo(+d.rdgo)}
+  else if(d.rdclose!==undefined){closeReader()}
   else if(d.dir){draft.dir=d.dir;const y=scrollY;render();scrollTo(0,y)}
   else if(d.icon){st.cfg.icon=d.icon;if(draft)draft.icon=d.icon;save();applyIcon();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="copylink"){const t="https://myhifz.github.io/Myhifz/?icon="+st.cfg.icon;if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>toast("Lien copié"),()=>toast("Copie le lien à la main"));else toast("Copie le lien à la main")}
   else if(d.themeC){st.cfg.c=d.themeC;draft.c=d.themeC;save();applyTheme();const y=scrollY;render();scrollTo(0,y);toast("Thème "+THEMES[d.themeC].n)}
-  else if(d.act==="save"){const old=st.cfg,ch=old.a!==draft.a||old.b!==draft.b||old.dir!==draft.dir||+old.jn!==+draft.jn||+old.d!==+draft.d;
+  else if(d.act==="save"){const old=st.cfg,r=pageRange(draft);draft.p1=r[0];draft.p2=r[1];
+    const ch=pageRange(old)+""!==r+""||old.dir!==draft.dir||+old.jn!==+draft.jn||+old.d!==+draft.d||(old.off||[]).slice().sort()+""!==draft.off.slice().sort()+"";
     st.cfg={...draft,c:st.cfg.c,icon:st.cfg.icon};if(ch||!st.cfg.start)st.cfg.start=today();save();draft=null;toast("Programme enregistré");go("home")}
   else if(d.act==="reset"){if(!resetArm){resetArm=true;const y=scrollY;render();scrollTo(0,y);return}
-    st={log:{},day:{},cfg:{...DEF,c:st.cfg.c}};save();draft=null;resetArm=false;toast("Données effacées");render()}
+    st={log:{},day:{},weak:[],cfg:{...DEF,c:st.cfg.c,icon:st.cfg.icon}};save();draft=null;resetArm=false;toast("Données effacées");render()}
   else if(d.act==="export"){const txt=JSON.stringify(st),ta=$("expt");ta.value=txt;const fb=()=>{ta.hidden=false;ta.select();toast("Sélectionne et copie le texte")};
     if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast("Sauvegarde copiée"),fb);else fb()}
   else if(d.act==="showimp"){$("imp").hidden=false}
   else if(d.act==="import"){try{const v=JSON.parse($("impt").value);if(!v.cfg&&!v.s)throw 0;
-    st={log:v.log||{},day:v.day||{},cfg:Object.assign({...DEF},v.cfg||{})};
+    st={log:v.log||{},day:v.day||{},weak:v.weak||[],cfg:Object.assign({...DEF},v.cfg||{})};
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}
     save();draft=null;applyTheme();toast("Données restaurées");render()}catch(x){toast("Colle la sauvegarde complète")}}
 });
+/* Appui long sur le nom d'une sourate : « à renforcer » */
+let longT=null,longFired=false,longXY=null;
+document.addEventListener("pointerdown",e=>{const b=e.target.closest("[data-read]");if(!b)return;longFired=false;longXY=[e.clientX,e.clientY];
+  longT=setTimeout(()=>{longFired=true;const id=+b.dataset.read,i=st.weak.indexOf(id);if(i<0)st.weak.push(id);else st.weak.splice(i,1);save();
+    if(navigator.vibrate)navigator.vibrate(15);toast(i<0?S[id-1].t+" : à renforcer":S[id-1].t+" : retirée des sourates à renforcer");const y=scrollY;render();scrollTo(0,y)},550)});
+const cancelLong=()=>{clearTimeout(longT);longT=null};
+document.addEventListener("pointerup",cancelLong);document.addEventListener("pointercancel",cancelLong);
+document.addEventListener("pointermove",e=>{if(longT&&longXY&&Math.hypot(e.clientX-longXY[0],e.clientY-longXY[1])>10)cancelLong()});
+document.addEventListener("contextmenu",e=>{if(e.target.closest("[data-read]"))e.preventDefault()});
+
+/* Lecteur : texte uthmani d'une page (api.alquran.cloud), gardé en cache pour le hors-ligne */
+const pageCache={};let rd=null;
+const AR=n=>String(n).replace(/\d/g,c=>"٠١٢٣٤٥٦٧٨٩"[c]);
+function getPage(p){if(pageCache[p])return Promise.resolve(pageCache[p]);
+  return fetch("https://api.alquran.cloud/v1/page/"+p+"/quran-uthmani").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>(pageCache[p]=j.data.ayahs))}
+function openReader(id,p){rd={id,p:p||S[id-1].p};$("reader").hidden=false;document.body.style.overflow="hidden";drawReader()}
+function closeReader(){rd=null;$("reader").hidden=true;document.body.style.overflow=""}
+function rdGo(p){if(!rd||p<1||p>604)return;rd.p=p;drawReader();$("rdbody").scrollTop=0}
+function drawReader(){const p=rd.p,s=S[rd.id-1];
+  $("rdhead").innerHTML='<button class="rdx" data-rdclose aria-label="Fermer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="rdt"><b>'+s.t+'</b><span class="num">Page '+p+'</span></div><span class="ar rda">'+s.a+'</span>';
+  $("rdfoot").innerHTML='<button class="btn" data-rdgo="'+(p+1)+'"'+(p>=604?" disabled":"")+'>‹ Page '+(p+1)+'</button><button class="btn" data-rdgo="'+(p-1)+'"'+(p<=1?" disabled":"")+'>Page '+(p-1)+' ›</button>';
+  $("rdbody").innerHTML='<div class="rdload">Chargement de la page '+p+'…</div>';
+  getPage(p).then(ay=>{if(!rd||rd.p!==p)return;let h="",cur=0;
+    ay.forEach(a=>{const sn=a.surah.number;let t=a.text.replace(/^\ufeff/,"");
+      if(a.numberInSurah===1){h+=(cur?'</p>':'')+'<div class="sh2">'+a.surah.name+'</div>';
+        if(sn!==1&&sn!==9){const w=t.split(" ");if(w[0].indexOf("بِسْمِ")===0||w[0].indexOf("بسم")===0){t=w.slice(4).join(" ");h+='<div class="bsm">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>'}}
+        h+='<p class="qt">';cur=sn}
+      else if(sn!==cur){h+=(cur?'</p>':'')+'<p class="qt">';cur=sn}
+      h+='<span class="'+(sn===rd.id?"":"dim")+'">'+t+' <span class="vn">﴿'+AR(a.numberInSurah)+'﴾</span></span> '});
+    $("rdbody").innerHTML=h+'</p>'}).catch(()=>{if(rd&&rd.p===p)$("rdbody").innerHTML='<div class="rdload">Impossible de charger la page '+p+'. Vérifie ta connexion : une fois ouverte, la page reste disponible hors connexion.</div>'})}
+
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyTheme);
 applyTheme();applyIcon();render();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
