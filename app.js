@@ -400,16 +400,27 @@ const b64e=t=>btoa(unescape(encodeURIComponent(t))),b64d=t=>decodeURIComponent(e
 function ghPayload(){const o=JSON.parse(JSON.stringify(st));if(o.cfg){o.cfg.avatar=st.cfg.sharePhoto&&st.cfg.photo?smallPhoto():"";o.cfg.photo=""}if(o.duo)o.duo={file:o.duo.file,name:o.duo.name};o.app="monhifz";o.saved=new Date().toISOString();return JSON.stringify(o,null,1)}
 function ghApi(path,opt){return fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+path,Object.assign({cache:"no-store"},opt,{headers:{"Authorization":"Bearer "+gh.token,"Accept":"application/vnd.github+json"}}))}
 let ghBusy=false,ghTimer=null,ghAgain=false;
-function ghPush(force){if(!gh.token||!gh.file||!navigator.onLine)return Promise.resolve(false);if(ghBusy){ghAgain=true;return Promise.resolve(false)}ghBusy=true;
-  const put=sha=>ghApi(gh.file,{method:"PUT",keepalive:true,body:JSON.stringify({message:"Sauvegarde auto "+today(),content:b64e(ghPayload()),sha:sha||undefined})});
-  const getSha=()=>ghApi(gh.file).then(r=>r.status===404?"":r.ok?r.json().then(j=>j.sha):Promise.reject(r.status));
-  return (gh.sha?Promise.resolve(gh.sha):getSha()).then(put).then(r=>r.status===409||r.status===422?getSha().then(put):r)
-    .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(j=>{gh.sha=j.content.sha;gh.last=new Date().toISOString();gh.err="";ghSave();st.bk=today();try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){};return true})
-    .catch(e=>{gh.err=e===401||e===403?"Clé refusée : vérifie qu'elle a l'accès « Contents : Read and write » sur Myhifz.":e===404?"Dépôt introuvable : la clé doit donner accès à Myhifz.":"Envoi impossible pour l'instant, nouvel essai plus tard.";ghSave();if(force)toast(gh.err);return false})
+/* Envoi fiable : délai max, nouvel essai automatique, rien n'est perdu tant que ce n'est pas parti */
+let ghRetry=0,ghRetryT=null,ghBusyAt=0;
+function ghPush(force,bg){if(!gh.token||!gh.file)return Promise.resolve(false);
+  if(!navigator.onLine){ghLater();return Promise.resolve(false)}
+  if(ghBusy&&Date.now()-ghBusyAt<25000){ghAgain=true;return Promise.resolve(false)}
+  ghBusy=true;ghBusyAt=Date.now();clearTimeout(ghRetryT);
+  const tm=(p)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej("timeout"),20000))]);
+  const body=()=>JSON.stringify({message:"Sauvegarde auto "+today(),content:b64e(ghPayload())});
+  const put=sha=>{const b=JSON.parse(body());if(sha)b.sha=sha;const txt=JSON.stringify(b);return tm(ghApi(gh.file,{method:"PUT",keepalive:!!bg&&txt.length<60000,body:txt}))};
+  const getSha=()=>tm(ghApi(gh.file+"?t="+Date.now())).then(r=>r.status===404?"":r.ok?r.json().then(j=>j.sha):Promise.reject(r.status));
+  return (gh.sha?Promise.resolve(gh.sha):getSha()).then(put).then(r=>r.status===409||r.status===422?getSha().then(put):r).then(r=>r.status===409?new Promise(z=>setTimeout(z,1200)).then(getSha).then(put):r)
+    .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(j=>{gh.sha=j.content.sha;gh.last=new Date().toISOString();gh.err="";gh.dirty=false;ghRetry=0;ghSave();st.bk=today();try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){};return true})
+    .catch(e=>{const auth=e===401||e===403,miss=e===404;gh.err=auth?"Clé refusée : vérifie qu'elle a l'accès « Contents : Read and write » sur Myhifz.":miss?"Dépôt introuvable : la clé doit donner accès à Myhifz.":"Envoi en attente : nouvel essai automatique.";if(auth||miss)gh.sha="";ghSave();if(!auth&&!miss)ghLater();if(force)toast(gh.err);return false})
     .finally(()=>{ghBusy=false;if(ghAgain){ghAgain=false;ghSchedule()}})}
-function ghSchedule(){if(!gh.token)return;clearTimeout(ghTimer);ghTimer=setTimeout(()=>{ghTimer=null;ghPush()},1500)}
+function ghLater(){clearTimeout(ghRetryT);const w=[4,10,30,60,120][Math.min(ghRetry,4)]*1000;ghRetry++;ghRetryT=setTimeout(()=>{if(gh.dirty)ghPush()},w)}
+function ghSchedule(){if(!gh.token)return;gh.dirty=true;ghSave();clearTimeout(ghTimer);ghTimer=setTimeout(()=>{ghTimer=null;ghPush()},1500)}
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&typeof duoFetch==="function"&&tab==="home")duoFetch()});
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&ghTimer){clearTimeout(ghTimer);ghTimer=null;ghPush()}});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&(ghTimer||gh.dirty)){clearTimeout(ghTimer);ghTimer=null;ghPush(false,true)}
+  else if(document.visibilityState==="visible"&&gh.dirty){ghRetry=0;ghPush()}});
+addEventListener("online",()=>{if(gh.dirty){ghRetry=0;ghPush()}});
+setTimeout(()=>{if(gh.token&&gh.dirty)ghPush()},1500);
 function ghRestore(){if(!gh.token)return;toast("Récupération…");ghApi(gh.file).then(r=>{if(!r.ok)throw r.status;return r.json()}).then(j=>{gh.sha=j.sha;ghSave();const photo=st.cfg.photo;restoreFrom(JSON.parse(b64d(j.content)));if(photo&&!st.cfg.photo){st.cfg.photo=photo;save()}})
   .catch(e=>toast(e===404?"Aucune sauvegarde trouvée sur GitHub":"Récupération impossible"))}
 function ago2(iso){if(!iso)return"jamais";const m=Math.round((Date.now()-new Date(iso))/60000);if(m<1)return"à l'instant";if(m<60)return"il y a "+m+" min";const h=Math.round(m/60);if(h<24)return"il y a "+h+" h";return"il y a "+Math.round(h/24)+" j"}
@@ -452,7 +463,7 @@ function closeRecap(){const s=$("sheet");s.hidden=true;document.body.classList.r
 let duoList=null,duoBusy=false;
 function duoFetch(force){if(!st.duo||duoBusy)return;if(!force&&st.duo.at&&Date.now()-st.duo.at<6e4)return;duoBusy=true;
   fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+st.duo.file+"?t="+Date.now(),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}})
-   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if(tab==="home"||sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})
+   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={saved:d.saved||"",log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if(tab==="home"||sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})
    .catch(e=>{st.duo.err="Impossible de lire la sauvegarde de "+st.duo.name;save()}).finally(()=>{duoBusy=false})}
 let duoListErr="";
 function duoLoadList(){duoListErr="";fetch("https://api.github.com/repos/"+GH_REPO+"/contents/sauvegardes?t="+Date.now(),{cache:"no-store"}).then(r=>{if(r.status===404)return[];if(!r.ok)throw r.status;return r.json()}).then(a=>{duoList=(Array.isArray(a)?a:[]).filter(f=>/\.json$/.test(f.name)&&"sauvegardes/"+f.name!==gh.file).map(f=>({file:f.path,name:f.name.replace(/\.json$/,"").replace(/-/g," ")}));duoList.forEach(f=>fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+f.file,{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.cfg&&d.cfg.name){f.name=d.cfg.name;if(sub==="profile"&&!st.duo){const y=scrollY;render();scrollTo(0,y)}}}).catch(()=>{}));if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}}).catch(e=>{duoList=[];duoListErr=e===403?"GitHub limite les demandes pour l'instant, réessaie dans quelques minutes.":"Impossible de joindre GitHub. Vérifie ta connexion.";if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})}
@@ -461,7 +472,7 @@ function duoCard(){if(!st.duo||!st.duo.data)return"";const o=st.duo.data,me=week
   const sa=me.pages+streakOf(st)*2,sb=him.pages+streakOf(o)*2,lead=sa===sb?"Égalité cette semaine":sa>sb?"Tu mènes cette semaine":nm+" mène cette semaine";
   return'<div class="sect">Défi à deux</div><div class="card duo3"><div class="vhd"><div class="vp"><span class="dp dme">'+(st.cfg.photo?'<img src="'+st.cfg.photo+'" alt="">':esc((st.cfg.name||"M").charAt(0).toUpperCase()))+'</span><b>Toi</b></div><span class="vs">VS</span><div class="vp"><span class="dp dot2">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':esc(nm.charAt(0).toUpperCase()))+'</span><b>'+nm+'</b></div></div>'
    +row("Pages révisées",me.pages,him.pages)+row("Jours de série",streakOf(st),streakOf(o))+row("Jours actifs",me.active,him.active)
-   +'<div class="dlead'+(sa===sb?"":sa>sb?" lme":" lot")+'">'+I.medal+lead+'</div></div>'}
+   +'<div class="dlead'+(sa===sb?"":sa>sb?" lme":" lot")+'">'+I.medal+lead+'</div>'+(o.saved?'<div class="dsync">Dernière activité de '+nm+' : '+ago2(o.saved)+'</div>':'')+'</div>'}
 
 /* ===== Premier lancement ===== */
 let ob=null;
