@@ -9,7 +9,7 @@ const DEF={c:"vert",name:"",a:0,b:0,dir:"up",jn:6,d:3,start:"",icon:"rose",p1:0,
 
 let st={log:{},day:{},weak:[],cfg:{...DEF}}, tab="home", draft=null, resetArm=false;
 try{const v=JSON.parse(localStorage.getItem(KEY)||"null");
-  if(v){st.bk=v.bk||"";st.bkSnooze=v.bkSnooze||"";st.log=v.log||{};st.day=v.day||{};st.weak=v.weak||[];st.tp=v.tp;st.learned=v.learned||[];st.got=v.got;st.gotAt=v.gotAt||{};st.pg=v.pg;st.duo=v.duo||null;st.onb=v.onb;st.recapSeen=v.recapSeen||"";st.cfg=Object.assign({...DEF},v.cfg||{});
+  if(v){st.bk=v.bk||"";st.bkSnooze=v.bkSnooze||"";st.log=v.log||{};st.day=v.day||{};st.weak=v.weak||[];st.tp=v.tp;st.learned=v.learned||[];st.got=v.got;st.gotAt=v.gotAt||{};st.pg=v.pg;st.beg=v.beg||{};st.fin=v.fin||{};st.duo=v.duo||null;st.onb=v.onb;st.recapSeen=v.recapSeen||"";st.cfg=Object.assign({...DEF},v.cfg||{});
     // Ancienne version (cases par sourate) : on reprend la plage cochée
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}}}catch(e){}
 // Icône : celle de l'écran d'accueil vient du lien utilisé à l'installation (?icon=N)
@@ -80,7 +80,10 @@ function mark(kind,ids,on){
   const t=today(),before=dayState(t).done;if(!st.day[t]||!st.day[t].sj)st.day[t]={sj:[],so:[],sw:[]};const d=st.day[t];if(!d.sw)d.sw=[];
   ids.forEach(p=>{const i=d[kind].indexOf(p);if(on&&i<0)d[kind].push(p);if(!on&&i>=0)d[kind].splice(i,1)});
   st.log[t]=d.sj.length+d.so.length+d.sw.length; if(!st.log[t])delete st.log[t];
-  const x=dayState(t);d.full=!!(x.tot&&x.done>=x.tot);st.pg=st.pg||{};if(x.done)st.pg[t]=x.done;else delete st.pg[t];st.tp=Math.max(0,(st.tp||0)+x.done-before);
+  const x=dayState(t);const wasFull=!!d.full;d.full=!!(x.tot&&x.done>=x.tot);
+  st.beg=st.beg||{};st.fin=st.fin||{};const now=new Date().toISOString();
+  if(on&&!st.beg[t])st.beg[t]=now;if(d.full&&!wasFull&&!st.fin[t])st.fin[t]=now;if(!d.full&&st.fin[t]&&!wasFull)delete st.fin[t];
+  [st.beg,st.fin].forEach(o=>Object.keys(o).forEach(k=>{if(diff(t,k)>60)delete o[k]}));st.pg=st.pg||{};if(x.done)st.pg[t]=x.done;else delete st.pg[t];st.tp=Math.max(0,(st.tp||0)+x.done-before);
   Object.keys(st.day).forEach(k=>{if(diff(t,k)>40)delete st.day[k]});
   save();checkBadges()}
 
@@ -131,6 +134,7 @@ const I={
  lock:D(22,'<rect x="5" y="10.5" width="14" height="10" rx="3"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>','<rect x="5" y="10.5" width="14" height="10" rx="3"/>'),
  cam:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.7l1.3-2h5l1.3 2h1.7A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><circle cx="12" cy="12.5" r="3.3"/></svg>',
  git:D(24,'<circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="9" r="2.2"/><path d="M6 8.2v7.6M18 11.2c0 3.5-3.5 4.3-9.8 5.6"/>'),
+ bolt:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2.5L5 13.5h6l-1 8 8.5-11h-6z"/></svg>',
  check:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
 };
 
@@ -374,7 +378,7 @@ function vMoi(){
   h+='<div class="sect">Mon parcours</div><div class="card"><div class="fl" style="margin-top:0">Date de début du hifdh</div><input class="field" id="hst" type="date" max="'+today()+'" value="'+hs+'"><div class="note" style="margin-top:8px">Début le '+fmtShort(hs)+' · il y a '+since(hs)+'.</div></div>';
   return h}
 function restoreFrom(v){if(!v||(!v.cfg&&!v.s))throw 0;
-    const keep={bk:[st.bk,v.saved,v.bk].filter(Boolean).sort().pop()||""};st={log:v.log||{},day:v.day||{},weak:v.weak||[],tp:v.tp||0,learned:v.learned||[],got:v.got,gotAt:v.gotAt||{},pg:v.pg||{},duo:v.duo||null,onb:1,cfg:Object.assign({...DEF},v.cfg||{})};
+    const keep={bk:[st.bk,v.saved,v.bk].filter(Boolean).sort().pop()||""};st={log:v.log||{},day:v.day||{},weak:v.weak||[],tp:v.tp||0,learned:v.learned||[],got:v.got,gotAt:v.gotAt||{},pg:v.pg||{},beg:v.beg||{},fin:v.fin||{},duo:v.duo||null,onb:1,cfg:Object.assign({...DEF},v.cfg||{})};
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}
     if(ICONS[URL_ICON])st.cfg.icon=URL_ICON;if(!ICONS[st.cfg.icon])st.cfg.icon="rose";
     Object.assign(st,keep);save();draft=null;applyTheme();applyIcon();toast("Données restaurées");render()}
@@ -463,15 +467,27 @@ function closeRecap(){const s=$("sheet");s.hidden=true;document.body.classList.r
 let duoList=null,duoBusy=false;
 function duoFetch(force){if(!st.duo||duoBusy)return;if(!force&&st.duo.at&&Date.now()-st.duo.at<6e4)return;duoBusy=true;
   fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+st.duo.file+"?t="+Date.now(),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}})
-   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={saved:d.saved||"",log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if(tab==="home"||sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})
+   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={saved:d.saved||"",beg:d.beg||{},fin:d.fin||{},log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if(tab==="home"||sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})
    .catch(e=>{st.duo.err="Impossible de lire la sauvegarde de "+st.duo.name;save()}).finally(()=>{duoBusy=false})}
 let duoListErr="";
 function duoLoadList(){duoListErr="";fetch("https://api.github.com/repos/"+GH_REPO+"/contents/sauvegardes?t="+Date.now(),{cache:"no-store"}).then(r=>{if(r.status===404)return[];if(!r.ok)throw r.status;return r.json()}).then(a=>{duoList=(Array.isArray(a)?a:[]).filter(f=>/\.json$/.test(f.name)&&"sauvegardes/"+f.name!==gh.file).map(f=>({file:f.path,name:f.name.replace(/\.json$/,"").replace(/-/g," ")}));duoList.forEach(f=>fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+f.file,{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.cfg&&d.cfg.name){f.name=d.cfg.name;if(sub==="profile"&&!st.duo){const y=scrollY;render();scrollTo(0,y)}}}).catch(()=>{}));if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}}).catch(e=>{duoList=[];duoListErr=e===403?"GitHub limite les demandes pour l'instant, réessaie dans quelques minutes.":"Impossible de joindre GitHub. Vérifie ta connexion.";if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})}
+const hm=iso=>{const d=new Date(iso);return d.getHours()+" h "+pad(d.getMinutes())};
+function durMin(o,day){const b=(o.beg||{})[day],f=(o.fin||{})[day];if(!b||!f)return null;return Math.max(1,Math.round((new Date(f)-new Date(b))/60000))}
+const fmtDur=m=>m<60?m+" min":Math.floor(m/60)+" h "+pad(m%60);
+function fastWins(a,b){let wa=0,wb=0;for(let k=0;k<7;k++){const day=addDays(today(),-k),fa=(a.fin||{})[day],fb=(b.fin||{})[day];if(!fa&&!fb)continue;
+  if(fa&&!fb){wa++;continue}if(fb&&!fa){wb++;continue}if(fa<fb)wa++;else if(fb<fa)wb++}return[wa,wb]}
+function todayRace(o,nm){const t=today(),fa=(st.fin||{})[t],fb=(o.fin||{})[t],da=durMin(st,t),db=durMin(o,t);
+  const who=(f,d)=>f?"fini à "+hm(f)+(d!==null?" en "+fmtDur(d):""):"pas encore fini";
+  let title;if(!fa&&!fb)title="Personne n'a encore fini aujourd'hui";
+  else if(fa&&!fb)title="Tu as fini en premier aujourd'hui";else if(fb&&!fa)title=nm+" a fini en première aujourd'hui";
+  else title=fa<fb?"Tu as fini en premier aujourd'hui":nm+" a fini en première aujourd'hui";
+  return'<div class="race"><div class="rt">'+I.bolt+'<b>'+title+'</b></div><div class="rl"><span><i class="dme"></i>Toi : '+who(fa,da)+'</span><span><i class="dot2"></i>'+nm+' : '+who(fb,db)+'</span></div></div>'}
 function duoCard(){if(!st.duo||!st.duo.data)return"";const o=st.duo.data,me=weekOf(st),him=weekOf(o),nm=esc(o.cfg.name||st.duo.name);
   const row=(lab,a,b)=>{const m=Math.max(1,a,b),wa=a/m*100,wb=b/m*100;return'<div class="vr"><b class="num va'+(a>b?" win":"")+'">'+a+'</b><div class="vbar"><span class="vl"><i style="--w:'+wa+'%"></i></span><span class="vlab">'+lab+'</span><span class="vrt"><i style="--w:'+wb+'%"></i></span></div><b class="num vb'+(b>a?" win":"")+'">'+b+'</b></div>'};
-  const sa=me.pages+streakOf(st)*2,sb=him.pages+streakOf(o)*2,lead=sa===sb?"Égalité cette semaine":sa>sb?"Tu mènes cette semaine":nm+" mène cette semaine";
+  const fw=fastWins(st,o),sa=me.pages+streakOf(st)*2+fw[0]*3,sb=him.pages+streakOf(o)*2+fw[1]*3,lead=sa===sb?"Égalité cette semaine":sa>sb?"Tu mènes cette semaine":nm+" mène cette semaine";
   return'<div class="sect">Défi à deux</div><div class="card duo3"><div class="vhd"><div class="vp"><span class="dp dme">'+(st.cfg.photo?'<img src="'+st.cfg.photo+'" alt="">':esc((st.cfg.name||"M").charAt(0).toUpperCase()))+'</span><b>Toi</b></div><span class="vs">VS</span><div class="vp"><span class="dp dot2">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':esc(nm.charAt(0).toUpperCase()))+'</span><b>'+nm+'</b></div></div>'
-   +row("Pages révisées",me.pages,him.pages)+row("Jours de série",streakOf(st),streakOf(o))+row("Jours actifs",me.active,him.active)
+   +todayRace(o,nm)
+   +row("Pages révisées",me.pages,him.pages)+(()=>{const[fa,fb]=fastWins(st,o);return row("Premier à finir",fa,fb)})()+row("Jours de série",streakOf(st),streakOf(o))+row("Jours actifs",me.active,him.active)
    +'<div class="dlead'+(sa===sb?"":sa>sb?" lme":" lot")+'">'+I.medal+lead+'</div>'+(o.saved?'<div class="dsync">Dernière activité de '+nm+' : '+ago2(o.saved)+'</div>':'')+'</div>'}
 
 /* ===== Premier lancement ===== */
@@ -620,7 +636,7 @@ document.addEventListener("click",e=>{
   else if(d.act==="sharephoto"){st.cfg.sharePhoto=!st.cfg.sharePhoto;save();clearTimeout(ghTimer);ghPush();toast(st.cfg.sharePhoto?"Ta photo sera visible dans le défi":"Ta photo n'est plus partagée");const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="nophoto"){st.cfg.photo="";save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="reset"){if(!resetArm){resetArm=true;const y=scrollY;render();scrollTo(0,y);return}
-    st={log:{},day:{},weak:[],tp:0,learned:[],got:[],gotAt:{},pg:{},cfg:{...DEF,c:st.cfg.c,icon:st.cfg.icon,mode:st.cfg.mode}};save();draft=null;resetArm=false;toast("Données effacées");render()}
+    st={log:{},day:{},weak:[],tp:0,learned:[],got:[],gotAt:{},pg:{},beg:{},fin:{},cfg:{...DEF,c:st.cfg.c,icon:st.cfg.icon,mode:st.cfg.mode}};save();draft=null;resetArm=false;toast("Données effacées");render()}
   else if(d.act==="export"){const txt=JSON.stringify(st),ta=$("expt");ta.value=txt;const fb=()=>{ta.hidden=false;ta.select();toast("Sélectionne et copie le texte")};
     if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast("Sauvegarde copiée"),fb);else fb()}
   else if(d.act==="showimp"){$("imp").hidden=false}
