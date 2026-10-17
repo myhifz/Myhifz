@@ -267,11 +267,11 @@ function vMoi(){
   h+='<div class="sect">Mes chiffres</div><div class="kp"><div class="card"><b class="num">'+Math.round(st.tp||0)+'</b><span>pages révisées</span></div><div class="card"><b class="num">'+Object.keys(st.log).length+'</b><span>jours actifs</span></div><div class="card"><b class="num">'+record()+'</b><span>meilleure série</span></div><div class="card"><b class="num">'+pace28().toFixed(1).replace(".",",").replace(",0","")+'</b><span>pages apprises / semaine</span></div></div>';
   /* Mon objectif */
   const gi=goalInfo(),up=c.dir==="up";
-  const opts=pr?S.filter(s=>up?s.id<pr.a:s.id>pr.b):[];if(up)opts.reverse();
+  const opts=pr?S.filter(s=>(up?s.id<pr.a:s.id>pr.b)||s.id===+c.goal):[];if(up)opts.reverse();
   h+='<div class="sect">Mon objectif</div><div class="card goal">';
   if(!pr)h+='<p class="note">Configure d\'abord ton programme.</p>';
   else{h+='<div class="fl">Mémoriser jusqu\'à</div><label class="pick"><span class="pt"><b>'+(c.goal&&S[c.goal-1]?S[c.goal-1].t:"Aucun objectif")+'</b>'+(c.goal&&S[c.goal-1]?'<span class="ar">'+S[c.goal-1].a+'</span>':'')+'</span>'+I.chev+'<select id="gsel" aria-label="Objectif"><option value="0">Aucun objectif</option>'+opts.map(s=>'<option value="'+s.id+'"'+(+c.goal===s.id?" selected":"")+'>'+s.id+'. '+s.t+'</option>').join("")+'</select></label>'
-    +'<div class="fl">Mon rythme visé</div><label class="numf"><input id="gpace" type="number" inputmode="decimal" min="0.25" max="50" step="0.5" value="'+(c.pace||2)+'"><span>pages / semaine</span></label>';
+    +'<div class="fl">Mon rythme visé</div><label class="numf"><input id="gpace" type="text" inputmode="decimal" value="'+String(c.pace||2).replace(".",",")+'"><span>pages / semaine</span></label>';
     if(gi&&gi.done)h+='<div class="gres ok">'+I.check+'<span>Objectif atteint, ma sha Allah ! Choisis le suivant.</span></div>';
     else if(gi)h+='<div class="gres"><div class="gbig"><b class="num">'+gi.rem+'</b> pages restantes</div><div>Arrivée prévue vers le <b>'+fmtShort(gi.eta)+'</b></div><div class="gst '+(gi.act===0?"":gi.ahead?"up":"down")+'">'+(gi.act===0?"Ajoute tes nouvelles pages avec le bouton + de l'accueil pour suivre ton rythme.":gi.ahead?"Dans les temps : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.":"Un peu en retard : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.")+'</div></div>'}
   h+='</div>';
@@ -297,7 +297,7 @@ function vSet(){
     h+='<div class="card">'+head(I.moon,"Jour off","Les jours où tu ne mémorises et ne révises rien.")+'<div class="days">'+DAYS.map(([n,l])=>'<button class="dy '+(draft.off.includes(n)?"on":"")+'" data-off="'+n+'">'+l+'</button>').join("")+'</div><div class="note" style="margin-top:10px">'+(draft.off.length?draft.off.length+' jour'+(draft.off.length>1?"s":"")+' off par semaine. Le cycle de Hifdh fait une pause ces jours-là.':'Aucun jour off pour l\'instant.')+'</div></div>';
     const A=S[pr.a-1],B=S[pr.b-1],ord=draft.dir==="up"?[B,A]:[A,B];
     h+='<div class="card sum" id="sumc"><div class="ctitle">'+I.chart+'Résumé de ton programme</div>'
-     +[["Sourates",ord[0].t+" → "+ord[1].t],["Pages mémorisées",pr.total+" pages"],["Hizb mémorisés",'<span style="color:var(--acc2)">'+hizb(pr.total)+" hizb</span>"],["Hifdh al-Jadid",pr.jadid.length+" pages/jour"],["Hifdh","~"+per+" pages/jour"],["Jour off",draft.off.length?DAYS.filter(([n])=>draft.off.includes(n)).map(([,l])=>l).join(", "):"Aucun"],["Total quotidien",'<b style="font-size:20px">~'+(pr.jadid.length+per)+" pages</b>"]]
+     +[["Sourates",ord[0].t+" → "+ord[1].t],["Pages mémorisées",pr.total+" pages"],["Hizb mémorisés",'<span style="color:var(--acc2-ink)">'+hizb(pr.total)+" hizb</span>"],["Hifdh al-Jadid",pr.jadid.length+" pages/jour"],["Hifdh","~"+per+" pages/jour"],["Jour off",draft.off.length?DAYS.filter(([n])=>draft.off.includes(n)).map(([,l])=>l).join(", "):"Aucun"],["Total quotidien",'<b style="font-size:20px">~'+(pr.jadid.length+per)+" pages</b>"]]
        .map(r=>'<div class="sr"><span>'+r[0]+'</span><b class="num">'+r[1]+'</b></div>').join("")+'</div>';
     return h+saveBar()}
   if(sub==="look"){
@@ -337,7 +337,7 @@ function render(){
     if($("dd"))$("dd").oninput=e=>{draft.d=Math.max(1,Math.min(60,+e.target.value||1));upd()};
     if($("nm"))$("nm").oninput=e=>{st.cfg.name=e.target.value;save()};
     if($("gsel"))$("gsel").onchange=e=>{st.cfg.goal=+e.target.value;save();re()};
-    if($("gpace"))$("gpace").onchange=e=>{st.cfg.pace=Math.max(.25,Math.min(50,+String(e.target.value).replace(",",".")||2));save();re()};
+    if($("gpace"))$("gpace").onchange=e=>{const v=parseFloat(String(e.target.value).replace(",","."));st.cfg.pace=isFinite(v)&&v>0?Math.max(.25,Math.min(50,v)):2;save();re()};
     if($("hst"))$("hst").onchange=e=>{if(e.target.value&&e.target.value<=today()){st.cfg.hstart=e.target.value;save();re()}};
   }}
 function go(t){draft=null;resetArm=false;sub=null;tab=t;try{localStorage.setItem(KEY+"-tab",t)}catch(e){}render();scrollTo(0,0)}
@@ -362,7 +362,7 @@ document.addEventListener("click",e=>{
   else if(d.themeC){st.cfg.c=d.themeC;draft.c=d.themeC;save();applyTheme();const y=scrollY;render();scrollTo(0,y);toast("Thème "+THEMES[d.themeC].n)}
   else if(d.act==="save"){const old=st.cfg,r=pageRange(draft);draft.p1=r[0];draft.p2=r[1];
     const ch=pageRange(old)+""!==r+""||old.dir!==draft.dir||+old.jn!==+draft.jn||+old.d!==+draft.d||(old.off||[]).slice().sort()+""!==draft.off.slice().sort()+"";
-    const first=!st.cfg.start;st.cfg={...draft,c:st.cfg.c,icon:st.cfg.icon,name:st.cfg.name};if(ch||first)st.cfg.start=today();save();draft=null;toast("Programme enregistré");
+    const first=!st.cfg.start;if(old.dir!==draft.dir)draft.goal=0;st.cfg={...draft,c:st.cfg.c,icon:st.cfg.icon,name:st.cfg.name};if(ch||first)st.cfg.start=today();save();draft=null;toast("Programme enregistré");
     if(first)go("home");else{sub=null;render();scrollTo(0,0)}}
   else if(d.act==="reset"){if(!resetArm){resetArm=true;const y=scrollY;render();scrollTo(0,y);return}
     st={log:{},day:{},weak:[],tp:0,learned:[],got:[],cfg:{...DEF,c:st.cfg.c,icon:st.cfg.icon}};save();draft=null;resetArm=false;toast("Données effacées");render()}
