@@ -198,6 +198,16 @@ hr{border:0;border-top:1px solid var(--line);margin:22px 0 18px}
 .su.on .sc{background:var(--acc);border-color:var(--acc)}
 .blk.o .su.on{border-color:var(--acc2);background:var(--acc2-soft)}
 .blk.o .su.on .sc{background:var(--acc2);border-color:var(--acc2)}
+.logo{overflow:hidden;padding:0}
+.logo img{width:100%;height:100%;display:block;object-fit:cover}
+.icons{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+.ico{border:3px solid transparent;background:none;border-radius:26%;padding:3px}
+.ico img{width:100%;display:block;border-radius:22%;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.ico.on{border-color:var(--acc)}
+.howto{background:var(--tint);border-radius:18px;padding:14px 16px;margin-top:16px;font-size:15px}
+.howto ol{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.lk{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+.lk span{font-weight:700;word-break:break-all;flex:1;min-width:0}
 /* Barre du bas */
 nav{position:fixed;left:max(14px,env(safe-area-inset-left,0px));right:max(14px,env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));max-width:540px;margin:0 auto;background:color-mix(in srgb,var(--card) 88%,transparent);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-radius:30px;display:flex;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.12);z-index:5}
 nav button{flex:1;border:0;background:none;border-radius:24px;padding:8px 2px 7px;font-size:12px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px}

@@ -5,13 +5,19 @@ S.forEach((x,i)=>{x.e=i===113?604:Math.max(x.p,S[i+1].p-1)});
 const PAGES=604, PER_HIZB=PAGES/60;
 const KEY="murajaa-v1";
 const THEMES={vert:{n:"Vert",c:["#1F5A47","#6DBB9C"],tc:"#F2F4F0"},rose:{n:"Rose",c:["#B23F6E","#F09DBD"],tc:"#FBF2F5"},marine:{n:"Bleu marine",c:["#26467A","#7FA3D8"],tc:"#F1F4F9"}};
-const DEF={c:"vert",name:"",a:0,b:0,dir:"up",jn:6,d:3,start:""};
+const DEF={c:"vert",name:"",a:0,b:0,dir:"up",jn:6,d:3,start:"",icon:4};
 
 let st={log:{},day:{},cfg:{...DEF}}, tab="home", draft=null, resetArm=false;
 try{const v=JSON.parse(localStorage.getItem(KEY)||"null");
   if(v){st.log=v.log||{};st.day=v.day||{};st.cfg=Object.assign({...DEF},v.cfg||{});
     // Ancienne version (cases par sourate) : on reprend la plage cochée
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}}}catch(e){}
+// Icône : celle de l'écran d'accueil vient du lien utilisé à l'installation (?icon=N)
+const URL_ICON=+(new URLSearchParams(location.search).get("icon"))||0;
+const INSTALLED_ICON=URL_ICON>=1&&URL_ICON<=6?URL_ICON:4;
+if(URL_ICON>=1&&URL_ICON<=6)st.cfg.icon=URL_ICON;
+function applyIcon(){const n=st.cfg.icon||4;document.querySelectorAll('link[rel="apple-touch-icon"],link[rel="icon"]').forEach(l=>l.href="icons/icon"+n+".png")}
+const logo=()=>'<div class="logo"><img src="icons/icon'+(st.cfg.icon||4)+'.png" alt=""></div>';
 try{const t=localStorage.getItem(KEY+"-tab");if(["home","rev","plan","set"].includes(t))tab=t}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
 
@@ -98,7 +104,7 @@ function needSetup(){return'<div class="card empty"><div class="ar">بسم ال�
 
 function vHome(){
   const name=st.cfg.name.trim(),x=dayState(today());
-  let h='<div class="hello"><div class="logo">'+I.logo+'</div><div class="txt"><h1>Salam Aleykoum'+(name?", "+esc(name):"")+'</h1><div class="sub">'+fmtDay(today())+'</div></div><div class="fire">'+I.flame+'<span class="num">'+streak()+'</span></div></div>';
+  let h='<div class="hello">'+logo()+'<div class="txt"><h1>Salam Aleykoum'+(name?", "+esc(name):"")+'</h1><div class="sub">'+fmtDay(today())+'</div></div><div class="fire">'+I.flame+'<span class="num">'+streak()+'</span></div></div>';
   if(!x.pr)return h+needSetup();
   const left=x.tot-x.done,pct=x.tot?Math.round(x.done/x.tot*100):100;
   const msg=left?["En cours","Continue sur ta lancée ! Il te reste "+left+" page"+(left>1?"s":"")+" à réviser aujourd'hui."]:["Terminé","Ma sha Allah, ta révision du jour est faite."];
@@ -147,7 +153,7 @@ function head(icon,t,s,soft){return'<div class="sh"><div class="si'+(soft?" s2":
 function vSet(){
   if(!draft)draft={...st.cfg,a:st.cfg.a||78,b:st.cfg.b||114};
   const pr=program(draft),per=pr&&pr.old.length?pr.k:0;
-  let h='<div class="hello"><div class="logo">'+I.logo+'</div><div class="txt"><h1>Réglages</h1><div class="sub">Configure ta méthode de révision</div></div></div>';
+  let h='<div class="hello">'+logo()+'<div class="txt"><h1>Réglages</h1><div class="sub">Configure ta méthode de révision</div></div></div>';
   h+='<div class="card">'+head(I.book,"Sourates mémorisées","De quelle sourate à quelle sourate connais-tu ?")+'<div class="fl">De :</div>'+sel("fa",draft.a)+'<div class="fl">À :</div>'+sel("fb",draft.b)+'<div class="pill">'+I.doc+'<span class="num">'+pr.total+' pages · '+hizb(pr.total)+' hizb</span></div></div>';
   h+='<div class="card">'+head(I.dir,"Sens d'apprentissage","Dans quel sens as-tu mémorisé ?")+'<div class="seg"><button class="'+(draft.dir==="down"?"on":"")+'" data-dir="down"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 4v16M6 14l6 6 6-6"/></svg>Al-Fatiha → An-Nas</button><button class="'+(draft.dir==="up"?"on":"")+'" data-dir="up"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 20V4M6 10l6-6 6 6"/></svg>An-Nas → Al-Fatiha</button></div></div>';
   h+='<div class="card">'+head(I.loop,"Boucles de révision","Comment veux-tu répartir tes révisions ?")
@@ -159,6 +165,9 @@ function vSet(){
    +[["Sourates",ord[0].t+" → "+ord[1].t],["Pages mémorisées",pr.total+" pages"],["Hizb mémorisés",'<span style="color:var(--acc2)">'+hizb(pr.total)+" hizb</span>"],["Hifdh al-Jadid",pr.jadid.length+" pages/jour"],["Hifdh","~"+per+" pages/jour"],["Total quotidien",'<b style="font-size:20px">~'+(pr.jadid.length+per)+" pages</b>"]]
      .map(r=>'<div class="sr"><span>'+r[0]+'</span><b class="num">'+r[1]+'</b></div>').join("")+'</div>';
   h+='<div class="card">'+head(I.palette,"Couleur","Choisis le thème de l'app.",1)+'<div class="themes">'+Object.entries(THEMES).map(([k,t])=>'<button class="th '+(st.cfg.c===k?"on":"")+'" data-theme-c="'+k+'"><i style="background:linear-gradient(135deg,'+t.c[0]+','+t.c[1]+')"></i>'+t.n+'</button>').join("")+'</div></div>';
+  const ic=st.cfg.icon||4,link="myhifz.github.io/Myhifz/?icon="+ic;
+  h+='<div class="card">'+head(I.book,"Icône de l'app","Choisis le logo de ton écran d'accueil.",1)+'<div class="icons">'+[1,2,3,4,5,6].map(n=>'<button class="ico '+(ic===n?"on":"")+'" data-icon="'+n+'" aria-label="Icône '+n+'"><img src="icons/icon'+n+'.png" alt=""></button>').join("")+'</div>'
+   +(ic!==INSTALLED_ICON?'<div class="howto"><b>Pour l\'avoir sur ton écran d\'accueil :</b><ol><li>Copie ta sauvegarde (plus bas).</li><li>Supprime l\'icône actuelle de l\'écran d\'accueil.</li><li>Ouvre ce lien dans Safari :<div class="lk"><span class="num">'+link+'</span><button class="btn" data-act="copylink">Copier</button></div></li><li>Partager → « Sur l\'écran d\'accueil ».</li><li>Ouvre l\'app, Réglages → Restaurer.</li></ol></div>':'')+'</div>';
   h+='<div class="card">'+head(I.user,"Ton prénom","Affiché sur l'accueil (facultatif).",1)+'<input class="field" id="nm" type="text" maxlength="24" autocomplete="given-name" placeholder="Prénom" value="'+esc(draft.name)+'"></div>';
   h+='<div class="card">'+head(I.cloud,"Sauvegarde","Tes données restent sur ce téléphone. Garde une copie dans tes notes.",1)+'<div class="chips" style="margin-top:14px"><button class="btn pri" data-act="export">Copier la sauvegarde</button><button class="btn" data-act="showimp">Restaurer</button></div><div id="imp" hidden><textarea id="impt" placeholder="Colle ta sauvegarde ici"></textarea><div class="chips" style="margin-top:10px"><button class="btn pri" data-act="import">Restaurer ces données</button></div></div><textarea id="expt" hidden readonly></textarea></div>';
   h+='<button class="reset" data-act="reset">'+I.trash+(resetArm?"Touche encore pour tout effacer":"Réinitialiser toutes les données")+'</button>';
@@ -186,9 +195,11 @@ document.addEventListener("click",e=>{
     const x=dayState(today());if(on&&x.tot&&x.done===x.tot)toast("Révision du jour terminée !")}
   else if(d.all){const x=dayState(today());mark(d.all,(d.all==="sj"?x.Js:x.Os).map(y=>y.s.id),d.on==="1");const y=scrollY;render();scrollTo(0,y)}
   else if(d.dir){draft.dir=d.dir;const y=scrollY;render();scrollTo(0,y)}
+  else if(d.icon){st.cfg.icon=+d.icon;if(draft)draft.icon=+d.icon;save();applyIcon();const y=scrollY;render();scrollTo(0,y)}
+  else if(d.act==="copylink"){const t="https://myhifz.github.io/Myhifz/?icon="+(st.cfg.icon||4);if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>toast("Lien copié"),()=>toast("Copie le lien à la main"));else toast("Copie le lien à la main")}
   else if(d.themeC){st.cfg.c=d.themeC;draft.c=d.themeC;save();applyTheme();const y=scrollY;render();scrollTo(0,y);toast("Thème "+THEMES[d.themeC].n)}
   else if(d.act==="save"){const old=st.cfg,ch=old.a!==draft.a||old.b!==draft.b||old.dir!==draft.dir||+old.jn!==+draft.jn||+old.d!==+draft.d;
-    st.cfg={...draft,c:st.cfg.c};if(ch||!st.cfg.start)st.cfg.start=today();save();draft=null;toast("Programme enregistré");go("home")}
+    st.cfg={...draft,c:st.cfg.c,icon:st.cfg.icon};if(ch||!st.cfg.start)st.cfg.start=today();save();draft=null;toast("Programme enregistré");go("home")}
   else if(d.act==="reset"){if(!resetArm){resetArm=true;const y=scrollY;render();scrollTo(0,y);return}
     st={log:{},day:{},cfg:{...DEF,c:st.cfg.c}};save();draft=null;resetArm=false;toast("Données effacées");render()}
   else if(d.act==="export"){const txt=JSON.stringify(st),ta=$("expt");ta.value=txt;const fb=()=>{ta.hidden=false;ta.select();toast("Sélectionne et copie le texte")};
@@ -200,5 +211,5 @@ document.addEventListener("click",e=>{
     save();draft=null;applyTheme();toast("Données restaurées");render()}catch(x){toast("Colle la sauvegarde complète")}}
 });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyTheme);
-applyTheme();render();
+applyTheme();applyIcon();render();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
