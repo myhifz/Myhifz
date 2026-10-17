@@ -344,12 +344,6 @@ function vMoi(){
   const c=st.cfg,pr=program(c),name=c.name.trim(),hs=c.hstart||firstDay(),bs=badges(),nOk=bs.filter(b=>b.ok).length;
   let h=subHead("Moi");
   h+='<div class="card me"><label class="av'+(c.photo?" ph":"")+'" aria-label="Changer la photo de profil">'+(c.photo?'<img src="'+c.photo+'" alt="">':(name?esc(name.charAt(0).toUpperCase()):I.user))+'<span class="avcam">'+I.cam+'</span><input type="file" id="photo" accept="image/*" class="vh"></label>'+(c.photo?'<button class="linkb" data-act="nophoto">Retirer la photo</button>':'<span class="note">Touche le rond pour ajouter une photo</span>')+'</div><div class="card me2"><input class="field" id="nm" type="text" maxlength="24" autocomplete="given-name" placeholder="Ton prénom" value="'+esc(c.name)+'"><div class="note" style="text-align:center">En hifdh depuis '+since(hs)+(pr?' · '+pr.total+' pages mémorisées':'')+'</div></div>';
-  /* Mes chiffres */
-  h+='<div class="sect">Mes chiffres</div><div class="kp"><div class="card"><b class="num">'+Math.round(st.tp||0)+'</b><span>pages révisées</span></div><div class="card"><b class="num">'+Object.keys(st.log).length+'</b><span>jours actifs</span></div><div class="card"><b class="num">'+record()+'</b><span>meilleure série</span></div><div class="card"><b class="num">'+pace28().toFixed(1).replace(".",",").replace(",0","")+'</b><span>pages apprises / semaine</span></div></div>';
-  /* Carte du Coran */
-  h+='<div class="sect">Ma carte du Coran</div><div class="card jzc">'+juzMap()+'</div>';
-  /* Historique */
-  h+='<div class="sect">Mon historique</div><div class="card">'+histChart()+'</div>';
   /* Mon objectif */
   const gi=goalInfo(),up=c.dir==="up";
   const opts=pr?S.filter(s=>(up?s.id<pr.a:s.id>pr.b)||s.id===+c.goal):[];if(up)opts.reverse();
@@ -360,6 +354,12 @@ function vMoi(){
     if(gi&&gi.done)h+='<div class="gres ok">'+I.check+'<span>Objectif atteint ! Choisis le suivant.</span></div>';
     else if(gi)h+='<div class="gres"><div class="gbig"><b class="num">'+gi.rem+'</b> pages restantes</div><div>Arrivée prévue vers le <b>'+fmtShort(gi.eta)+'</b></div><div class="gst '+(gi.act===0?"":gi.ahead?"up":"down")+'">'+(gi.act===0?"Ajoute tes nouvelles pages avec le bouton + de l'accueil pour suivre ton rythme.":gi.ahead?"Dans les temps : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.":"Un peu en retard : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.")+'</div></div>'}
   h+='</div>';
+  /* Mes chiffres */
+  h+='<div class="sect">Mes chiffres</div><div class="kp"><div class="card"><b class="num">'+Math.round(st.tp||0)+'</b><span>pages révisées</span></div><div class="card"><b class="num">'+Object.keys(st.log).length+'</b><span>jours actifs</span></div><div class="card"><b class="num">'+record()+'</b><span>meilleure série</span></div><div class="card"><b class="num">'+pace28().toFixed(1).replace(".",",").replace(",0","")+'</b><span>pages apprises / semaine</span></div></div>';
+  /* Carte du Coran */
+  h+='<div class="sect">Ma carte du Coran</div><div class="card jzc">'+juzMap()+'</div>';
+  /* Historique */
+  h+='<div class="sect">Mon historique</div><div class="card">'+histChart()+'</div>';
   /* Défi à deux */
   h+='<div class="sect">Défi à deux</div><div class="card">';
   if(!gh.token)h+='<p class="note" style="margin:0">Pour faire un défi, active d\'abord la sauvegarde automatique GitHub (Réglages → Sauvegarde et restauration). Ton proche doit faire pareil sur son téléphone.</p>';
