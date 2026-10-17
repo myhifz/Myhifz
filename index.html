@@ -15,11 +15,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Amiri+Quran&family=Figtree:wght@400;500;600;700;800&display=swap">
 <style>
+@font-face{font-family:"Medine";src:url("https://cdn.jsdelivr.net/npm/kfgqpc-uthmanic-script-hafs-regular@1.0.0/arabic.otf") format("opentype");font-display:swap}
 /* Thèmes : une couleur principale + une couleur secondaire assortie (fonds neutres, pas teintés) */
 :root{
   --card:#FFFFFF; --ink:#1D1F22; --muted:#6B6F76; --hard:#B04A3E; --hard-soft:#F6E1DD;
   --on-acc:#fff; --on-acc2:#fff; --on-h:#fff;
-  --ar:"Amiri","Noto Naskh Arabic","Geeza Pro",serif;
+  --ar:"Medine","Amiri","Noto Naskh Arabic","Geeza Pro",serif;
   --ui:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
   /* Vert + or */
   --paper:#F4F5F1; --tint:#ECEEE9; --line:#E2E5DE;
@@ -199,7 +200,7 @@ hr{border:0;border-top:1px solid var(--line);margin:22px 0 18px}
 .su .sn{flex:1;min-width:0;display:flex;flex-direction:column}
 .su .sn b{font-size:16px}
 .su .sn span{font-size:13px;color:var(--muted)}
-.su .ar{font-size:21px;line-height:1.2}
+.su .ar{font-size:24px;line-height:1.3}
 .su.on{border-color:var(--acc);background:var(--acc-soft)}
 .su.on .sc{background:var(--acc);border-color:var(--acc)}
 .logo{overflow:hidden;padding:0}
@@ -240,8 +241,8 @@ hr{border:0;border-top:1px solid var(--line);margin:22px 0 18px}
 .qt{font-family:"Amiri Quran","Amiri",serif;direction:rtl;text-align:justify;font-size:25px;line-height:2.25;margin:0 0 10px}
 .qt .dim{opacity:.38}
 .vn{color:var(--acc);font-size:.85em;white-space:nowrap}
-.sh2{font-family:"Amiri",serif;text-align:center;font-size:22px;font-weight:700;color:var(--acc);border:1.5px solid var(--acc2);border-radius:14px;padding:4px 0;margin:10px 0 6px;background:var(--acc2-soft)}
-.bsm{font-family:"Amiri Quran","Amiri",serif;text-align:center;font-size:23px;margin:4px 0 6px}
+.sh2{font-family:var(--ar);text-align:center;font-size:22px;font-weight:700;color:var(--acc);border:1.5px solid var(--acc2);border-radius:14px;padding:4px 0;margin:10px 0 6px;background:var(--acc2-soft)}
+.bsm{font-family:var(--ar);text-align:center;font-size:23px;margin:4px 0 6px}
 .rdload{text-align:center;color:var(--muted);padding:40px 10px}
 .rdf{display:flex;justify-content:space-between;gap:10px;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));border-top:1px solid var(--line);background:var(--card)}
 .rdf .btn{flex:1}
@@ -261,10 +262,10 @@ hr{border:0;border-top:1px solid var(--line);margin:22px 0 18px}
 .mlines.short{padding-block:1.2em}
 .mband{position:relative;display:flex;align-items:center;justify-content:center;margin:.1em 0}
 .mband svg{position:absolute;inset:.18em 0;width:100%;height:calc(100% - .36em)}
-.mbn{position:relative;font-family:"Amiri",serif;font-weight:700;font-size:.62em;color:var(--m-ink)}
+.mbn{position:relative;font-family:var(--ar);font-weight:700;font-size:.62em;color:var(--m-ink)}
 .mro{position:absolute;top:50%;width:.42em;height:.42em;background:var(--m-gold);transform:translateY(-50%) rotate(45deg)}
 .mro.r{right:-.12em}.mro.l{left:-.12em}
-.mbsm{display:flex;align-items:center;justify-content:center;font-family:"Amiri Quran","Amiri",serif;font-size:.8em}
+.mbsm{display:flex;align-items:center;justify-content:center;font-family:var(--ar);font-size:.8em}
 .mnum{margin:16px auto 4px;width:44px;height:44px;display:grid;place-items:center;font-family:"Amiri",serif;font-weight:700;font-size:17px;color:var(--m-gold);border:1.5px solid var(--m-gold);border-radius:50%;box-shadow:0 0 0 3px var(--m-desk),0 0 0 4px var(--m-gold)}
 .mframe .qt{color:var(--m-ink)}
 /* Accueil */
@@ -700,6 +701,6 @@ nav svg{width:24px;height:24px}
 <div class="sheet" id="sheet" hidden></div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="app.js?v=35"></script>
+<script src="app.js?v=36"></script>
 </body>
 </html>
