@@ -640,8 +640,8 @@ body.sheet-open{overflow:hidden}
 .duo2 .dh b:nth-of-type(2){margin-left:auto}
 .dp{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:800;overflow:hidden;flex:none}
 .dp img{width:100%;height:100%;object-fit:cover}
-.dp.me{background:linear-gradient(135deg,var(--h1),var(--h2));color:var(--on-h)}
-.dp.ot{background:var(--acc2);color:var(--on-acc2)}
+.dp.dme{background:linear-gradient(135deg,var(--h1),var(--h2));color:var(--on-h)}
+.dp.dot2{background:var(--acc2);color:var(--on-acc2)}
 .vs{margin:0 auto;font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.1em}
 .dr{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-top:10px}
 .drl{grid-column:1/-1;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
@@ -709,6 +709,27 @@ body.onbm .wrap{padding-bottom:40px}
 .hc span{font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
 .hc.now span{color:var(--acc)}
 @media (prefers-reduced-motion:no-preference){.hcol{animation:barup .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--k) * 50ms + .15s)}}
+/* Défi à deux v2 */
+.duo3 .vhd{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:6px}
+.vp{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.vp b{font-size:15px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.duo3 .dp{width:52px;height:52px;font-size:20px}
+.duo3 .vs{font-size:13px;font-weight:800;letter-spacing:.12em;color:var(--muted);background:var(--tint);border-radius:999px;padding:6px 10px}
+.vr{display:grid;grid-template-columns:36px 1fr 36px;align-items:center;gap:8px;margin-top:14px}
+.vr>b{font-size:20px;font-weight:800;color:var(--muted);text-align:center}
+.vr>b.win{color:var(--ink)}
+.vr>b.va.win{color:var(--acc)}
+.vr>b.vb.win{color:var(--acc2-ink)}
+.vbar{display:grid;grid-template-columns:1fr 112px 1fr;align-items:center;gap:6px}
+.vlab{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:center;white-space:nowrap}
+.vl,.vrt{height:10px;border-radius:5px;background:var(--tint);display:flex;overflow:hidden}
+.vl{justify-content:flex-end}
+.vl i,.vrt i{display:block;height:100%;width:var(--w);border-radius:5px}
+.vl i{background:var(--acc)}
+.vrt i{background:var(--acc2)}
+.dlead.lme{background:var(--acc-soft);color:var(--acc)}
+.dlead.lot{background:var(--acc2-soft);color:var(--acc2-ink)}
+@media (prefers-reduced-motion:no-preference){.vl i,.vrt i{animation:wgrow .8s cubic-bezier(.2,.8,.2,1) both .2s}}
 /* Barre du bas */
 nav{position:fixed;left:max(14px,env(safe-area-inset-left,0px));right:max(14px,env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));max-width:540px;margin:0 auto;background:color-mix(in srgb,var(--card) 88%,transparent);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-radius:30px;display:flex;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.12);z-index:5}
 nav button{flex:1;border:0;background:none;border-radius:24px;padding:8px 2px 7px;font-size:12px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px}
@@ -731,6 +752,6 @@ nav svg{width:24px;height:24px}
 <div class="sheet" id="sheet" hidden></div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="app.js?v=42"></script>
+<script src="app.js?v=45"></script>
 </body>
 </html>
