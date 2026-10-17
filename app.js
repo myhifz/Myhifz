@@ -127,31 +127,35 @@ function learn(delta){
   toast(delta>0?"Page "+np+" ajoutée · "+onPage(np).map(s=>s.t).join(", "):"Dernière page retirée")}
 function needSetup(){return'<div class="card empty"><div class="ar">بسم الله</div><p>Indique dans Réglages les sourates que tu connais et ton rythme de révision.</p><div class="chips" style="justify-content:center;margin-top:16px"><button class="btn pri" data-tab="set">Configurer mon programme</button></div></div>'}
 
+/* Accueil : tableau de bord du jour */
+const DOW=["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
+function firstDay(){const ks=Object.keys(st.log).sort();const c=[st.cfg.start,ks[0]].filter(Boolean).sort();return c[0]||today()}
+function dayStatus(d){const r=st.day[d];if(r&&r.full)return"full";if(st.log[d])return"part";if(isOff(d))return"off";if(d<firstDay())return"none";return d<today()?"miss":"todo"}
+function weekStrip(){let h='<div class="wk">';const t=today(),dow=(new Date(t+"T12:00").getDay()+6)%7;
+  for(let i=0;i<7;i++){const d=addDays(t,i-dow),s=d>t?"future":dayStatus(d);
+    h+='<div class="wd '+s+(d===t?" now":"")+'"><span>'+DOW[new Date(d+"T12:00").getDay()].charAt(0)+'</span><i>'+(s==="full"?I.check:s==="off"?"–":"")+'</i></div>'}
+  return h+'</div>'}
 function vHome(){
   const name=st.cfg.name.trim(),x=dayState(today());
   let h='<div class="hello">'+logo()+'<div class="txt"><h1>Salam Aleykoum'+(name?", "+esc(name):"")+'</h1><div class="sub">'+fmtDay(today())+'</div></div><div class="fire">'+I.flame+'<span class="num">'+streak()+'</span></div></div>';
   if(!x.pr)return h+needSetup();
-  const left=x.tot-x.done,pct=x.tot?Math.round(x.done/x.tot*100):100;
-  const msg=left?["En cours","Continue sur ta lancée ! Il te reste "+left+" page"+(left>1?"s":"")+" à réviser aujourd'hui."]:["Terminé","Ma sha Allah, ta révision du jour est faite."];
-  if(x.off){h+='<div class="card status"><div class="ic">'+I.moon+'</div><div><b>Jour off</b><span>Pas de mémorisation ni de révision aujourd\'hui. Repose-toi bien.</span></div></div>'+memoCard(x.pr);
-    return h+statsCards(x)}
-  h+='<button class="card status" data-tab="rev"><div class="ic">'+I.drop+'</div><div><b>'+msg[0]+'</b><span>'+msg[1]+'</span></div></button>';
-  const R=70,C=2*Math.PI*R;
-  h+='<div class="hero"><div class="t">Progression du jour</div><div class="ring"><svg viewBox="0 0 170 170"><circle cx="85" cy="85" r="'+R+'" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.22)" stroke-width="8"/><circle cx="85" cy="85" r="'+R+'" fill="none" stroke="rgba(255,255,255,.92)" stroke-width="8" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+(C*(1-pct/100))+'"/></svg><div class="in"><div class="p num">'+pct+'%</div><div class="s num">'+x.done+'/'+x.tot+' pages</div></div></div><div class="hbar"><i style="width:'+pct+'%"></i></div></div>';
-  const tp=(a,b)=>b?Math.round(a/b*100):100;
-  h+='<div class="tiles"><button class="card tile n" data-tab="rev"><div class="ic">'+I.star+'</div><div class="p num">'+tp(x.jd,x.J.length)+'%</div><div class="k">Hifdh al-Jadid</div><div class="s num">'+x.jd+'/'+x.J.length+' pages</div><div class="tbar"><i style="width:'+tp(x.jd,x.J.length)+'%"></i></div></button>'
-    +'<button class="card tile o" data-tab="rev"><div class="ic">'+I.stack+'</div><div class="p num">'+tp(x.od,x.O.length)+'%</div><div class="k">Hifdh</div><div class="s num">'+x.od+'/'+x.O.length+' pages</div><div class="tbar"><i style="width:'+tp(x.od,x.O.length)+'%"></i></div></button></div>';
-  h+=memoCard(x.pr);
-  return h+statsCards(x)}
-function memoCard(pr){
-  const np=st.cfg.dir==="up"?pr.p1-1:pr.p2+1,nxt=np>=1&&np<=604?onPage(np):[];
-  return'<div class="card memo"><div class="bh"><div class="ctitle">'+I.plus+'Mémorisation</div><span class="tag num">'+pr.total+' pages</span></div><div class="rng num">Pages '+pr.p1+' → '+pr.p2+' · '+label([pr.p1,pr.p2],pr).split(" · ")[1]+'</div>'
-   +(nxt.length?'<div class="mrow"><button class="btn pri grow" data-learn="1">J\'ai appris une nouvelle page</button><button class="btn" data-learn="-1" aria-label="Retirer la dernière page">−</button></div><div class="note" style="margin-top:8px">Prochaine page : '+np+' · '+nxt.map(s=>s.t).join(", ")+'</div>':'<p class="note">Tu as atteint la fin du Mushaf, ma sha Allah.</p>')+'</div>'}
-function statsCards(x){let h='';
-  h+='<div class="card"><div class="ctitle">'+I.chart+'Tes statistiques</div><div class="sgrid"><div><b class="num">'+x.pr.total+'</b><span>Pages</span></div><div><b class="num">'+streak()+'</b><span>Série</span></div><div><b class="num">'+record()+'</b><span>Record</span></div></div></div>';
-  const cp=x.pr.total/PAGES*100;let cells="";
-  for(let i=29;i>=0;i--){const d=addDays(today(),-i),n=st.log[d]||0,f=st.day[d]&&st.day[d].full;cells+='<i class="'+(f?"l2":n?"l1":isOff(d)?"off":"")+'"></i>'}
-  h+='<div class="card"><div class="row" style="justify-content:space-between"><div class="ctitle">Coran mémorisé</div><b class="num" style="font-size:22px">'+cp.toFixed(1)+' %</b></div><div class="note num" style="margin-top:2px">'+x.pr.total+' / '+PAGES+' pages · '+hizb(x.pr.total)+' hizb</div><div class="prog"><i style="width:'+cp+'%"></i></div><div class="note" style="margin-top:16px">30 derniers jours</div><div class="heat">'+cells+'</div></div>';
+  const left=x.tot-x.done,pct=x.tot?Math.round(x.done/x.tot*100):100,R=34,C=2*Math.PI*R;
+  /* 1. Aujourd'hui */
+  if(x.off)h+='<div class="today off"><div class="tring"><span class="moon">'+I.moon+'</span></div><div class="tt"><b>Jour off</b><span>Pas de mémorisation ni de révision aujourd\'hui. Repose-toi bien.</span></div></div>';
+  else h+='<div class="today"><div class="tring"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="'+R+'" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="7"/><circle cx="40" cy="40" r="'+R+'" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+(C*(1-pct/100))+'" transform="rotate(-90 40 40)"/></svg><b class="num">'+pct+'%</b></div>'
+    +'<div class="tt"><b>'+(left?"Révision du jour":"Révision terminée")+'</b><span class="num">'+(left?x.done+" / "+x.tot+" pages · il en reste "+left:"Ma sha Allah, "+x.tot+" pages révisées")+'</span>'
+    +'<button class="tgo" data-tab="rev">'+(left?(x.done?"Continuer":"Commencer")+I.next:"Revoir"+I.next)+'</button></div></div>';
+  /* 2. Programme du jour */
+  if(!x.off){const tp=(a,b)=>b?Math.round(a/b*100):100;
+    const tile=(cls,icon,t,pages,dn)=>'<button class="dt '+cls+'" data-tab="rev"><div class="dth"><span class="dti">'+icon+'</span><b>'+t+'</b></div><div class="dtr num">'+(pages.length?(pages.length>1?"p. "+Math.min(...pages)+"–"+Math.max(...pages):"p. "+pages[0]):"Rien aujourd'hui")+'</div><div class="dtb"><i style="width:'+tp(dn,pages.length)+'%"></i></div><div class="dtn num">'+dn+'/'+pages.length+' pages</div></button>';
+    h+='<div class="sect">Programme du jour</div><div class="duo">'+tile("n",I.star,"Hifdh al-Jadid",x.J,x.jd)+tile("o",I.stack,"Hifdh",x.O,x.od)+'</div>';
+    if(x.W.length){const n=x.W.filter(y=>x.d.sw.includes(y.s.id)).length;h+='<button class="weakchip" data-tab="rev">'+I.flag+'<span>À renforcer</span><b class="num">'+n+'/'+x.W.length+'</b>'+I.next+'</button>'}}
+  /* 3. Mémorisation */
+  const pr=x.pr,cp=pr.total/PAGES*100,np=st.cfg.dir==="up"?pr.p1-1:pr.p2+1,nxt=np>=1&&np<=604?onPage(np):[];
+  h+='<div class="sect">Mémorisation</div><div class="card memo2"><div class="mtop2"><div><b class="num">'+cp.toFixed(1)+'<small>%</small></b><span>du Coran mémorisé</span></div><div class="mstat num"><b>'+pr.total+'</b> pages<br><b>'+hizb(pr.total)+'</b> hizb</div></div><div class="prog"><i style="width:'+Math.max(cp,1)+'%"></i></div>'
+   +(nxt.length?'<div class="mnext"><div><span>Prochaine page</span><b class="num">'+np+' · '+nxt.map(s=>s.t).join(", ")+'</b></div><button class="ghost" data-learn="-1" aria-label="Retirer la dernière page">−</button><button class="plusb" data-learn="1" aria-label="J\'ai appris une nouvelle page">'+I.plus+'</button></div>':'<p class="note">Tu as atteint la fin du Mushaf, ma sha Allah.</p>')+'</div>';
+  /* 4. Cette semaine */
+  h+='<div class="sect">Cette semaine</div><div class="card week">'+weekStrip()+'<div class="wkst"><div><b class="num">'+streak()+'</b><span>jours de série</span></div><div><b class="num">'+record()+'</b><span>record</span></div></div></div>';
   return h}
 
 function block(kind,title,tag,pages,list,doneIds,pr,cls){
@@ -175,15 +179,34 @@ function vRev(){
   h+=weakBlock(x);
   return h+'<p class="note">Touche la case quand tu as récité. Touche le nom pour lire la page. Appui long sur le nom : « à renforcer ».</p>'}
 
+/* Planning : choisir un jour et voir son programme */
+let planSel=null;
 function vPlan(){
-  const pr=program(st.cfg);
-  let h='<div><h1>Planning</h1><div class="sub">Les '+(pr?Math.max(7,pr.d):7)+' prochains jours</div></div>';
+  const pr=program(st.cfg),t=today();
+  let h='<div><h1>Planning</h1><div class="sub">Ton programme jour par jour</div></div>';
   if(!pr)return h+needSetup();
-  h+='<div class="card"><div class="bh"><div class="ctitle">Hifdh al-Jadid</div><span class="tag">Chaque jour</span></div><div class="rng">'+(pr.jadid.length?label(pr.jadid,pr):"Aucune page")+'</div></div><div class="lbl">Hifdh</div><div class="card plist">';
-  const n=Math.max(7,pr.d);
-  for(let i=0;i<n;i++){const d=addDays(today(),i),O=janbFor(pr,d),Os=surahsFor(O,pr),dd=dayRec(d),ok=Os.length&&Os.every(y=>dd.so.includes(y.s.id));
-    h+='<div class="prow'+(i===0?" now":"")+(isOff(d)?" offd":"")+'"><div class="pd"><b>'+(i===0?"Aujourd'hui":i===1?"Demain":fmtDay(d).split(" ").slice(0,2).join(" "))+'</b></div><div class="pr num">'+(isOff(d)?"Jour off":O.length?label(O,pr):"Repos")+'</div>'+(ok?'<span class="okb">'+I.check+'</span>':"")+'</div>'}
-  return h+'</div><p class="note">Le cycle recommence tous les '+pr.d+' jours de révision'+((st.cfg.off||[]).length?' (les jours off ne comptent pas)':'')+'. Tu peux changer le rythme dans Réglages.</p>'}
+  if(!planSel||planSel<t)planSel=t;
+  const n=Math.max(14,pr.d);
+  h+='<div class="days2">';
+  for(let i=0;i<n;i++){const d=addDays(t,i),dt=new Date(d+"T12:00"),s=dayStatus(d);
+    h+='<button class="dc'+(d===planSel?" on":"")+(isOff(d)?" off":"")+'" data-pday="'+d+'"><span>'+(i===0?"Auj.":DOW[dt.getDay()])+'</span><b class="num">'+dt.getDate()+'</b><i class="'+(s==="full"?"ok":isOff(d)?"":"dot")+'"></i></button>'}
+  h+='</div>';
+  const d=planSel,off=isOff(d),O=janbFor(pr,d),J=off?[]:pr.jadid,dd=dayRec(d);
+  h+='<div class="card dayd"><div class="ddh"><b>'+(d===t?"Aujourd'hui":fmtDay(d))+'</b>'+(off?'<span class="tag">Jour off</span>':'<span class="tag num">'+(J.length+O.length)+' pages</span>')+'</div>';
+  if(off)h+='<p class="note">Pas de mémorisation ni de révision ce jour-là.</p>';
+  else{const part=(cls,t2,pages,kind)=>{const L=surahsFor(pages,pr);return'<div class="dpart '+cls+'"><div class="dpt"><span class="bar2"></span><b>'+t2+'</b><span class="num">'+(pages.length?(pages.length>1?"p. "+Math.min(...pages)+"–"+Math.max(...pages):"p. "+pages[0]):"—")+'</span></div><div class="chips2">'+(L.length?L.map(y=>'<span class="'+(dd[kind].includes(y.s.id)?"done":"")+'">'+y.s.t+'</span>').join(""):'<span class="none">Rien</span>')+'</div></div>'};
+    h+=part("n","Hifdh al-Jadid",J,"sj")+part("o","Hifdh",O,"so");
+    if(d===t)h+='<button class="btn pri wide" data-tab="rev">Ouvrir la révision du jour</button>'}
+  h+='</div>';
+  /* Cycle de Hifdh */
+  if(pr.old.length){const i=((workIndex(t)%pr.d)+pr.d)%pr.d;
+    h+='<div class="sect">Cycle de Hifdh</div><div class="card cyc"><div class="cyh"><b>Jour '+(i+1)+' sur '+pr.d+'</b><span class="num">~'+pr.k+' pages par jour</span></div><div class="cyb">';
+    for(let k=0;k<pr.d;k++)h+='<i class="'+(k<i?"past":k===i?"cur":"")+'"></i>';
+    h+='</div><p class="note">Tout ce que tu connais (hors Hifdh al-Jadid) est révisé en '+pr.d+' jours'+((st.cfg.off||[]).length?', sans compter les jours off':'')+'.</p></div>'}
+  /* 30 derniers jours */
+  let cells="";for(let i=29;i>=0;i--){const d2=addDays(t,-i),s=dayStatus(d2);cells+='<i class="'+(s==="full"?"l2":s==="part"?"l1":s==="off"?"off":"")+'"></i>'}
+  h+='<div class="sect">30 derniers jours</div><div class="card"><div class="heat">'+cells+'</div><div class="lgd"><span><i class="l2"></i>Complet</span><span><i class="l1"></i>Commencé</span><span><i class="off"></i>Jour off</span></div></div>';
+  return h}
 
 function sel(id,val){
   const s=S[(val||1)-1];
@@ -262,6 +285,7 @@ function go(t){draft=null;resetArm=false;sub=null;tab=t;try{localStorage.setItem
 document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
   if(d.tab)go(d.tab);
+  else if(d.pday){planSel=d.pday;const y=scrollY;render();scrollTo(0,y)}
   else if(d.sub!==undefined){sub=d.sub||null;draft=null;resetArm=false;render();scrollTo(0,0)}
   else if(d.su){const id=+d.su,k=d.k,on=!dayRec(today())[k].includes(id);mark(k,[id],on);const y=scrollY;render();scrollTo(0,y);
     const x=dayState(today());if(on&&x.tot&&x.done===x.tot)toast("Révision du jour terminée !")}
