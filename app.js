@@ -503,7 +503,7 @@ function vSet(){
   const progVal=configured?(()=>{const A=S[cp.a-1],B=S[cp.b-1],o=c.dir==="up"?[B,A]:[A,B];return o[0].t+" → "+o[1].t})():"À configurer";
   const revVal=configured?cp.jadid.length+" + ~"+(cp.old.length?cp.k:0)+" p./jour":"—";
   const offVal=(c.off||[]).length?DAYS.filter(([n])=>c.off.includes(n)).map(([,l])=>l).join(", "):"Aucun";
-  let h='<div class="hello">'+logo()+'<div class="txt"><h1>Réglages</h1><div class="sub">Configure ta méthode de révision</div></div></div>';
+  let h='<div><h1>Réglages</h1><div class="sub">Configure ta méthode de révision</div></div>';
   h+='<div class="lbl">Méthode</div><div class="card list">'+setRow("prog",I.book,"Mon programme",progVal)+setRow("rev",I.loop,"Révision",revVal+' · Jour off : '+offVal)+'</div>';
   h+='<div class="lbl">Personnalisation</div><div class="card list">'+setRow("look",I.palette,"Apparence",THEMES[c.c]?THEMES[c.c].n:"Vert",1)+setRow("profile",I.user,"Moi",(c.name.trim()?esc(c.name.trim())+" · ":"")+badges().filter(b=>b.ok).length+" jalons")+'</div>';
   h+='<div class="lbl">Données</div><div class="card list">'+setRow("data",I.cloud,"Sauvegarde et restauration",gh.token?(gh.err?"Sauvegarde auto : erreur":"Auto · "+ago2(gh.last)):bkAge()===null?"Jamais sauvegardé":bkAge()===0?"Sauvegardé aujourd\'hui":"Il y a "+bkAge()+" j",1)+'</div>';
