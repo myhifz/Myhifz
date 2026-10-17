@@ -106,6 +106,8 @@ const I={
  flame:'<svg viewBox="0 0 24 24"><defs><linearGradient id="fg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#E8432E"/><stop offset="1" stop-color="#FFA92E"/></linearGradient></defs><path fill="url(#fg)" d="M12 2c1 3.5 5 5.6 5 10.5A5.2 5.2 0 0 1 12 18a5.2 5.2 0 0 1-5-5.5c0-2.3 1.2-3.8 2.4-5 .1 1.6.8 2.7 1.8 3.3C11 7.9 11.4 4.6 12 2z"/><path fill="#FFD36E" d="M12 11c.6 1.5 2.3 2.4 2.3 4.4A2.3 2.3 0 0 1 12 18a2.3 2.3 0 0 1-2.3-2.6c0-1.3.7-2 1.3-2.6.1.7.4 1.1.8 1.3-.1-1.1.1-2.3.2-3.1z"/></svg>',
  drop:D(24,P.drop,P.drop.replace('<path','<path')),
  star:D(26,P.star,P.star),
+ spark:'<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11 2.5l1.9 5.3 5.3 1.9-5.3 1.9L11 16.9l-1.9-5.3-5.3-1.9 5.3-1.9z"/><path d="M18.5 13.5l.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9z" opacity=".75"/></svg>',
+ repeat:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l3 3-3 3"/><path d="M4 11.5V10a4 4 0 0 1 4-4h12"/><path d="M7 21l-3-3 3-3"/><path d="M20 12.5V14a4 4 0 0 1-4 4H4"/></svg>',
  stack:D(22,'<path d="M12 3.5l8.5 4.3L12 12 3.5 7.8z"/><path d="M3.5 12.2L12 16.5l8.5-4.3"/><path d="M3.5 16.4L12 20.7l8.5-4.3"/>','<path d="M12 3.5l8.5 4.3L12 12 3.5 7.8z"/>'),
  chart:D(20,'<path d="M4 20h16"/><rect x="5.5" y="11" width="3" height="6.5" rx="1"/><rect x="10.5" y="6" width="3" height="11.5" rx="1"/><rect x="15.5" y="13.5" width="3" height="4" rx="1"/>','<rect x="5.5" y="11" width="3" height="6.5" rx="1"/><rect x="10.5" y="6" width="3" height="11.5" rx="1"/><rect x="15.5" y="13.5" width="3" height="4" rx="1"/>'),
  book:D(24,P.book+'<path d="M12 6.5v13"/>',P.book),
@@ -158,7 +160,7 @@ function vHome(){
   /* 2. Programme du jour */
   if(!x.off){const tp=(a,b)=>b?Math.round(a/b*100):100;
     const tile=(cls,icon,t,pages,dn)=>'<button class="dt '+cls+'" data-tab="rev"><div class="dth"><span class="dti">'+icon+'</span><b>'+t+'</b></div><div class="dtr num">'+(pages.length?(pages.length>1?"p. "+Math.min(...pages)+"–"+Math.max(...pages):"p. "+pages[0]):"Rien aujourd'hui")+'</div><div class="dtb"><i style="width:'+tp(dn,pages.length)+'%"></i></div><div class="dtn num">'+dn+'/'+pages.length+' pages</div></button>';
-    h+='<div class="sect">Programme du jour</div><div class="duo">'+tile("n",I.star,"Hifdh al-Jadid",x.J,x.jd)+tile("o",I.stack,"Hifdh",x.O,x.od)+'</div>';
+    h+='<div class="sect">Programme du jour</div><div class="duo">'+tile("n",I.spark,"Hifdh al-Jadid",x.J,x.jd)+tile("o",I.repeat,"Hifdh",x.O,x.od)+'</div>';
     if(x.W.length){const n=x.W.filter(y=>x.d.sw.includes(y.s.id)).length;h+='<button class="weakchip" data-tab="rev">'+I.flag+'<span>À renforcer</span><b class="num">'+n+'/'+x.W.length+'</b>'+I.next+'</button>'}}
   /* 3. Mémorisation */
   const pr=x.pr,cp=pr.total/PAGES*100,np=st.cfg.dir==="up"?pr.p1-1:pr.p2+1,nxt=np>=1&&np<=604?onPage(np):[];
@@ -183,7 +185,10 @@ function vRev(){
   let h='<div><h1>Révision</h1><div class="sub">'+fmtDay(today())+'</div></div>';
   if(!x.pr)return h+needSetup();
   if(x.off)return h+'<div class="card empty"><div class="ar">راحة</div><p>Jour off : rien à mémoriser ni à réviser aujourd\'hui.</p></div>';
-  if(x.tot&&x.done===x.tot)h+='<div class="card empty" style="padding:18px"><div class="ar">ما شاء الله</div><p>Tout est fait pour aujourd\'hui. Qu\'Allah te le facilite.</p></div>';
+  if(x.tot&&x.done===x.tot){let nd=addDays(today(),1),g=0;while(isOff(nd)&&g++<7)nd=addDays(nd,1);const nO=janbFor(x.pr,nd);
+    h+='<div class="fin"><div class="fbadge">'+I.check+'</div><h2>Révision du jour terminée</h2><p>Qu\'Allah la fasse fructifier dans ton cœur.</p>'
+     +'<div class="fst"><div><b class="num">'+x.tot+'</b><span>pages</span></div><div><b class="num">'+(new Set(x.Js.concat(x.Os).map(y=>y.s.id))).size+'</b><span>sourates</span></div><div><b class="num">'+streak()+'</b><span>jours de suite</span></div></div>'
+     +(nO.length?'<div class="fnext">'+(diff(nd,today())===1?"Demain":fmtDay(nd).split(" ")[0])+' · Hifdh p. '+Math.min(...nO)+'–'+Math.max(...nO)+'</div>':'')+'</div>'}
   h+=block("sj","Hifdh al-Jadid","Chaque jour",x.J,x.Js,x.d.sj,x.pr,"n");
   h+=block("so","Hifdh","Cycle de "+x.pr.d+" j",x.O,x.Os,x.d.so,x.pr,"o");
   h+=weakBlock(x);
