@@ -343,7 +343,7 @@ function histChart(){const D=histData(),max=Math.max(1,...D.map(x=>x.r)),maxL=Ma
 function vMoi(){
   const c=st.cfg,pr=program(c),name=c.name.trim(),hs=c.hstart||firstDay(),bs=badges(),nOk=bs.filter(b=>b.ok).length;
   let h=subHead("Moi");
-  h+='<div class="card me"><label class="av'+(c.photo?" ph":"")+'" aria-label="Changer la photo de profil">'+(c.photo?'<img src="'+c.photo+'" alt="">':(name?esc(name.charAt(0).toUpperCase()):I.user))+'<span class="avcam">'+I.cam+'</span><input type="file" id="photo" accept="image/*" class="vh"></label>'+(c.photo?'<button class="linkb" data-act="nophoto">Retirer la photo</button>':'<span class="note">Touche le rond pour ajouter une photo</span>')+'</div><div class="card me2"><input class="field" id="nm" type="text" maxlength="24" autocomplete="given-name" placeholder="Ton prénom" value="'+esc(c.name)+'"><div class="note" style="text-align:center">En hifdh depuis '+since(hs)+(pr?' · '+pr.total+' pages mémorisées':'')+'</div></div>';
+  h+='<div class="card me"><label class="av'+(c.photo?" ph":"")+'" aria-label="Changer la photo de profil">'+(c.photo?'<img src="'+c.photo+'" alt="">':(name?esc(name.charAt(0).toUpperCase()):I.user))+'<span class="avcam">'+I.cam+'</span><input type="file" id="photo" accept="image/*" class="vh"></label>'+(c.photo?'<button class="linkb" data-act="nophoto">Retirer la photo</button>'+(gh.token?'<button class="tgl'+(c.sharePhoto?" on":"")+'" data-act="sharephoto"><span><b>Montrer ma photo dans le défi</b><small>Elle sera visible publiquement sur GitHub, en petit format.</small></span><i></i></button>':''):'<span class="note">Touche le rond pour ajouter une photo</span>')+'</div><div class="card me2"><input class="field" id="nm" type="text" maxlength="24" autocomplete="given-name" placeholder="Ton prénom" value="'+esc(c.name)+'"><div class="note" style="text-align:center">En hifdh depuis '+since(hs)+(pr?' · '+pr.total+' pages mémorisées':'')+'</div></div>';
   /* Mon objectif */
   const gi=goalInfo(),up=c.dir==="up";
   const opts=pr?S.filter(s=>(up?s.id<pr.a:s.id>pr.b)||s.id===+c.goal):[];if(up)opts.reverse();
@@ -394,8 +394,10 @@ try{Object.assign(gh,JSON.parse(localStorage.getItem(GHK)||"{}"))}catch(e){}
 const ghSave=()=>{try{localStorage.setItem(GHK,JSON.stringify(gh))}catch(e){}};
 const GH_REPO="myhifz/Myhifz";
 const slug=s=>(s||"moi").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"moi";
+let smallCache={src:"",out:""};
+function smallPhoto(){const src=st.cfg.photo;if(smallCache.src===src)return smallCache.out;let out="";try{const img=new Image();img.src=src;if(img.complete&&img.naturalWidth){const cv=document.createElement("canvas");cv.width=cv.height=96;cv.getContext("2d").drawImage(img,0,0,96,96);out=cv.toDataURL("image/jpeg",.7)}}catch(e){}if(out)smallCache={src,out};return out}
 const b64e=t=>btoa(unescape(encodeURIComponent(t))),b64d=t=>decodeURIComponent(escape(atob(t.replace(/\s/g,""))));
-function ghPayload(){const o=JSON.parse(JSON.stringify(st));if(o.cfg)o.cfg.photo="";if(o.duo)o.duo={file:o.duo.file,name:o.duo.name};o.app="monhifz";o.saved=new Date().toISOString();return JSON.stringify(o,null,1)}
+function ghPayload(){const o=JSON.parse(JSON.stringify(st));if(o.cfg){o.cfg.avatar=st.cfg.sharePhoto&&st.cfg.photo?smallPhoto():"";o.cfg.photo=""}if(o.duo)o.duo={file:o.duo.file,name:o.duo.name};o.app="monhifz";o.saved=new Date().toISOString();return JSON.stringify(o,null,1)}
 function ghApi(path,opt){return fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+path,Object.assign({cache:"no-store"},opt,{headers:{"Authorization":"Bearer "+gh.token,"Accept":"application/vnd.github+json"}}))}
 let ghBusy=false,ghTimer=null;
 function ghPush(force){if(!gh.token||!gh.file||!navigator.onLine||ghBusy)return Promise.resolve(false);ghBusy=true;
@@ -449,14 +451,14 @@ function closeRecap(){const s=$("sheet");s.hidden=true;document.body.classList.r
 let duoList=null,duoBusy=false;
 function duoFetch(force){if(!st.duo||duoBusy)return;if(!force&&st.duo.at&&Date.now()-st.duo.at<6e5)return;duoBusy=true;
   fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+st.duo.file,{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}})
-   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if(tab==="home"||sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})
+   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if(tab==="home"||sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})
    .catch(e=>{st.duo.err="Impossible de lire la sauvegarde de "+st.duo.name;save()}).finally(()=>{duoBusy=false})}
 let duoListErr="";
 function duoLoadList(){duoListErr="";fetch("https://api.github.com/repos/"+GH_REPO+"/contents/sauvegardes?t="+Date.now(),{cache:"no-store"}).then(r=>{if(r.status===404)return[];if(!r.ok)throw r.status;return r.json()}).then(a=>{duoList=(Array.isArray(a)?a:[]).filter(f=>/\.json$/.test(f.name)&&"sauvegardes/"+f.name!==gh.file).map(f=>({file:f.path,name:f.name.replace(/\.json$/,"").replace(/-/g," ")}));duoList.forEach(f=>fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+f.file,{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.cfg&&d.cfg.name){f.name=d.cfg.name;if(sub==="profile"&&!st.duo){const y=scrollY;render();scrollTo(0,y)}}}).catch(()=>{}));if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}}).catch(e=>{duoList=[];duoListErr=e===403?"GitHub limite les demandes pour l'instant, réessaie dans quelques minutes.":"Impossible de joindre GitHub. Vérifie ta connexion.";if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})}
 function duoCard(){if(!st.duo||!st.duo.data)return"";const o=st.duo.data,me=weekOf(st),him=weekOf(o),nm=esc(o.cfg.name||st.duo.name);
   const row=(lab,a,b)=>{const m=Math.max(1,a,b),wa=a/m*100,wb=b/m*100;return'<div class="vr"><b class="num va'+(a>b?" win":"")+'">'+a+'</b><div class="vbar"><span class="vl"><i style="--w:'+wa+'%"></i></span><span class="vlab">'+lab+'</span><span class="vrt"><i style="--w:'+wb+'%"></i></span></div><b class="num vb'+(b>a?" win":"")+'">'+b+'</b></div>'};
   const sa=me.pages+streakOf(st)*2,sb=him.pages+streakOf(o)*2,lead=sa===sb?"Égalité cette semaine":sa>sb?"Tu mènes cette semaine":nm+" mène cette semaine";
-  return'<div class="sect">Défi à deux</div><div class="card duo3"><div class="vhd"><div class="vp"><span class="dp dme">'+(st.cfg.photo?'<img src="'+st.cfg.photo+'" alt="">':esc((st.cfg.name||"M").charAt(0).toUpperCase()))+'</span><b>Toi</b></div><span class="vs">VS</span><div class="vp"><span class="dp dot2">'+esc(nm.charAt(0).toUpperCase())+'</span><b>'+nm+'</b></div></div>'
+  return'<div class="sect">Défi à deux</div><div class="card duo3"><div class="vhd"><div class="vp"><span class="dp dme">'+(st.cfg.photo?'<img src="'+st.cfg.photo+'" alt="">':esc((st.cfg.name||"M").charAt(0).toUpperCase()))+'</span><b>Toi</b></div><span class="vs">VS</span><div class="vp"><span class="dp dot2">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':esc(nm.charAt(0).toUpperCase()))+'</span><b>'+nm+'</b></div></div>'
    +row("Pages révisées",me.pages,him.pages)+row("Jours de série",streakOf(st),streakOf(o))+row("Jours actifs",me.active,him.active)
    +'<div class="dlead'+(sa===sb?"":sa>sb?" lme":" lot")+'">'+I.medal+lead+'</div></div>'}
 
@@ -603,6 +605,7 @@ document.addEventListener("click",e=>{
     const ch=pageRange(old)+""!==r+""||old.dir!==draft.dir||+old.jn!==+draft.jn||+old.d!==+draft.d||(old.off||[]).slice().sort()+""!==draft.off.slice().sort()+"";
     const first=!st.cfg.start;if(old.dir!==draft.dir)draft.goal=0;st.cfg={...draft,c:st.cfg.c,icon:st.cfg.icon,name:st.cfg.name};if(ch||first)st.cfg.start=today();save();draft=null;toast("Programme enregistré");
     if(first)go("home");else{sub=null;render();scrollTo(0,0)}}
+  else if(d.act==="sharephoto"){st.cfg.sharePhoto=!st.cfg.sharePhoto;save();toast(st.cfg.sharePhoto?"Ta photo sera visible dans le défi":"Ta photo n'est plus partagée");const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="nophoto"){st.cfg.photo="";save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="reset"){if(!resetArm){resetArm=true;const y=scrollY;render();scrollTo(0,y);return}
     st={log:{},day:{},weak:[],tp:0,learned:[],got:[],gotAt:{},pg:{},cfg:{...DEF,c:st.cfg.c,icon:st.cfg.icon,mode:st.cfg.mode}};save();draft=null;resetArm=false;toast("Données effacées");render()}
