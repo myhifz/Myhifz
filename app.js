@@ -194,7 +194,7 @@ function vHome(){
   h+='<div class="sect">Mémorisation</div><div class="card memo2"><div class="mtop2"><div><b class="num">'+cp.toFixed(1)+'<small>%</small></b><span>du Coran mémorisé</span></div><div class="mstat num"><b>'+pr.total+'</b> pages<br><b>'+hizb(pr.total)+'</b> hizb</div></div><div class="prog"><i style="width:'+Math.max(cp,1)+'%"></i></div>'+goalLine()
    +(nxt.length?'<div class="mnext"><div><span>Prochaine page</span><b class="num">'+np+' · '+nxt.map(s=>s.t).join(", ")+'</b></div><button class="ghost" data-learn="-1" aria-label="Retirer la dernière page">−</button><button class="plusb" data-learn="1" aria-label="J\'ai appris une nouvelle page">'+I.plus+'</button></div>':'<p class="note">Tu as atteint la fin du Mushaf. Toutes les pages sont mémorisées.</p>')+'</div>';
   /* 4. Cette semaine */
-  h+='<div class="sect">Cette semaine</div><div class="card week">'+weekStrip()+'<div class="wkst"><div><b class="num">'+streak()+'</b><span>jours de série</span></div><div><b class="num">'+record()+'</b><span>record</span></div></div></div>';
+  h+='<div class="sect">Cette semaine</div><div class="card week">'+weekStrip()+'<div class="wkline">'+(()=>{const t=today(),dw=(new Date(t+"T12:00").getDay()+6)%7;let a=0;for(let k=0;k<=dw;k++)if(st.log[addDays(t,k-dw)])a++;return'<span><b class="num">'+a+'</b> jour'+(a>1?"s":"")+' actif'+(a>1?"s":"")+' cette semaine</span><span>Record : <b class="num">'+record()+'</b> j</span>'})()+'</div></div>';
   return h}
 
 function block(kind,title,tag,pages,list,doneIds,pr,cls){
@@ -207,13 +207,30 @@ function suRow(x,kind,on,part){const w=st.weak.includes(x.s.id);
   return'<div class="su '+(on?"on":"")+(w?" weak":"")+'"><button class="sc" data-su="'+x.s.id+'" data-k="'+kind+'" aria-label="Cocher '+x.s.t+'">'+(on?I.check:"")+'</button><button class="sb" data-read="'+x.s.id+'" data-lo="'+x.lo+'"><span class="sn"><b>'+x.s.t+'</b><span class="num">'+(x.lo===x.hi?"p. "+x.lo:"p. "+x.lo+"–"+x.hi)+(part?" · partie":"")+(w?' · <em>à renforcer</em>':"")+'</span></span><span class="ar">'+x.s.a+'</span></button></div>'}
 function weakBlock(x){if(!x.W.length)return"";const ids=x.d.sw,n=x.W.filter(y=>ids.includes(y.s.id)).length,all=n===x.W.length;
   return'<div class="card blk w" id="blk-sw"><div class="bh"><div class="ctitle">'+I.flag+'À renforcer</div><span class="tag">Chaque jour</span></div><div class="rng">Les sourates que tu as marquées comme difficiles.</div><div class="sus">'+x.W.map(y=>suRow(y,"sw",ids.includes(y.s.id),false)).join("")+'</div><div class="bf"><span class="note num">'+n+'/'+x.W.length+'</span><button class="btn '+(all?"":"pri")+'" data-all="sw" data-on="'+(all?0:1)+'">'+(all?"Annuler":"Tout marquer comme fait")+'</button></div></div>'}
+let revShown=false,revTap=null,revPrevDone=null,revPrevW=null;
+function confetti(el){const cols=["var(--acc2)","#fff","var(--h2)","var(--acc2-soft)"];for(let k=0;k<28;k++){const c=document.createElement("i");c.className="cf";c.style.left=(5+Math.random()*90)+"%";c.style.background=cols[k%4];c.style.setProperty("--x",(Math.random()*120-60)+"px");c.style.setProperty("--r",(Math.random()*720-360)+"deg");c.style.animationDelay=(Math.random()*.25)+"s";c.style.width=c.style.height=(5+Math.random()*6)+"px";if(k%3===0)c.style.borderRadius="50%";el.appendChild(c)}}
+function animateRev(){const red=matchMedia("(prefers-reduced-motion: reduce)").matches,app=$("app"),x=dayState(today());
+  if(!revShown&&!red){app.classList.add("cascade");document.querySelectorAll(".sus .su").forEach((e,k)=>{e.style.setProperty("--k",Math.min(k,14));e.classList.add("in")});setTimeout(()=>{app.classList.remove("cascade");document.querySelectorAll(".su.in").forEach(e=>e.classList.remove("in"))},1500)}
+  revShown=true;
+  /* barre : avance depuis l'ancienne valeur */
+  const bar=document.querySelector(".rvbar i");if(bar&&!red&&revPrevW!==null){const w=bar.style.width;bar.style.transition="none";bar.style.width=revPrevW+"%";bar.getBoundingClientRect();bar.style.transition="width .6s cubic-bezier(.3,.7,.2,1)";bar.style.width=w}
+  revPrevW=bar?+bar.dataset.w:100;
+  /* sourate cochée : petit rebond */
+  if(revTap&&!red){const list=revTap.all?[...document.querySelectorAll("#blk-"+revTap.k+" .su.on")]:[...document.querySelectorAll('.sc[data-su="'+revTap.id+'"][data-k="'+revTap.k+'"]')].map(b=>b.closest(".su")).filter(e=>e&&e.classList.contains("on"));
+    list.forEach((e,k)=>{e.style.setProperty("--k",k);e.classList.add("pop")});
+    const blk=$("blk-"+revTap.k);if(blk&&blk.querySelectorAll(".su").length===blk.querySelectorAll(".su.on").length)blk.classList.add("glow")}
+  revTap=null;
+  /* révision terminée : confettis */
+  const fin=$("fin");if(fin&&!red&&revPrevDone!==null&&revPrevDone<x.tot)confetti(fin);
+  revPrevDone=x.done}
 function vRev(){
   const x=dayState(today());
   let h='<div><h1>Révision</h1><div class="sub">'+fmtDay(today())+'</div></div>';
   if(!x.pr)return h+needSetup();
+  if(!x.off&&x.tot&&x.done<x.tot){const p=Math.round(x.done/x.tot*100);h+='<div class="rvp"><div class="rvt"><b class="num">'+x.done+'<small> / '+x.tot+' pages</small></b><span class="num">'+p+'%</span></div><div class="rvbar"><i data-w="'+p+'" style="width:'+p+'%"></i></div></div>'}
   if(x.off)return h+'<div class="card empty"><div class="ar">راحة</div><p>Jour off : rien à mémoriser ni à réviser aujourd\'hui.</p></div>';
   if(x.tot&&x.done===x.tot){let nd=addDays(today(),1),g=0;while(isOff(nd)&&g++<7)nd=addDays(nd,1);const nO=janbFor(x.pr,nd);
-    h+='<div class="fin"><div class="fbadge">'+I.check+'</div><h2>Révision du jour terminée</h2><p>Qu\'Allah la fasse fructifier dans ton cœur.</p>'
+    h+='<div class="fin" id="fin"><div class="fbadge">'+I.check+'</div><h2>Révision du jour terminée</h2><p>Qu\'Allah la fasse fructifier dans ton cœur.</p>'
      +'<div class="fst"><div><b class="num">'+x.tot+'</b><span>pages</span></div><div><b class="num">'+(new Set(x.Js.concat(x.Os).map(y=>y.s.id))).size+'</b><span>sourates</span></div><div><b class="num">'+streak()+'</b><span>jours de suite</span></div></div>'
      +(nO.length?'<div class="fnext">'+(diff(nd,today())===1?"Demain":fmtDay(nd).split(" ")[0])+' · Hifdh p. '+Math.min(...nO)+'–'+Math.max(...nO)+'</div>':'')+'</div>'}
   h+=block("sj","Hifdh al-Jadid","Chaque jour",x.J,x.Js,x.d.sj,x.pr,"n");
@@ -221,34 +238,49 @@ function vRev(){
   h+=weakBlock(x);
   return h+'<p class="note">Touche la case quand tu as récité. Touche le nom pour lire la page. Appui long sur le nom : « à renforcer ».</p>'}
 
-/* Planning : choisir un jour et voir son programme */
-let planSel=null;
+/* Planning : semaine, jour choisi, cycle de Hifdh, calendrier du mois */
+let planSel=null,planPrev=null,planMonth=null,planShown=false;
+const MOIS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+function rangeTxt(p){return p.length?(p.length>1?"p. "+Math.min(...p)+"–"+Math.max(...p):"p. "+p[0]):"—"}
 function vPlan(){
   const pr=program(st.cfg),t=today();
   let h='<div><h1>Planning</h1><div class="sub">Ton programme jour par jour</div></div>';
   if(!pr)return h+needSetup();
   if(!planSel||planSel<t)planSel=t;
-  const n=Math.max(14,pr.d);
-  h+='<div class="days2">';
-  for(let i=0;i<n;i++){const d=addDays(t,i),dt=new Date(d+"T12:00"),s=dayStatus(d);
+  /* 1. Bande des 14 prochains jours */
+  h+='<div class="days2" id="days2">';
+  for(let i=0;i<14;i++){const d=addDays(t,i),dt=new Date(d+"T12:00"),s=dayStatus(d);
     h+='<button class="dc'+(d===planSel?" on":"")+(isOff(d)?" off":"")+'" data-pday="'+d+'"><span>'+(i===0?"Auj.":DOW[dt.getDay()])+'</span><b class="num">'+dt.getDate()+'</b><i class="'+(s==="full"?"ok":isOff(d)?"":"dot")+'"></i></button>'}
   h+='</div>';
-  const d=planSel,off=isOff(d),O=janbFor(pr,d),J=off?[]:pr.jadid,dd=dayRec(d);
-  h+='<div class="card dayd"><div class="ddh"><b>'+(d===t?"Aujourd'hui":fmtDay(d))+'</b>'+(off?'<span class="tag">Jour off</span>':'<span class="tag num">'+(J.length+O.length)+' pages</span>')+'</div>';
-  if(off)h+='<p class="note">Pas de mémorisation ni de révision ce jour-là.</p>';
-  else{const part=(cls,t2,pages,kind)=>{const L=surahsFor(pages,pr);return'<div class="dpart '+cls+'"><div class="dpt"><span class="bar2"></span><b>'+t2+'</b><span class="num">'+(pages.length?(pages.length>1?"p. "+Math.min(...pages)+"–"+Math.max(...pages):"p. "+pages[0]):"—")+'</span></div><div class="chips2">'+(L.length?L.map(y=>'<span class="'+(dd[kind].includes(y.s.id)?"done":"")+'">'+y.s.t+'</span>').join(""):'<span class="none">Rien</span>')+'</div></div>'};
-    h+=part("n","Hifdh al-Jadid",J,"sj")+part("o","Hifdh",O,"so");
-    if(d===t)h+='<button class="btn pri wide" data-tab="rev">Ouvrir la révision du jour</button>'}
+  /* 2. Le jour choisi */
+  const d=planSel,off=isOff(d),O=janbFor(pr,d),J=off?[]:pr.jadid,dd=dayRec(d),dir=planPrev&&planPrev!==d?(d>planPrev?"r":"l"):"";
+  h+='<div class="card dayd'+(dir?" sl-"+dir:"")+'"><div class="ddh"><div><span class="ddk">'+(d===t?"Aujourd'hui":diff(d,t)===1?"Demain":"Dans "+diff(d,t)+" jours")+'</span><b>'+fmtDay(d)+'</b></div>'+(off?'<span class="tag">Jour off</span>':'<span class="ddn"><b class="num">'+(J.length+O.length)+'</b>pages</span>')+'</div>';
+  if(off)h+='<div class="offday">'+I.moon+'<span>Pas de mémorisation ni de révision ce jour-là.</span></div>';
+  else{const part=(cls,t2,icon,pages,kind)=>{const L=surahsFor(pages,pr),n=L.filter(y=>dd[kind].includes(y.s.id)).length;
+      return'<div class="tl '+cls+'"><div class="tlr"><span class="tli">'+icon+'</span></div><div class="tlc"><div class="tlh"><b>'+t2+'</b><span class="num">'+rangeTxt(pages)+'</span></div><div class="chips2">'+(L.length?L.map((y,k)=>'<span style="--k:'+k+'" class="'+(dd[kind].includes(y.s.id)?"done":"")+'">'+y.s.t+'</span>').join(""):'<span class="none">Rien ce jour-là</span>')+'</div>'+(d===t&&L.length?'<div class="tlp num">'+n+'/'+L.length+' sourates faites</div>':'')+'</div></div>'};
+    h+=part("n","Hifdh al-Jadid",I.spark,J,"sj")+part("o","Hifdh",I.repeat,O,"so");
+    if(d===t)h+='<button class="btn pri wide" data-tab="rev">Ouvrir la révision du jour'+I.next+'</button>'}
   h+='</div>';
-  /* Cycle de Hifdh */
-  if(pr.old.length){const i=((workIndex(t)%pr.d)+pr.d)%pr.d;
-    h+='<div class="sect">Cycle de Hifdh</div><div class="card cyc"><div class="cyh"><b>Jour '+(i+1)+' sur '+pr.d+'</b><span class="num">~'+pr.k+' pages par jour</span></div><div class="cyb">';
-    for(let k=0;k<pr.d;k++)h+='<i class="'+(k<i?"past":k===i?"cur":"")+'"></i>';
-    h+='</div><p class="note">Tout ce que tu connais (hors Hifdh al-Jadid) est révisé en '+pr.d+' jours'+((st.cfg.off||[]).length?', sans compter les jours off':'')+'.</p></div>'}
-  /* 30 derniers jours */
-  let cells="";for(let i=29;i>=0;i--){const d2=addDays(t,-i),s=dayStatus(d2);cells+='<i class="'+(s==="full"?"l2":s==="part"?"l1":s==="off"?"off":"")+'"></i>'}
-  h+='<div class="sect">30 derniers jours</div><div class="card"><div class="heat">'+cells+'</div><div class="lgd"><span><i class="l2"></i>Complet</span><span><i class="l1"></i>Commencé</span><span><i class="off"></i>Jour off</span></div></div>';
+  /* 3. Cycle de Hifdh : anneau découpé en jours */
+  if(pr.old.length){const i=((workIndex(t)%pr.d)+pr.d)%pr.d,R=44,C=2*Math.PI*R,n=pr.d,gap=n>1?Math.min(6,C/n*.25):0,seg=C/n-gap;
+    let arcs="";for(let k=0;k<n;k++)arcs+='<circle r="'+R+'" cx="56" cy="56" fill="none" stroke-width="11" stroke-linecap="'+(n>24?"butt":"round")+'" class="cs '+(k<i?"past":k===i?"cur":"")+'" style="--k:'+k+'" stroke-dasharray="'+seg+' '+(C-seg)+'" stroke-dashoffset="'+(-(k*C/n))+'" transform="rotate(-90 56 56)"/>';
+    let rem=n-i,end=t,g=0;while(rem>0&&g++<400){if(!isOff(end))rem--;if(rem>0)end=addDays(end,1)}
+    h+='<div class="sect">Cycle de Hifdh</div><div class="card cyc2"><svg viewBox="0 0 112 112" class="cring">'+arcs+'<text x="56" y="54" text-anchor="middle" class="cn">'+(i+1)+'</text><text x="56" y="72" text-anchor="middle" class="cd">sur '+n+'</text></svg>'
+      +'<div class="cyt"><b>Jour '+(i+1)+' du cycle</b><span class="num">~'+pr.k+' pages par jour</span><span>'+(end===t?"Cycle bouclé <b>aujourd\'hui</b>":"Cycle bouclé le <b>"+new Date(end+"T12:00").toLocaleDateString("fr-BE",{weekday:"long",day:"numeric",month:"long"})+"</b>")+'</span></div></div>'}
+  /* 4. Calendrier du mois */
+  if(!planMonth)planMonth=t.slice(0,7);
+  const [Y,M]=planMonth.split("-").map(Number),first=planMonth+"-01",lead=(new Date(first+"T12:00").getDay()+6)%7,nd=new Date(Y,M,0).getDate();
+  h+='<div class="sect">Calendrier</div><div class="card cal"><div class="calh"><button class="calb" data-mon="-1" aria-label="Mois précédent">'+I.prev+'</button><b>'+MOIS[M-1].charAt(0).toUpperCase()+MOIS[M-1].slice(1)+' '+Y+'</b><button class="calb" data-mon="1" aria-label="Mois suivant">'+I.next+'</button></div>'
+   +'<div class="calg">'+["L","M","M","J","V","S","D"].map(x=>'<span class="cw">'+x+'</span>').join("");
+  for(let k=0;k<lead;k++)h+='<span></span>';
+  for(let k=1;k<=nd;k++){const dd2=planMonth+"-"+pad(k),s=dd2>t?(isOff(dd2)?"off":"future"):dayStatus(dd2);
+    h+=(dd2>=t?'<button data-pday="'+dd2+'"':'<span')+' class="cd2 '+s+(dd2===t?" now":"")+(dd2===planSel?" sel":"")+'" style="--k:'+(k+lead)+'"><b class="num">'+k+'</b>'+(dd2>=t?'</button>':'</span>')}
+  h+='</div><div class="lgd"><span><i class="l2"></i>Complet</span><span><i class="l1"></i>Commencé</span><span><i class="mi"></i>Manqué</span><span><i class="off"></i>Jour off</span></div></div>';
   return h}
+function animatePlan(){const red=matchMedia("(prefers-reduced-motion: reduce)").matches,app=$("app");
+  if(!planShown&&!red){app.classList.add("cascade");setTimeout(()=>app.classList.remove("cascade"),1400);document.querySelectorAll(".cring,.calg").forEach(e=>e.classList.add("draw"))}
+  planShown=true;
+  const s=document.querySelector("#days2 .dc.on"),box=$("days2");if(s&&box){const x=s.offsetLeft-box.clientWidth/2+s.clientWidth/2;box.scrollTo({left:Math.max(0,x),behavior:planPrev&&!red?"smooth":"auto"})}}
 
 function sel(id,val){
   const s=S[(val||1)-1];
@@ -405,6 +437,8 @@ function render(){
   $("app").innerHTML=tab==="home"?vHome():tab==="rev"?vRev():tab==="plan"?vPlan():vSet();
   document.body.classList.toggle("onset",tab==="set");
   if(tab==="home")animateHome();else homeShown=false;
+  if(tab==="rev")animateRev();else{revShown=false;revPrevW=null;revPrevDone=null}
+  if(tab==="plan")animatePlan();else{planShown=false;planMonth=null}
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
   if(tab==="set"){
     const re=()=>{const y=scrollY;render();scrollTo(0,y)};
@@ -431,11 +465,12 @@ document.addEventListener("click",e=>{
   if(d.tab)go(d.tab);
   else if(d.goto){go("rev");const el=$("blk-"+d.goto);if(el){const y=el.getBoundingClientRect().top+scrollY-14-(parseFloat(getComputedStyle(document.documentElement).paddingTop)||0);scrollTo({top:Math.max(0,y),behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),1200)}}
   else if(d.goal!==undefined){tab="set";sub="profile";draft=null;render();scrollTo(0,0)}
-  else if(d.pday){planSel=d.pday;const y=scrollY;render();scrollTo(0,y)}
+  else if(d.pday){planPrev=planSel;planSel=d.pday;if(d.pday.slice(0,7)!==planMonth)planMonth=d.pday.slice(0,7);const y=scrollY;render();scrollTo(0,y);planPrev=null}
+  else if(d.mon){const [Y,M]=planMonth.split("-").map(Number),nd=new Date(Y,M-1+ +d.mon,1);planMonth=nd.getFullYear()+"-"+pad(nd.getMonth()+1);const y=scrollY;render();scrollTo(0,y);const g=document.querySelector(".calg");if(g&&!matchMedia("(prefers-reduced-motion: reduce)").matches){g.classList.add("draw")}}
   else if(d.sub!==undefined){sub=d.sub||null;draft=null;resetArm=false;render();scrollTo(0,0)}
-  else if(d.su){const id=+d.su,k=d.k,on=!dayRec(today())[k].includes(id);mark(k,[id],on);const y=scrollY;render();scrollTo(0,y);
+  else if(d.su){const id=+d.su,k=d.k,on=!dayRec(today())[k].includes(id);revTap=on?{id,k}:null;mark(k,[id],on);const y=scrollY;render();scrollTo(0,y);
     const x=dayState(today());if(on&&x.tot&&x.done===x.tot)toast("Révision du jour terminée !")}
-  else if(d.all){const x=dayState(today());mark(d.all,(d.all==="sj"?x.Js:d.all==="so"?x.Os:x.W).map(y=>y.s.id),d.on==="1");const y=scrollY;render();scrollTo(0,y)}
+  else if(d.all){revTap=d.on==="1"?{k:d.all,all:true}:null;const x=dayState(today());mark(d.all,(d.all==="sj"?x.Js:d.all==="so"?x.Os:x.W).map(y=>y.s.id),d.on==="1");const y=scrollY;render();scrollTo(0,y)}
   else if(d.learn){const before=program(st.cfg).total;learn(+d.learn);const y=scrollY;render();scrollTo(0,y);
     const after=program(st.cfg).total;if(after!==before&&!matchMedia("(prefers-reduced-motion: reduce)").matches){const btn=document.querySelector(d.learn==="1"?".plusb":".ghost");if(btn){const r=btn.getBoundingClientRect(),f=document.createElement("div");f.className="fly"+(after<before?" neg":"");f.textContent=(after>before?"+1":"−1")+" page";f.style.left=(r.left+r.width/2)+"px";f.style.top=(r.top)+"px";document.body.appendChild(f);setTimeout(()=>f.remove(),1100);btn.classList.add("bump");setTimeout(()=>btn.classList.remove("bump"),400)}}}
   else if(d.off!==undefined){const n=+d.off,i=draft.off.indexOf(n);if(i<0&&draft.off.length>=6){toast("Garde au moins un jour de révision");return}if(i<0)draft.off.push(n);else draft.off.splice(i,1);const y=scrollY;render();scrollTo(0,y)}
