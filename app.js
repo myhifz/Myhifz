@@ -399,15 +399,15 @@ function smallPhoto(){const src=st.cfg.photo;if(smallCache.src===src)return smal
 const b64e=t=>btoa(unescape(encodeURIComponent(t))),b64d=t=>decodeURIComponent(escape(atob(t.replace(/\s/g,""))));
 function ghPayload(){const o=JSON.parse(JSON.stringify(st));if(o.cfg){o.cfg.avatar=st.cfg.sharePhoto&&st.cfg.photo?smallPhoto():"";o.cfg.photo=""}if(o.duo)o.duo={file:o.duo.file,name:o.duo.name};o.app="monhifz";o.saved=new Date().toISOString();return JSON.stringify(o,null,1)}
 function ghApi(path,opt){return fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+path,Object.assign({cache:"no-store"},opt,{headers:{"Authorization":"Bearer "+gh.token,"Accept":"application/vnd.github+json"}}))}
-let ghBusy=false,ghTimer=null;
-function ghPush(force){if(!gh.token||!gh.file||!navigator.onLine||ghBusy)return Promise.resolve(false);ghBusy=true;
+let ghBusy=false,ghTimer=null,ghAgain=false;
+function ghPush(force){if(!gh.token||!gh.file||!navigator.onLine)return Promise.resolve(false);if(ghBusy){ghAgain=true;return Promise.resolve(false)}ghBusy=true;
   const put=sha=>ghApi(gh.file,{method:"PUT",keepalive:true,body:JSON.stringify({message:"Sauvegarde auto "+today(),content:b64e(ghPayload()),sha:sha||undefined})});
   const getSha=()=>ghApi(gh.file).then(r=>r.status===404?"":r.ok?r.json().then(j=>j.sha):Promise.reject(r.status));
   return (gh.sha?Promise.resolve(gh.sha):getSha()).then(put).then(r=>r.status===409||r.status===422?getSha().then(put):r)
     .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(j=>{gh.sha=j.content.sha;gh.last=new Date().toISOString();gh.err="";ghSave();st.bk=today();try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){};return true})
     .catch(e=>{gh.err=e===401||e===403?"Clé refusée : vérifie qu'elle a l'accès « Contents : Read and write » sur Myhifz.":e===404?"Dépôt introuvable : la clé doit donner accès à Myhifz.":"Envoi impossible pour l'instant, nouvel essai plus tard.";ghSave();if(force)toast(gh.err);return false})
-    .finally(()=>{ghBusy=false})}
-function ghSchedule(){if(!gh.token)return;clearTimeout(ghTimer);ghTimer=setTimeout(()=>ghPush(),15000)}
+    .finally(()=>{ghBusy=false;if(ghAgain){ghAgain=false;ghSchedule()}})}
+function ghSchedule(){if(!gh.token)return;clearTimeout(ghTimer);ghTimer=setTimeout(()=>{ghTimer=null;ghPush()},1500)}
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&typeof duoFetch==="function"&&tab==="home")duoFetch()});
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&ghTimer){clearTimeout(ghTimer);ghTimer=null;ghPush()}});
 function ghRestore(){if(!gh.token)return;toast("Récupération…");ghApi(gh.file).then(r=>{if(!r.ok)throw r.status;return r.json()}).then(j=>{gh.sha=j.sha;ghSave();const photo=st.cfg.photo;restoreFrom(JSON.parse(b64d(j.content)));if(photo&&!st.cfg.photo){st.cfg.photo=photo;save()}})
