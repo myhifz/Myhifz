@@ -1,0 +1,58 @@
+{
+ "log": {},
+ "day": {
+  "2026-10-17": {
+   "sj": [],
+   "so": [],
+   "sw": [],
+   "full": false
+  }
+ },
+ "weak": [
+  101
+ ],
+ "cfg": {
+  "c": "rose",
+  "name": "Camélia",
+  "a": 65,
+  "b": 114,
+  "dir": "up",
+  "jn": 4,
+  "d": 7,
+  "start": "2026-10-17",
+  "icon": "rose",
+  "p1": 558,
+  "p2": 604,
+  "off": [],
+  "goal": 62,
+  "pace": 2,
+  "hstart": "",
+  "mode": "auto",
+  "photo": ""
+ },
+ "bk": "",
+ "bkSnooze": "",
+ "tp": 0,
+ "learned": [
+  {
+   "d": "2026-10-17",
+   "n": -1
+  },
+  {
+   "d": "2026-10-17",
+   "n": 1
+  }
+ ],
+ "got": [
+  "hizb",
+  "juz",
+  "amma"
+ ],
+ "gotAt": {},
+ "pg": {},
+ "duo": null,
+ "onb": 1,
+ "recapSeen": "2026-10-17",
+ "app": "monhifz",
+ "saved": "2026-10-17T11:35:15.659Z"
+}
