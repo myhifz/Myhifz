@@ -134,6 +134,8 @@
  "pg": {
   "2026-10-17": 10
  },
+ "beg": {},
+ "fin": {},
  "duo": {
   "file": "sauvegardes/camelia.json",
   "name": "Camélia"
@@ -141,5 +143,5 @@
  "onb": 1,
  "recapSeen": "2026-10-17",
  "app": "monhifz",
- "saved": "2026-10-17T15:37:12.495Z"
+ "saved": "2026-10-17T21:38:15.182Z"
 }
