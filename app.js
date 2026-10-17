@@ -316,12 +316,40 @@ function badges(){const pr=program(st.cfg),mem=pr?pr.total:0,rec=record(),tp=Mat
   return B.map(([id,t,d,v,n])=>({id,t,d,v:Math.min(v,n),n,ok:v>=n}))}
 function checkBadges(silent){const ok=badges().filter(b=>b.ok).map(b=>b.id);if(!st.got){st.got=ok;save();return}
   const nw=ok.filter(i=>!st.got.includes(i));if(nw.length){st.got=st.got.concat(nw);st.gotAt=st.gotAt||{};nw.forEach(i=>st.gotAt[i]=today());save();if(!silent){const b=badges().find(x=>x.id===nw[0]);setTimeout(()=>toast("Nouveau jalon : "+b.t+" !"),400)}}}
+/* Carte du Coran (30 juz) et historique */
+const JUZ_P=[1,22,42,62,82,102,121,142,162,182,201,222,242,262,282,302,322,342,362,382,402,422,442,462,482,502,522,542,562,582,605];
+let histMode="w",juzSel=null;
+function juzMap(){const pr=program(st.cfg);let h='<div class="jz">';let full=0;
+  for(let j=0;j<30;j++){const a=JUZ_P[j],b=JUZ_P[j+1]-1,n=b-a+1,m=pr?Math.max(0,Math.min(b,pr.p2)-Math.max(a,pr.p1)+1):0,p=m/n;if(p>=1)full++;
+    h+='<button class="jc'+(p>=1?" full":p>0?" part":"")+(juzSel===j+1?" sel":"")+'" data-juz="'+(j+1)+'" style="--p:'+(p*100)+'%;--k:'+j+'"><i></i><b class="num">'+(j+1)+'</b></button>'}
+  h+='</div>';
+  let info;if(juzSel){const a=JUZ_P[juzSel-1],b=JUZ_P[juzSel]-1,m=pr?Math.max(0,Math.min(b,pr.p2)-Math.max(a,pr.p1)+1):0,f=onPage(a)[0],l=onPage(b).slice(-1)[0];
+    info='<b>Juz '+juzSel+' · '+f.t+(f.id!==l.id?' → '+l.t:'')+'</b><span class="num">p. '+a+'–'+b+' · '+m+' / '+(b-a+1)+' pages mémorisées ('+Math.round(m/(b-a+1)*100)+' %)</span>'}
+  else info='<b class="num">'+full+' juz complet'+(full>1?"s":"")+' sur 30</b><span>Touche un juz pour voir le détail.</span>';
+  return h+'<div class="jinfo">'+info+'</div>'}
+function histData(){const out=[],t=today();
+  if(histMode==="w"){const dw=(new Date(t+"T12:00").getDay()+6)%7,mon=addDays(t,-dw);
+    for(let k=7;k>=0;k--){const s=addDays(mon,-7*k);let r=0,l=0;for(let d=0;d<7;d++){const x=addDays(s,d);r+=(st.pg||{})[x]||0}
+      (st.learned||[]).forEach(e=>{const g=diff(e.d,s);if(g>=0&&g<7)l+=e.n});const dt=new Date(s+"T12:00");out.push({lab:dt.getDate()+"/"+(dt.getMonth()+1),r,l:Math.max(0,l),now:k===0})}}
+  else{const d0=new Date(t+"T12:00");for(let k=5;k>=0;k--){const dt=new Date(d0.getFullYear(),d0.getMonth()-k,1),key=dt.getFullYear()+"-"+pad(dt.getMonth()+1);let r=0,l=0;
+      Object.entries(st.pg||{}).forEach(([d,n])=>{if(d.startsWith(key))r+=n});(st.learned||[]).forEach(e=>{if(e.d.startsWith(key))l+=e.n});
+      out.push({lab:MOIS[dt.getMonth()].slice(0,4).replace(/\.$/,""),r,l:Math.max(0,l),now:k===0})}}
+  return out}
+function histChart(){const D=histData(),max=Math.max(1,...D.map(x=>x.r)),maxL=Math.max(1,...D.map(x=>x.l)),tr=D.reduce((a,x)=>a+x.r,0),tl=D.reduce((a,x)=>a+x.l,0);
+  return'<div class="seg3 hseg"><button class="'+(histMode==="w"?"on":"")+'" data-hist="w">8 semaines</button><button class="'+(histMode==="m"?"on":"")+'" data-hist="m">6 mois</button></div>'
+   +'<div class="htot"><div><i class="r"></i><b class="num">'+tr+'</b> pages révisées</div><div><i class="l"></i><b class="num">'+tl+'</b> pages apprises</div></div>'
+   +'<div class="hch">'+D.map((x,k)=>'<div class="hc'+(x.now?" now":"")+'"><div class="hb"><div class="hcol" style="--h:'+(x.r/max*100)+'%;--k:'+k+'">'+(x.l?'<em class="num">+'+x.l+'</em>':'')+'<i class="r"></i></div></div><span>'+x.lab+'</span></div>').join("")+'</div><p class="note" style="margin:8px 0 0">Les barres montrent les pages révisées, les pastilles « +N » les nouvelles pages apprises.</p>'
+   +(tr+tl===0?'<p class="note" style="margin:8px 0 0">Ton historique se remplit au fil de tes révisions.</p>':'')}
 function vMoi(){
   const c=st.cfg,pr=program(c),name=c.name.trim(),hs=c.hstart||firstDay(),bs=badges(),nOk=bs.filter(b=>b.ok).length;
   let h=subHead("Moi");
   h+='<div class="card me"><label class="av'+(c.photo?" ph":"")+'" aria-label="Changer la photo de profil">'+(c.photo?'<img src="'+c.photo+'" alt="">':(name?esc(name.charAt(0).toUpperCase()):I.user))+'<span class="avcam">'+I.cam+'</span><input type="file" id="photo" accept="image/*" class="vh"></label>'+(c.photo?'<button class="linkb" data-act="nophoto">Retirer la photo</button>':'<span class="note">Touche le rond pour ajouter une photo</span>')+'</div><div class="card me2"><input class="field" id="nm" type="text" maxlength="24" autocomplete="given-name" placeholder="Ton prénom" value="'+esc(c.name)+'"><div class="note" style="text-align:center">En hifdh depuis '+since(hs)+(pr?' · '+pr.total+' pages mémorisées':'')+'</div></div>';
   /* Mes chiffres */
   h+='<div class="sect">Mes chiffres</div><div class="kp"><div class="card"><b class="num">'+Math.round(st.tp||0)+'</b><span>pages révisées</span></div><div class="card"><b class="num">'+Object.keys(st.log).length+'</b><span>jours actifs</span></div><div class="card"><b class="num">'+record()+'</b><span>meilleure série</span></div><div class="card"><b class="num">'+pace28().toFixed(1).replace(".",",").replace(",0","")+'</b><span>pages apprises / semaine</span></div></div>';
+  /* Carte du Coran */
+  h+='<div class="sect">Ma carte du Coran</div><div class="card jzc">'+juzMap()+'</div>';
+  /* Historique */
+  h+='<div class="sect">Mon historique</div><div class="card">'+histChart()+'</div>';
   /* Mon objectif */
   const gi=goalInfo(),up=c.dir==="up";
   const opts=pr?S.filter(s=>(up?s.id<pr.a:s.id>pr.b)||s.id===+c.goal):[];if(up)opts.reverse();
@@ -543,6 +571,8 @@ document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
   if(ob&&onbClick(d))return;
   if(d.tab)go(d.tab);
+  else if(d.juz){juzSel=juzSel===+d.juz?null:+d.juz;const box=document.querySelector(".jzc");if(box){box.innerHTML=juzMap()}}
+  else if(d.hist){histMode=d.hist;const y=scrollY;render();scrollTo(0,y)}
   else if(d.mode){st.cfg.mode=d.mode;save();applyTheme();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="recap"){openRecap()}
   else if(d.act==="recapclose"){closeRecap()}
