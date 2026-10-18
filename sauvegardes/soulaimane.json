@@ -55,7 +55,10 @@
    "full": true
   }
  },
- "weak": [],
+ "weak": [
+  83,
+  82
+ ],
  "cfg": {
   "c": "marine",
   "name": "Soulaimane",
@@ -170,5 +173,5 @@
  "onb": 1,
  "recapSeen": "2026-10-17",
  "app": "monhifz",
- "saved": "2026-10-18T13:39:09.065Z"
+ "saved": "2026-10-18T13:39:19.696Z"
 }
