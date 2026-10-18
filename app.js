@@ -9,7 +9,7 @@ const DEF={c:"vert",name:"",a:0,b:0,dir:"up",jn:6,d:3,start:"",icon:"rose",p1:0,
 
 let st={log:{},day:{},weak:[],cfg:{...DEF}}, tab="home", draft=null, resetArm=false;
 try{const v=JSON.parse(localStorage.getItem(KEY)||"null");
-  if(v){st.bk=v.bk||"";st.bkSnooze=v.bkSnooze||"";st.log=v.log||{};st.day=v.day||{};st.weak=v.weak||[];st.tp=v.tp;st.learned=v.learned||[];st.got=v.got;st.gotAt=v.gotAt||{};st.pg=v.pg;st.wkhit=v.wkhit||{};st.wkgoal=v.wkgoal||{};st.cheer=v.cheer||null;st.cheerSeen=v.cheerSeen||"";st.notifAsk=v.notifAsk||"";st.beg=v.beg||{};st.fin=v.fin||{};st.duo=v.duo||null;st.onb=v.onb;st.recapSeen=v.recapSeen||"";st.cfg=Object.assign({...DEF},v.cfg||{});
+  if(v){st.bk=v.bk||"";st.bkSnooze=v.bkSnooze||"";st.log=v.log||{};st.day=v.day||{};st.weak=v.weak||[];st.tp=v.tp;st.learned=v.learned||[];st.got=v.got;st.gotAt=v.gotAt||{};st.pg=v.pg;st.wkhit=v.wkhit||{};st.wkgoal=v.wkgoal||{};st.cheer=v.cheer||null;st.cheerSeen=v.cheerSeen||"";st.notifAsk=v.notifAsk||"";st.beg=v.beg||{};st.fin=v.fin||{};st.duo=v.duo||null;st.onb=v.onb;st.recapSeen=v.recapSeen||"";st.tipRev=v.tipRev||0;st.cfg=Object.assign({...DEF},v.cfg||{});
     // Ancienne version (cases par sourate) : on reprend la plage cochée
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}}}catch(e){}
 // Icône : celle de l'écran d'accueil vient du lien utilisé à l'installation (?icon=N)
@@ -20,7 +20,7 @@ if(ICONS[URL_ICON])st.cfg.icon=URL_ICON;
 if(!ICONS[st.cfg.icon])st.cfg.icon="rose";
 function applyIcon(){document.querySelectorAll('link[rel="apple-touch-icon"],link[rel="icon"]').forEach(l=>l.href="icons/"+st.cfg.icon+".png")}
 const logo=()=>'<div class="logo"><img src="icons/'+st.cfg.icon+'.png" alt=""></div>';
-try{const t=localStorage.getItem(KEY+"-tab");if(["home","rev","plan","set"].includes(t))tab=t}catch(e){}
+try{const t=localStorage.getItem(KEY+"-tab");if(["home","rev","plan","set","moi"].includes(t))tab=t}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){};if(typeof ghSchedule==="function")ghSchedule()};
 
 const pad=n=>String(n).padStart(2,"0");
@@ -96,7 +96,7 @@ function record(){const ks=Object.keys(st.log).filter(k=>st.log[k]).sort();if(!k
 function applyTheme(){const c=THEMES[st.cfg.c]?st.cfg.c:"vert",m=st.cfg.mode,root=document.documentElement;root.dataset.c=c;
   if(m==="light"||m==="dark")root.dataset.mode=m;else delete root.dataset.mode;
   const dark=m==="dark"||(m!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);$("tc").content=dark?getComputedStyle(document.documentElement).getPropertyValue("--paper").trim():THEMES[c].tc}
-function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,1900)}
+function toast(m,act){const t=$("toast");t.innerHTML=esc(m)+(act?'<button data-act="'+act+'">Annuler</button>':"");t.classList.toggle("act",!!act);t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,act?5000:1900)}
 
 /* Icônes : style « duotone » (trait + aplat léger), toutes dessinées sur la même grille */
 const D=(s,p,f)=>'<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(f?'<g class="duo-f" fill="currentColor" stroke="none" opacity=".22">'+f+'</g>':'')+p+'</svg>';
@@ -141,6 +141,8 @@ const I={
  trophy:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h10v2h3.5v3a4.5 4.5 0 0 1-4.6 4.5A5 5 0 0 1 13 15.9V18h3v3H8v-3h3v-2.1A5 5 0 0 1 8.1 12.5 4.5 4.5 0 0 1 3.5 8V5H7zm0 4H5.5v1A2.5 2.5 0 0 0 7.3 10.4 6 6 0 0 1 7 8.5zm10 0v1.5a6 6 0 0 1-.3 1.9A2.5 2.5 0 0 0 18.5 8V7z"/></svg>',
  bell:D(22,'<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>','<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/>'),
  pen:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
+ gear:D(22,'<path d="M10.3 3.6a1.8 1.8 0 0 1 3.4 0l.3.9a1.8 1.8 0 0 0 2.4 1l.9-.4a1.8 1.8 0 0 1 2.4 2.4l-.4.9a1.8 1.8 0 0 0 1 2.4l.9.3a1.8 1.8 0 0 1 0 3.4l-.9.3a1.8 1.8 0 0 0-1 2.4l.4.9a1.8 1.8 0 0 1-2.4 2.4l-.9-.4a1.8 1.8 0 0 0-2.4 1l-.3.9a1.8 1.8 0 0 1-3.4 0l-.3-.9a1.8 1.8 0 0 0-2.4-1l-.9.4a1.8 1.8 0 0 1-2.4-2.4l.4-.9a1.8 1.8 0 0 0-1-2.4l-.9-.3a1.8 1.8 0 0 1 0-3.4l.9-.3a1.8 1.8 0 0 0 1-2.4l-.4-.9a1.8 1.8 0 0 1 2.4-2.4l.9.4a1.8 1.8 0 0 0 2.4-1z"/><circle cx="12" cy="12" r="3"/>','<circle cx="12" cy="12" r="7.5"/>'),
+ heart:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg>',
  check:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
 };
 
@@ -149,10 +151,13 @@ function learn(delta){
   const r=pageRange(st.cfg);if(!r)return;let[p1,p2]=r;
   if(st.cfg.dir==="up"){p1=Math.min(Math.max(1,p1-delta),p2)}else{p2=Math.max(Math.min(604,p2+delta),p1)}
   if(p1===r[0]&&p2===r[1]){toast(delta>0?"Tu es déjà à la fin du Mushaf":"Il faut garder au moins une page");return}
+  lastLearn=delta>0?{p1:st.cfg.p1,p2:st.cfg.p2,a:st.cfg.a,b:st.cfg.b,n:(st.learned||[]).length,got:(st.got||[]).slice()}:null;
   st.cfg.p1=p1;st.cfg.p2=p2;st.cfg.a=onPage(p1)[0].id;st.cfg.b=onPage(p2).slice(-1)[0].id;
   st.learned=(st.learned||[]).concat({d:today(),n:delta>0?1:-1,p:delta>0?(st.cfg.dir==="up"?p1:p2):0,at:new Date().toISOString()}).slice(-400);save();checkBadges();
   const np=st.cfg.dir==="up"?p1:p2;
-  toast(delta>0?"Page "+np+" ajoutée · "+onPage(np).map(s=>s.t).join(", "):"Dernière page retirée")}
+  toast(delta>0?"Page "+np+" ajoutée":"Dernière page retirée",delta>0?"undolearn":"")}
+let lastLearn=null;
+function undoLearn(){const u=lastLearn;if(!u)return;lastLearn=null;Object.assign(st.cfg,{p1:u.p1,p2:u.p2,a:u.a,b:u.b});st.learned=(st.learned||[]).slice(0,u.n);st.got=u.got;save();$("toast").hidden=true;toast("Page retirée");const y=scrollY;render();scrollTo(0,y)}
 function needSetup(){return'<div class="card empty"><div class="ar">بسم الله</div><p>Indique dans Réglages les sourates que tu connais et ton rythme de révision.</p><div class="chips" style="justify-content:center;margin-top:16px"><button class="btn pri" data-tab="set">Configurer mon programme</button></div></div>'}
 
 /* Accueil : tableau de bord du jour */
@@ -205,9 +210,9 @@ function vHome(){
   /* 3. Mémorisation */
   const pr=x.pr,cp=pr.total/PAGES*100,np=st.cfg.dir==="up"?pr.p1-1:pr.p2+1,nxt=np>=1&&np<=604?onPage(np):[];
   h+='<div class="sect">Mémorisation</div><div class="card memo2"><div class="mtop2"><div><b class="num">'+cp.toFixed(1)+'<small>%</small></b><span>du Coran mémorisé</span></div><div class="mstat num"><b>'+pr.total+'</b> pages<br><b>'+hizb(pr.total)+'</b> hizb</div></div><div class="prog"><i style="width:'+Math.max(cp,1)+'%"></i></div>'+goalLine()
-   +(nxt.length?'<div class="mnext"><div><span>Prochaine page</span><b class="num">'+np+' · '+nxt.map(s=>s.t).join(", ")+'</b></div><button class="ghost" data-learn="-1" aria-label="Retirer la dernière page">−</button><button class="plusb" data-learn="1" aria-label="J\'ai appris une nouvelle page">'+I.plus+'</button></div>':'<p class="note">Tu as atteint la fin du Mushaf. Toutes les pages sont mémorisées.</p>')+'</div>';
+   +(nxt.length?'<div class="mnext"><div><span>Prochaine page</span><b class="num">'+np+' · '+nxt.map(s=>s.t).join(", ")+'</b></div><button class="plusb" data-learn="1" aria-label="J\'ai appris une nouvelle page">'+I.plus+'</button></div>':'<p class="note">Tu as atteint la fin du Mushaf. Toutes les pages sont mémorisées.</p>')+'</div>';
   /* 4. Cette semaine */
-  h+=duoCard();
+  h+=duoShort();
   h+='<div class="sect">Cette semaine</div><div class="card week">'+weekStrip()+'<div class="wkline">'+(()=>{const t=today(),dw=(new Date(t+"T12:00").getDay()+6)%7;let a=0;for(let k=0;k<=dw;k++)if(st.log[addDays(t,k-dw)])a++;return'<span><b class="num">'+a+'</b> jour'+(a>1?"s":"")+' actif'+(a>1?"s":"")+' cette semaine</span><span>Record : <b class="num">'+record()+'</b> j</span>'})()+'</div><button class="btn wide" data-act="recap">'+I.chart+'Voir le bilan de la semaine</button></div>';
   return h}
 
@@ -247,10 +252,11 @@ function vRev(){
     const ns=(new Set(x.Js.concat(x.Os).map(y=>y.s.id))).size,sk=streak();
     h+='<div class="fin" id="fin">'+GEO+'<div class="fbadge">'+I.check+'</div><div class="fx"><h2>Révision terminée</h2><p class="num">'+x.tot+' pages · '+ns+' sourates · '+sk+' jour'+(sk>1?"s":"")+' de suite</p>'
      +(nO.length?'<span class="fnext">'+(diff(nd,today())===1?"Demain":fmtDay(nd).split(" ")[0])+' · Hifdh p. '+Math.min(...nO)+'–'+Math.max(...nO)+'</span>':'')+'</div></div>'}
+  if(!st.tipRev)h+='<div class="tip"><span class="tipi">'+I.spark+'</span><div><b>Comment ça marche</b><span>Touche la case quand tu as récité. Touche le nom pour lire la page. Une sourate difficile ? Appui long sur son nom, ou bouton « À renforcer » en lisant la page.</span><button class="btn" data-act="tipok">Compris</button></div></div>';
   h+=block("sj","Hifdh al-Jadid","Chaque jour",x.J,x.Js,x.d.sj,x.pr,"n");
   h+=block("so","Hifdh","Cycle de "+x.pr.d+" j",x.O,x.Os,x.d.so,x.pr,"o");
   h+=weakBlock(x);
-  return h+'<p class="note">Touche la case quand tu as récité. Touche le nom pour lire la page. Appui long sur le nom : « à renforcer ».</p>'}
+  return h}
 
 /* Planning : semaine, jour choisi, cycle de Hifdh, calendrier du mois */
 let planSel=null,planPrev=null,planMonth=null,planShown=false;
@@ -308,7 +314,7 @@ function initDraft(){draft={...st.cfg,a:st.cfg.a||78,b:st.cfg.b||114,off:(st.cfg
 function progKey(c){return[pageRange(c)+"",c.dir,+c.jn,+c.d,(c.off||[]).slice().sort()+""].join("|")}
 const dirty=()=>!!draft&&(progKey(draft)!==progKey(st.cfg)||!st.cfg.start);
 function setRow(id,icon,title,val,soft){return'<button class="srw" data-sub="'+id+'"><span class="si sm'+(soft?" s2":"")+(id==="profile"&&st.cfg.photo?" ph":"")+'">'+(id==="profile"&&st.cfg.photo?'<img src="'+st.cfg.photo+'" alt="">':icon)+'</span><span class="srt">'+title+(val?'<span class="srv">'+val+'</span>':'')+'</span>'+I.next+'</button>'}
-function subHead(t,s){return'<div class="subh"><button class="back" data-sub="">'+I.prev+'Réglages</button><h1>'+t+'</h1>'+(s?'<div class="sub">'+s+'</div>':'')+'</div>'}
+function subHead(t,s,back){return'<div class="subh"><button class="back" data-sub="">'+I.prev+(back||'Réglages')+'</button><h1>'+t+'</h1>'+(s?'<div class="sub">'+s+'</div>':'')+'</div>'}
 function saveBar(){return'<div class="savebar" id="savebar"'+(dirty()?"":" hidden")+'><button class="savebtn" data-act="save">'+I.save+'Sauvegarder</button></div>'}
 /* Moi : chiffres, objectif, jalons, date de début */
 function pace28(){const t=today();return Math.max(0,(st.learned||[]).filter(e=>diff(t,e.d)<28).reduce((a,e)=>a+e.n,0))/4}
@@ -354,8 +360,9 @@ function histChart(){const D=histData(),max=Math.max(1,...D.map(x=>x.r)),maxL=Ma
    +(tr+tl===0?'<p class="note" style="margin:8px 0 0">Ton historique se remplit au fil de tes révisions.</p>':'')}
 function vMoi(){
   const c=st.cfg,pr=program(c),name=c.name.trim(),hs=c.hstart||firstDay(),bs=badges(),nOk=bs.filter(b=>b.ok).length;
-  let h=subHead("Moi");
-  h+='<div class="card me"><label class="av'+(c.photo?" ph":"")+'" aria-label="Changer la photo de profil">'+(c.photo?'<img src="'+c.photo+'" alt="">':(name?esc(name.charAt(0).toUpperCase()):I.user))+'<span class="avcam">'+I.cam+'</span><input type="file" id="photo" accept="image/*" class="vh"></label>'+(c.photo?'<button class="linkb" data-act="nophoto">Retirer la photo</button>'+(gh.token?'<button class="tgl'+(c.sharePhoto?" on":"")+'" data-act="sharephoto"><span><b>Montrer ma photo dans le défi</b><small>Elle sera visible publiquement sur GitHub, en petit format.</small></span><i></i></button>':''):'<span class="note">Touche le rond pour ajouter une photo</span>')+'</div><div class="card me2"><input class="field" id="nm" type="text" maxlength="24" autocomplete="given-name" placeholder="Ton prénom" value="'+esc(c.name)+'"><div class="note" style="text-align:center">En hifdh depuis '+since(hs)+(pr?' · '+pr.total+' pages mémorisées':'')+'</div></div>';
+  let h='<div class="mhd"><h1>Moi</h1><button class="gear" data-tab="set" aria-label="Réglages">'+I.gear+'</button></div>';
+  h+='<div class="card prof"><div class="pfr"><label class="av'+(c.photo?" ph":"")+'" aria-label="Changer la photo de profil">'+(c.photo?'<img src="'+c.photo+'" alt="">':(name?esc(name.charAt(0).toUpperCase()):I.user))+'<span class="avcam">'+I.cam+'</span><input type="file" id="photo" accept="image/*" class="vh"></label><div class="pfc"><input class="field" id="nm" type="text" maxlength="24" autocomplete="given-name" placeholder="Ton prénom" value="'+esc(c.name)+'"><span class="note">En hifdh depuis '+since(hs)+(pr?' · '+pr.total+' pages':'')+'</span></div></div>'
+   +(c.photo?(gh.token?'<button class="tgl'+(c.sharePhoto?" on":"")+'" data-act="sharephoto"><span><b>Montrer ma photo dans le défi</b><small>Visible publiquement sur GitHub, en petit format.</small></span><i></i></button>':'')+'<button class="linkb" data-act="nophoto">Retirer la photo</button>':'')+'</div>';
   /* Mon objectif */
   const gi=goalInfo(),up=c.dir==="up";
   const opts=pr?S.filter(s=>(up?s.id<pr.a:s.id>pr.b)||s.id===+c.goal):[];if(up)opts.reverse();
@@ -366,27 +373,32 @@ function vMoi(){
     if(gi&&gi.done)h+='<div class="gres ok">'+I.check+'<span>Objectif atteint ! Choisis le suivant.</span></div>';
     else if(gi)h+='<div class="gres"><div class="gbig"><b class="num">'+gi.rem+'</b> pages restantes</div><div>Arrivée prévue vers le <b>'+fmtShort(gi.eta)+'</b></div><div class="gst '+(gi.act===0?"":gi.ahead?"up":"down")+'">'+(gi.act===0?"Ajoute tes nouvelles pages avec le bouton + de l'accueil pour suivre ton rythme.":gi.ahead?"Dans les temps : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.":"Un peu en retard : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.")+'</div></div>'}
   h+='</div>';
+  h+=defiSection();
   /* Mes chiffres */
   h+='<div class="sect">Mes chiffres</div><div class="kp"><div class="card"><b class="num">'+Math.round(st.tp||0)+'</b><span>pages révisées</span></div><div class="card"><b class="num">'+Object.keys(st.log).length+'</b><span>jours actifs</span></div><div class="card"><b class="num">'+record()+'</b><span>meilleure série</span></div><div class="card"><b class="num">'+pace28().toFixed(1).replace(".",",").replace(",0","")+'</b><span>pages apprises / semaine</span></div></div>';
   /* Carte du Coran */
   h+='<div class="sect">Ma carte du Coran</div><div class="card jzc">'+juzMap()+'</div>';
   /* Historique */
   h+='<div class="sect">Mon historique</div><div class="card">'+histChart()+'</div>';
-  /* Défi à deux */
-  h+='<div class="sect">Défi à deux</div><div class="card">';
-  if(!gh.token)h+='<p class="note" style="margin:0">Pour faire un défi, active d\'abord la sauvegarde automatique GitHub (Réglages → Sauvegarde et restauration). Ton proche doit faire pareil sur son téléphone.</p>';
-  else if(st.duo){h+='<div class="fl" style="margin-top:0">Objectif du duel de la semaine</div><div class="seg3">'+[30,50,80].map(g=>'<button class="'+(duelGoal()===g?"on":"")+'" data-dgoal="'+g+'">'+g+' pages</button>').join("")+'</div><p class="note" style="margin:8px 0 14px">Le premier à réviser ce nombre de pages dans la semaine gagne un trophée. Le choix est partagé avec ton proche.</p><div class="duoset"><b>Avec '+esc((st.duo.data&&st.duo.data.cfg.name)||st.duo.name)+'</b><span>'+(st.duo.err||"Mis à jour "+ago2(st.duo.at?new Date(st.duo.at).toISOString():""))+'</span></div><div class="chips" style="margin-top:12px"><button class="btn" data-act="duoref">Actualiser</button><button class="btn" data-act="duooff">Arrêter le défi</button></div>'}
-  else{if(duoList===null){duoLoadList();h+='<p class="note" style="margin:0">Recherche des autres sauvegardes…</p>'}
-    else if(!duoList.length)h+='<p class="note" style="margin:0">'+(duoListErr||'Aucune autre sauvegarde trouvée. Ton proche doit mettre son prénom, puis activer la sauvegarde automatique avec la même clé.')+'</p><button class="btn wide" data-act="duolist">Actualiser la liste</button>';
-    else h+='<p class="note" style="margin:0 0 10px">Avec qui veux-tu faire le défi ?</p><div class="chips">'+duoList.map(f=>'<button class="btn" data-duo="'+esc(f.file)+'" data-dn="'+esc(f.name)+'">'+esc(f.name.charAt(0).toUpperCase()+f.name.slice(1))+'</button>').join("")+'</div>'}
-  h+='</div>';
   /* Mes jalons */
   h+='<div class="sect">Mes jalons · '+nOk+'/'+bs.length+'</div><div class="bdg">'+bs.map(b=>'<div class="bd'+(b.ok?" ok":"")+'"><div class="bdi">'+(b.ok?I.medal:I.lock)+'</div><b>'+b.t+'</b><span>'+(b.ok?b.d:b.v+" / "+b.n)+'</span>'+(b.ok?'':'<i><u style="width:'+Math.round(b.v/b.n*100)+'%"></u></i>')+'</div>').join("")+'</div>';
   /* Date de début */
   h+='<div class="sect">Mon parcours</div><div class="card"><div class="fl" style="margin-top:0">Date de début du hifdh</div><input class="field" id="hst" type="date" max="'+today()+'" value="'+hs+'"><div class="note" style="margin-top:8px">Début le '+fmtShort(hs)+' · il y a '+since(hs)+'.</div></div>';
   return h}
+function defiSection(){let h='<div class="sect">Défi à deux</div>';
+  if(!gh.token)return h+'<div class="card"><p class="note" style="margin:0">Pour faire un défi, active d\'abord la sauvegarde automatique GitHub (Réglages → Sauvegarde). Ton proche doit faire pareil sur son téléphone.</p><button class="btn wide" style="margin-top:12px" data-gosub="data">Ouvrir la sauvegarde</button></div>';
+  if(!st.duo){h+='<div class="card">';if(duoList===null){duoLoadList();h+='<p class="note" style="margin:0">Recherche des autres sauvegardes…</p>'}
+    else if(!duoList.length)h+='<p class="note" style="margin:0">'+(duoListErr||'Aucune autre sauvegarde trouvée. Ton proche doit mettre son prénom, puis activer la sauvegarde automatique avec la même clé.')+'</p><button class="btn wide" data-act="duolist">Actualiser la liste</button>';
+    else h+='<p class="note" style="margin:0 0 10px">Avec qui veux-tu faire le défi ?</p><div class="chips">'+duoList.map(f=>'<button class="btn" data-duo="'+esc(f.file)+'" data-dn="'+esc(f.name)+'">'+esc(f.name.charAt(0).toUpperCase()+f.name.slice(1))+'</button>').join("")+'</div>';
+    return h+'</div>'}
+  const nm=esc((st.duo.data&&st.duo.data.cfg.name)||st.duo.name),on=!!(st.cfg.push&&st.cfg.push.endpoint);
+  h+=duoCard()||'<div class="card"><p class="note" style="margin:0">'+(st.duo.err||"Chargement du défi…")+'</p></div>';
+  h+='<div class="card"><div class="fl" style="margin-top:0">Objectif du duel de la semaine</div><div class="seg3">'+[30,50,80].map(g=>'<button class="'+(duelGoal()===g?"on":"")+'" data-dgoal="'+g+'">'+g+' pages</button>').join("")+'</div><p class="note" style="margin:8px 0 0">Le premier à réviser ce nombre de pages dans la semaine gagne un trophée. Le choix est partagé avec '+nm+'.</p></div>'
+   +'<div class="card list">'+setRow("notif",I.bell,"Notifications",on?"Activées":"Désactivées",1)+'</div>'
+   +'<div class="dfoot"><span>'+(st.duo.err?esc(st.duo.err):"Mis à jour "+ago2(st.duo.at?new Date(st.duo.at).toISOString():""))+'</span><button class="linkb" data-act="duoref">Actualiser</button><button class="linkb" data-act="duooff">Arrêter le défi</button></div>';
+  return h}
 function restoreFrom(v){if(!v||(!v.cfg&&!v.s))throw 0;
-    const keep={bk:[st.bk,v.saved,v.bk].filter(Boolean).sort().pop()||""};st={log:v.log||{},day:v.day||{},weak:v.weak||[],tp:v.tp||0,learned:v.learned||[],got:v.got,gotAt:v.gotAt||{},pg:v.pg||{},beg:v.beg||{},fin:v.fin||{},duo:v.duo||null,onb:1,wkhit:v.wkhit||{},wkgoal:v.wkgoal||{},cheer:v.cheer||null,cheerSeen:[st.cheerSeen,v.cheerSeen].filter(Boolean).sort().pop()||"",recapSeen:v.recapSeen||"",cfg:Object.assign({...DEF},v.cfg||{},{push:(st.cfg&&st.cfg.push)||null})};
+    const keep={bk:[st.bk,v.saved,v.bk].filter(Boolean).sort().pop()||""};st={log:v.log||{},day:v.day||{},weak:v.weak||[],tp:v.tp||0,learned:v.learned||[],got:v.got,gotAt:v.gotAt||{},pg:v.pg||{},beg:v.beg||{},fin:v.fin||{},duo:v.duo||null,onb:1,wkhit:v.wkhit||{},wkgoal:v.wkgoal||{},cheer:v.cheer||null,cheerSeen:[st.cheerSeen,v.cheerSeen].filter(Boolean).sort().pop()||"",recapSeen:v.recapSeen||"",tipRev:v.tipRev||st.tipRev||0,cfg:Object.assign({...DEF},v.cfg||{},{push:(st.cfg&&st.cfg.push)||null})};
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}
     if(ICONS[URL_ICON])st.cfg.icon=URL_ICON;if(!ICONS[st.cfg.icon])st.cfg.icon="rose";
     Object.assign(st,keep);save();draft=null;applyTheme();applyIcon();toast("Données restaurées");render()}
@@ -432,7 +444,7 @@ function ghPush(force,bg){if(!gh.token||!gh.file)return Promise.resolve(false);
     .finally(()=>{ghBusy=false;if(ghAgain){ghAgain=false;ghSchedule()}})}
 function ghLater(){clearTimeout(ghRetryT);const w=[4,10,30,60,120][Math.min(ghRetry,4)]*1000;ghRetry++;ghRetryT=setTimeout(()=>{if(gh.dirty)ghPush()},w)}
 function ghSchedule(){if(!gh.token)return;gh.dirty=true;ghSave();clearTimeout(ghTimer);ghTimer=setTimeout(()=>{ghTimer=null;ghPush()},1500)}
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&typeof duoFetch==="function"&&tab==="home")duoFetch()});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&typeof duoFetch==="function"&&(tab==="home"||tab==="moi"))duoFetch()});
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&(ghTimer||gh.dirty)){clearTimeout(ghTimer);ghTimer=null;ghPush(false,true)}
   else if(document.visibilityState==="visible"&&gh.dirty){ghRetry=0;ghPush()}});
 addEventListener("online",()=>{if(gh.dirty){ghRetry=0;ghPush()}});
@@ -479,12 +491,12 @@ function closeRecap(){const s=$("sheet");s.hidden=true;document.body.classList.r
 let duoList=null,duoBusy=false;
 function duoFetch(force){if(!st.duo||duoBusy)return;if(!force&&st.duo.at&&Date.now()-st.duo.at<6e4)return;duoBusy=true;
   fetch(ghUrl(st.duo.file+"?t="+Date.now()),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}})
-   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={wkhit:d.wkhit||{},cheer:d.cheer||null,duoGoal:(d.cfg||{}).duoGoal,duoGoalAt:(d.cfg||{}).duoGoalAt,saved:d.saved||"",beg:d.beg||{},fin:d.fin||{},log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if((tab==="home"||sub==="profile")&&!typing()){const y=scrollY;render();scrollTo(0,y)}})
+   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={wkhit:d.wkhit||{},cheer:d.cheer||null,duoGoal:(d.cfg||{}).duoGoal,duoGoalAt:(d.cfg||{}).duoGoalAt,saved:d.saved||"",beg:d.beg||{},fin:d.fin||{},log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if((tab==="home"||tab==="moi")&&!typing()){const y=scrollY;render();scrollTo(0,y)}})
    .catch(e=>{st.duo.err="Impossible de lire la sauvegarde de "+st.duo.name;save()}).finally(()=>{duoBusy=false})}
 let duoListErr="";
-function duoLoadList(){duoListErr="";fetch(ghUrl("sauvegardes?t="+Date.now()),{cache:"no-store"}).then(r=>{if(r.status===404)return[];if(!r.ok)throw r.status;return r.json()}).then(a=>{duoList=(Array.isArray(a)?a:[]).filter(f=>/\.json$/.test(f.name)&&"sauvegardes/"+f.name!==gh.file).map(f=>({file:f.path,name:f.name.replace(/\.json$/,"").replace(/-/g," ")}));duoList.forEach(f=>fetch(ghUrl(f.file),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.cfg&&d.cfg.name){f.name=d.cfg.name;if(sub==="profile"&&!st.duo){const y=scrollY;render();scrollTo(0,y)}}}).catch(()=>{}));if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}}).catch(e=>{duoList=[];duoListErr=e===403?"GitHub limite les demandes pour l'instant, réessaie dans quelques minutes.":"Impossible de joindre GitHub. Vérifie ta connexion.";if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})}
+function duoLoadList(){duoListErr="";fetch(ghUrl("sauvegardes?t="+Date.now()),{cache:"no-store"}).then(r=>{if(r.status===404)return[];if(!r.ok)throw r.status;return r.json()}).then(a=>{duoList=(Array.isArray(a)?a:[]).filter(f=>/\.json$/.test(f.name)&&"sauvegardes/"+f.name!==gh.file).map(f=>({file:f.path,name:f.name.replace(/\.json$/,"").replace(/-/g," ")}));duoList.forEach(f=>fetch(ghUrl(f.file),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.cfg&&d.cfg.name){f.name=d.cfg.name;if(tab==="moi"&&!st.duo){const y=scrollY;render();scrollTo(0,y)}}}).catch(()=>{}));if(tab==="moi"){const y=scrollY;render();scrollTo(0,y)}}).catch(e=>{duoList=[];duoListErr=e===403?"GitHub limite les demandes pour l'instant, réessaie dans quelques minutes.":"Impossible de joindre GitHub. Vérifie ta connexion.";if(tab==="moi"){const y=scrollY;render();scrollTo(0,y)}})}
 /* Quelqu'un écrit : on ne redessine pas l'écran (le texte serait perdu) */
-function typing(){const w=$("cwrite"),a=document.activeElement;return!!(w&&!w.hidden&&$("cmsg").value)||!!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))}
+function typing(){const a=document.activeElement;return!!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&$("app").contains(a))}
 const hm=iso=>{const d=new Date(iso);return d.getHours()+" h "+pad(d.getMinutes())};
 function durMin(o,day){const b=(o.beg||{})[day],f=(o.fin||{})[day];if(!b||!f)return null;return Math.max(1,Math.round((new Date(f)-new Date(b))/60000))}
 const fmtDur=m=>m<60?m+" min":Math.floor(m/60)+" h "+pad(m%60);
@@ -518,13 +530,24 @@ function duelBlock(o,nm){const wk=weekKey(),g=duelGoal(),a=calWeekPages(st,wk),b
    +'<div class="dlrow"><span>Toi</span>'+bar(a,"dlme")+'<b class="num">'+Math.min(a,g)+'/'+g+'</b>'+(w==="a"?I.trophy:'')+'</div>'
    +'<div class="dlrow"><span>'+nm+'</span>'+bar(b,"dlot")+'<b class="num">'+Math.min(b,g)+'/'+g+'</b>'+(w==="b"?I.trophy:'')+'</div>'
    +'<div class="dlf">'+(w?(w==="a"?"Tu as gagné le duel de la semaine !":nm+" a gagné le duel de la semaine !"):"Fin du duel "+(left<=0?"ce soir":"dans "+left+" jour"+(left>1?"s":"")))+'<span class="num">Trophées : Toi '+ta+' · '+nm+' '+tb+'</span></div></div>'}
+function leadOf(o,nm){const fw=fastWins(st,o),sa=weekOf(st).pages+streakOf(st)*2+fw[0]*3,sb=weekOf(o).pages+streakOf(o)*2+fw[1]*3;return{cls:sa===sb?"":sa>sb?" lme":" lot",t:sa===sb?"Égalité cette semaine":sa>sb?"Tu mènes cette semaine":nm+" mène cette semaine"}}
+const avMe=()=>'<span class="dp dme">'+(st.cfg.photo?'<img src="'+st.cfg.photo+'" alt="">':esc((st.cfg.name||"M").charAt(0).toUpperCase()))+'</span>';
+const avOt=(o,nm)=>'<span class="dp dot2">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':esc(nm.charAt(0).toUpperCase()))+'</span>';
+function cheerSent(){return st.cheer&&st.cheer.at&&st.duo&&st.cheer.to===st.duo.file&&diff(today(),ld(st.cheer.at))<1?st.cheer.msg:""}
+function duoShort(){if(!st.duo||!st.duo.data)return"";const o=st.duo.data,nm=esc(o.cfg.name||st.duo.name),L=leadOf(o,nm),cs=cheerSent();
+  return'<div class="sect">Défi à deux</div><div class="card dshort"><button class="dsh" data-tab="moi"><span class="dpair">'+avMe()+avOt(o,nm)+'</span><span class="dst"><b>Toi et '+nm+'</b><span class="'+L.cls+'">'+L.t+'</span></span>'+I.next+'</button>'
+   +duelBlock(o,nm)+'<div class="dsf">'+(cs?'<span class="note">Envoyé : « '+esc(cs)+' »</span>':'<span class="note">Un petit mot pour '+nm+' ?</span>')+'<button class="btn pri" data-act="cheer">'+I.heart+'Encourager</button></div></div>'}
+function openCheer(){if(!st.duo)return;const o=st.duo.data||{cfg:{}},nm=esc(o.cfg.name||st.duo.name),s=$("sheet");
+  s.innerHTML='<div class="sheet-in"><button class="shx" data-act="recapclose" aria-label="Fermer">×</button><span class="ddk">Encourager</span><h2>'+nm+'</h2><div class="chl">'+CHEERS.map((m,k)=>'<button data-cheer="'+k+'">'+m+'</button>').join("")+'</div><div class="fl">Ou écris ton message</div><textarea id="cmsg" class="cmsg" maxlength="140" rows="3" placeholder="Ton message pour '+nm+'…"></textarea><div class="cwf"><span class="note" id="ccount">0/140</span><button class="btn pri" data-act="cheersend">Envoyer</button></div></div>';
+  s.hidden=false;document.body.classList.add("sheet-open");const t=$("cmsg");t.oninput=()=>{$("ccount").textContent=t.value.length+"/140"}}
+function sendCheer(msg){st.cheer={to:st.duo.file,msg:msg,at:new Date().toISOString()};save();closeRecap();toast("Encouragement envoyé");const y=scrollY;render();scrollTo(0,y)}
 function duoCard(){if(!st.duo||!st.duo.data)return"";const o=st.duo.data,me=weekOf(st),him=weekOf(o),nm=esc(o.cfg.name||st.duo.name);
   const row=(lab,a,b)=>{const m=Math.max(1,a,b),wa=a/m*100,wb=b/m*100;return'<div class="vr"><b class="num va'+(a>b?" win":"")+'">'+a+'</b><div class="vbar"><span class="vl"><i style="--w:'+wa+'%"></i></span><span class="vlab">'+lab+'</span><span class="vrt"><i style="--w:'+wb+'%"></i></span></div><b class="num vb'+(b>a?" win":"")+'">'+b+'</b></div>'};
   const fw=fastWins(st,o),sa=me.pages+streakOf(st)*2+fw[0]*3,sb=him.pages+streakOf(o)*2+fw[1]*3,lead=sa===sb?"Égalité cette semaine":sa>sb?"Tu mènes cette semaine":nm+" mène cette semaine";
-  return'<div class="sect">Défi à deux</div><div class="card duo3"><div class="vhd"><div class="vp"><span class="dp dme">'+(st.cfg.photo?'<img src="'+st.cfg.photo+'" alt="">':esc((st.cfg.name||"M").charAt(0).toUpperCase()))+'</span><b>Toi</b></div><span class="vs">VS</span><div class="vp"><span class="dp dot2">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':esc(nm.charAt(0).toUpperCase()))+'</span><b>'+nm+'</b></div></div>'
+  return'<div class="card duo3"><div class="vhd"><div class="vp"><span class="dp dme">'+(st.cfg.photo?'<img src="'+st.cfg.photo+'" alt="">':esc((st.cfg.name||"M").charAt(0).toUpperCase()))+'</span><b>Toi</b></div><span class="vs">VS</span><div class="vp"><span class="dp dot2">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':esc(nm.charAt(0).toUpperCase()))+'</span><b>'+nm+'</b></div></div>'
    +duelBlock(o,nm)+todayRace(o,nm)
    +row("Pages révisées",me.pages,him.pages)+(()=>{const[fa,fb]=fastWins(st,o);return row("Premier à finir",fa,fb)})()+(()=>{const[pa,pb]=pageRace(st,o);return row("Course aux pages",pa,pb)})()+row("Jours de série",streakOf(st),streakOf(o))+row("Jours actifs",me.active,him.active)
-   +'<div class="dlead'+(sa===sb?"":sa>sb?" lme":" lot")+'">'+I.medal+lead+'</div>'+'<div class="chrow">'+(st.cheer&&st.cheer.at&&diff(today(),ld(st.cheer.at))<1?'<span class="note">Encouragement envoyé : « '+esc(st.cheer.msg)+' »</span>':'<span class="note">Encourager '+nm+' :</span>')+'<div class="chips">'+CHEERS.map((m,k)=>'<button class="chip" data-cheer="'+k+'">'+m+'</button>').join("")+'<button class="chip add" data-act="cheerwrite">'+I.pen+'Écrire un message</button></div><div class="cwrite" id="cwrite" hidden><textarea id="cmsg" maxlength="140" rows="2" placeholder="Ton message pour '+nm+'…"></textarea><div class="cwf"><span class="note" id="ccount">0/140</span><button class="btn pri" data-act="cheersend">Envoyer</button></div></div></div>'
+   +'<div class="dlead'+(sa===sb?"":sa>sb?" lme":" lot")+'">'+I.medal+lead+'</div>'+(()=>{const cs=cheerSent();return'<div class="chrow">'+(cs?'<span class="note">Envoyé aujourd\'hui : « '+esc(cs)+' »</span>':'')+'<button class="btn pri wide" data-act="cheer">'+I.heart+'Encourager '+nm+'</button></div>'})()
    +(o.saved?'<div class="dsync">Dernière activité de '+nm+' : '+ago2(o.saved)+'</div>':'')+'</div>'}
 
 /* ===== Premier lancement ===== */
@@ -566,7 +589,7 @@ function notifOn(){if(!gh.token){toast("Active d'abord la sauvegarde automatique
   .catch(e=>toast("Impossible d'activer les notifications"))}
 function notifOff(){navigator.serviceWorker.ready.then(r=>r.pushManager.getSubscription()).then(s=>s&&s.unsubscribe()).catch(()=>{});st.cfg.push=null;save();toast("Notifications désactivées");const y=scrollY;render();scrollTo(0,y)}
 function vNotif(){const sup=notifSupport(),on=!!(st.cfg.push&&st.cfg.push.endpoint),pref=Object.assign({cheer:true,fin:true,duel:true},st.cfg.notif||{}),nm=esc((st.duo&&st.duo.data&&st.duo.data.cfg.name)||"ton proche");
-  let h=subHead("Notifications","Pour le défi à deux.");
+  let h=subHead("Notifications","Pour le défi à deux.","Moi");
   h+='<div class="card">'+head(I.bell,on?"Notifications activées":"Recevoir des notifications",on?"Sur ce téléphone, même quand l\'app est fermée.":"Sois prévenu quand "+nm+" t\'encourage, finit sa révision ou gagne le duel.",1);
   if(!on&&sup)h+='<p class="note" style="margin:12px 0 0">'+sup+'</p>';
   else if(!on)h+='<button class="btn pri wide" data-act="notifon">'+I.bell+'Activer les notifications</button>';
@@ -602,8 +625,6 @@ function vSet(){
     h+='<div class="card">'+head(I.book,"Icône de l'app","Choisis le logo de ton écran d'accueil.",1)+'<div class="icons">'+Object.entries(ICONS).map(([k,n])=>'<button class="ico '+(ic===k?"on":"")+'" data-icon="'+k+'" aria-label="Icône '+n+'"><img src="icons/'+k+'.png" alt=""><span>'+n+'</span></button>').join("")+'</div>'
      +(ic!==INSTALLED_ICON?'<div class="howto"><b>Pour l\'avoir sur ton écran d\'accueil :</b><ol><li>Copie ta sauvegarde (Réglages → Données).</li><li>Supprime l\'icône actuelle de l\'écran d\'accueil.</li><li>Ouvre ce lien dans Safari :<div class="lk"><span class="num">'+link+'</span><button class="btn" data-act="copylink">Copier</button></div></li><li>Partager → « Sur l\'écran d\'accueil ».</li><li>Ouvre l\'app, Réglages → Données → Restaurer.</li></ol></div>':'')+'</div>';
     return h}
-  if(sub==="profile")return vMoi();
-  if(sub==="notif")return vNotif();
   if(sub==="data"){
     let h=subHead("Données","Tes données restent sur ce téléphone.");
     const a=bkAge();
@@ -620,24 +641,22 @@ function vSet(){
   const progVal=configured?(()=>{const A=S[cp.a-1],B=S[cp.b-1],o=c.dir==="up"?[B,A]:[A,B];return o[0].t+" → "+o[1].t})():"À configurer";
   const revVal=configured?cp.jadid.length+" + ~"+(cp.old.length?cp.k:0)+" p./jour":"—";
   const offVal=(c.off||[]).length?DAYS.filter(([n])=>c.off.includes(n)).map(([,l])=>l).join(", "):"Aucun";
-  let h='<div><h1>Réglages</h1><div class="sub">Configure ta méthode de révision</div></div>';
+  let h='<div class="subh"><button class="back" data-tab="moi">'+I.prev+'Moi</button><h1>Réglages</h1></div>';
   h+='<div class="lbl">Méthode</div><div class="card list">'+setRow("prog",I.book,"Mon programme",progVal)+setRow("rev",I.loop,"Révision",revVal+' · Jour off : '+offVal)+'</div>';
-  h+='<div class="lbl">Personnalisation</div><div class="card list">'+setRow("look",I.palette,"Apparence",THEMES[c.c]?THEMES[c.c].n:"Vert",1)+setRow("profile",I.user,"Moi",(c.name.trim()?esc(c.name.trim())+" · ":"")+badges().filter(b=>b.ok).length+" jalons")+'</div>';
-  h+='<div class="lbl">Défi à deux</div><div class="card list">'+setRow("notif",I.bell,"Notifications",st.cfg.push&&st.cfg.push.endpoint?"Activées":"Désactivées",1)+'</div>';
-  h+='<div class="lbl">Données</div><div class="card list">'+setRow("data",I.cloud,"Sauvegarde et restauration",gh.token?(gh.err?"Sauvegarde auto : erreur":"Auto · "+ago2(gh.last)):bkAge()===null?"Jamais sauvegardé":bkAge()===0?"Sauvegardé aujourd\'hui":"Il y a "+bkAge()+" j",1)+'</div>';
+  h+='<div class="lbl">App</div><div class="card list">'+setRow("look",I.palette,"Apparence",(THEMES[c.c]?THEMES[c.c].n:"Vert")+" · "+({auto:"Auto",light:"Clair",dark:"Sombre"}[c.mode]||"Auto"),1)+setRow("data",I.cloud,"Sauvegarde",gh.token?(gh.err?"Sauvegarde auto : erreur":"Auto · "+ago2(gh.last)):bkAge()===null?"Jamais sauvegardé":bkAge()===0?"Sauvegardé aujourd\'hui":"Il y a "+bkAge()+" j",1)+'</div>';
   return h}
 
 function render(){
   const onb=needOnb();document.body.classList.toggle("onbm",onb);
   if(onb){$("app").innerHTML=vOnb();onbBind();return}
-  $("app").innerHTML=tab==="home"?vHome():tab==="rev"?vRev():tab==="plan"?vPlan():vSet();
-  if(tab==="home"){duoFetch();if(new Date().getDay()===5&&st.recapSeen!==today()&&Object.keys(st.log).length>=2)setTimeout(()=>{if(tab==="home"&&$("sheet").hidden)openRecap()},900)}
+  $("app").innerHTML=tab==="home"?vHome():tab==="rev"?vRev():tab==="plan"?vPlan():tab==="moi"?(sub==="notif"?vNotif():vMoi()):vSet();
+  if(tab==="moi")duoFetch();if(tab==="home"){duoFetch();if(new Date().getDay()===5&&st.recapSeen!==today()&&Object.keys(st.log).length>=2)setTimeout(()=>{if(tab==="home"&&$("sheet").hidden)openRecap()},900)}
   document.body.classList.toggle("onset",tab==="set");
   if(tab==="home")animateHome();else homeShown=false;
   if(tab==="rev")animateRev();else{revShown=false;revPrevW=null;revPrevDone=null}
   if(tab==="plan")animatePlan();else{planShown=false;planMonth=null}
-  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
-  if(tab==="set"){
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab||(tab==="set"&&b.dataset.tab==="moi")));
+  if(tab==="set"||tab==="moi"){
     const re=()=>{const y=scrollY;render();scrollTo(0,y)};
     if($("fa"))$("fa").onchange=e=>{draft.a=+e.target.value;draft.p1=draft.p2=0;re()};
     if($("fb"))$("fb").onchange=e=>{draft.b=+e.target.value;draft.p1=draft.p2=0;re()};
@@ -655,7 +674,7 @@ function render(){
     if($("gpace"))$("gpace").onchange=e=>{const v=parseFloat(String(e.target.value).replace(",","."));st.cfg.pace=isFinite(v)&&v>0?Math.max(.25,Math.min(50,v)):2;save();re()};
     if($("hst"))$("hst").onchange=e=>{if(e.target.value&&e.target.value<=today()){st.cfg.hstart=e.target.value;save();re()}};
   }}
-function go(t){draft=null;resetArm=false;sub=null;tab=t;try{localStorage.setItem(KEY+"-tab",t)}catch(e){}render();scrollTo(0,0)}
+function go(t){if(t==="moi"&&tab!=="set")duoList=null;draft=null;resetArm=false;sub=null;tab=t;try{localStorage.setItem(KEY+"-tab",t)}catch(e){}render();scrollTo(0,0)}
 
 document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
@@ -668,10 +687,12 @@ document.addEventListener("click",e=>{
   else if(d.act==="recapclose"){closeRecap()}
   else if(d.duo){st.duo={file:d.duo,name:d.dn,at:0,data:null,err:""};save();duoFetch(true);const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="duolist"){duoList=null;const y=scrollY;render();scrollTo(0,y)}
-  else if(d.cheer!==undefined){if(!st.duo){return}st.cheer={to:st.duo.file,msg:CHEERS[+d.cheer],at:new Date().toISOString()};save();toast("Encouragement envoyé");const y=scrollY;render();scrollTo(0,y)}
-  else if(d.act==="cheerwrite"){const w=$("cwrite");if(w){w.hidden=!w.hidden;if(!w.hidden){const t=$("cmsg");t.focus();t.oninput=()=>{$("ccount").textContent=t.value.length+"/140"}}}}
-  else if(d.act==="cheersend"){const m=($("cmsg").value||"").replace(/\s+/g," ").trim();if(!m){toast("Écris d'abord ton message");return}if(!st.duo)return;
-    st.cheer={to:st.duo.file,msg:m.slice(0,140),at:new Date().toISOString()};save();toast("Message envoyé");const y=scrollY;render();scrollTo(0,y)}
+  else if(d.cheer!==undefined){if(st.duo)sendCheer(CHEERS[+d.cheer])}
+  else if(d.act==="cheer"){openCheer()}
+  else if(d.act==="cheersend"){const m=($("cmsg").value||"").replace(/\s+/g," ").trim();if(!m){toast("Écris d'abord ton message");return}if(st.duo)sendCheer(m.slice(0,140))}
+  else if(d.act==="undolearn"){undoLearn()}
+  else if(d.act==="tipok"){st.tipRev=1;save();const y=scrollY;render();scrollTo(0,y)}
+  else if(d.act==="rdweak"){if(!rd)return;const i=st.weak.indexOf(rd.id);if(i<0)st.weak.push(rd.id);else st.weak.splice(i,1);save();rdFoot();toast(i<0?S[rd.id-1].t+" : à renforcer":S[rd.id-1].t+" : retirée");const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="cheerok"){const o=st.duo&&st.duo.data;if(o&&o.cheer)st.cheerSeen=o.cheer.at;save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.dgoal){st.cfg.duoGoal=+d.dgoal;st.cfg.duoGoalAt=new Date().toISOString();save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="notifon"){notifOn()}
@@ -681,7 +702,8 @@ document.addEventListener("click",e=>{
   else if(d.act==="duoref"){duoFetch(true);toast("Actualisation…")}
   else if(d.act==="duooff"){st.duo=null;save();duoList=null;const y=scrollY;render();scrollTo(0,y)}
   else if(d.goto){go("rev");const el=$("blk-"+d.goto);if(el){const y=el.getBoundingClientRect().top+scrollY-14-(parseFloat(getComputedStyle(document.documentElement).paddingTop)||0);scrollTo({top:Math.max(0,y),behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),1200)}}
-  else if(d.goal!==undefined){tab="set";sub="profile";draft=null;render();scrollTo(0,0)}
+  else if(d.goal!==undefined){go("moi")}
+  else if(d.gosub){tab="set";sub=d.gosub;draft=null;render();scrollTo(0,0)}
   else if(d.pday){planPrev=planSel;planSel=d.pday;if(d.pday.slice(0,7)!==planMonth)planMonth=d.pday.slice(0,7);const y=scrollY;render();scrollTo(0,y);planPrev=null}
   else if(d.mon){const [Y,M]=planMonth.split("-").map(Number),nd=new Date(Y,M-1+ +d.mon,1);planMonth=nd.getFullYear()+"-"+pad(nd.getMonth()+1);const y=scrollY;render();scrollTo(0,y);const g=document.querySelector(".calg");if(g&&!matchMedia("(prefers-reduced-motion: reduce)").matches){g.classList.add("draw")}}
   else if(d.sub!==undefined){if(d.sub==="profile")duoList=null;sub=d.sub||null;draft=null;resetArm=false;render();scrollTo(0,0)}
@@ -748,9 +770,11 @@ function rdGo(p){if(!rd||p<1||p>604)return;rd.p=p;drawReader();$("rdbody").scrol
 const JUZ=["","الأول","الثاني","الثالث","الرابع","الخامس","السادس","السابع","الثامن","التاسع","العاشر","الحادي عشر","الثاني عشر","الثالث عشر","الرابع عشر","الخامس عشر","السادس عشر","السابع عشر","الثامن عشر","التاسع عشر","العشرون","الحادي والعشرون","الثاني والعشرون","الثالث والعشرون","الرابع والعشرون","الخامس والعشرون","السادس والعشرون","السابع والعشرون","الثامن والعشرون","التاسع والعشرون","الثلاثون"];
 function surahBand(c){return'<div class="mband"><svg viewBox="0 0 300 40" preserveAspectRatio="none"><rect x="1.5" y="1.5" width="297" height="37" rx="8" fill="var(--m-band)" stroke="var(--m-gold)" stroke-width="1.6"/><rect x="6" y="6" width="288" height="28" rx="5" fill="none" stroke="var(--m-gold)" stroke-width=".8"/></svg><span class="mbn">سُورَةُ '+S[c-1].a+'</span><i class="mro r"></i><i class="mro l"></i></div>'}
 const BASM='<div class="mbsm">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>';
+function rdFoot(){const p=rd.p,w=st.weak.includes(rd.id);
+  $("rdfoot").innerHTML='<button class="btn" data-rdgo="'+(p+1)+'"'+(p>=604?" disabled":"")+' aria-label="Page suivante">‹ '+(p+1)+'</button><button class="btn rdw'+(w?" on":"")+'" data-act="rdweak">'+I.flag+(w?"À renforcer ✓":"À renforcer")+'</button><button class="btn" data-rdgo="'+(p-1)+'"'+(p<=1?" disabled":"")+' aria-label="Page précédente">'+(p-1)+' ›</button>'}
 function drawReader(){const p=rd.p,s=S[rd.id-1];
   $("rdhead").innerHTML='<button class="rdx" data-rdclose aria-label="Fermer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="rdt"><b>'+s.t+'</b><span class="num">Page '+p+' sur 604</span></div><span class="ar rda">'+s.a+'</span>';
-  $("rdfoot").innerHTML='<button class="btn" data-rdgo="'+(p+1)+'"'+(p>=604?" disabled":"")+'>‹ Page '+(p+1)+'</button><button class="btn" data-rdgo="'+(p-1)+'"'+(p<=1?" disabled":"")+'>Page '+(p-1)+' ›</button>';
+  rdFoot();
   $("rdbody").innerHTML='<div class="mpage"><div class="rdload">Chargement de la page '+p+'…</div></div>';
   Promise.all([pageWords(p),loadFont(p)]).then(([ws,fam])=>{if(!rd||rd.p!==p)return;if(!ws.length)throw 0;
     const lines={};ws.forEach(o=>{(lines[o.w.line_v2]=lines[o.w.line_v2]||[]).push(o)});

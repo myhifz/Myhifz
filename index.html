@@ -790,6 +790,54 @@ body.onbm .wrap{padding-bottom:40px}
 .cwrite textarea:focus{outline:none;border-color:var(--acc)}
 .cwf{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
 .cwf .btn{padding:9px 16px}
+/* Onglet Moi */
+.goal>.fl:first-child{margin-top:0}
+.prof{display:flex;flex-direction:column;gap:12px}
+.pfr{display:flex;align-items:center;gap:16px}
+.prof .av{width:64px;height:64px;font-size:26px;flex:none}
+.pfc{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.pfc .field{margin:0;font-weight:700;font-size:18px;padding:10px 12px}
+.pfc .note{font-size:13px}
+.prof .linkb{align-self:center}
+.mhd{display:flex;align-items:center;justify-content:space-between}
+.gear{width:44px;height:44px;border-radius:50%;border:0;background:var(--card);color:var(--ink);display:grid;place-items:center;box-shadow:0 1px 2px rgba(0,0,0,.05),0 6px 16px rgba(0,0,0,.06)}
+.dfoot{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;justify-content:center;font-size:13px;color:var(--muted);margin-top:-4px}
+.dfoot span{width:100%;text-align:center}
+.dfoot .linkb{margin:0;color:var(--acc)}
+.dfoot .linkb[data-act=duooff]{color:var(--muted)}
+/* Défi court (accueil) */
+.dshort{padding:14px 16px 16px}
+.dsh{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;padding:0 0 12px;text-align:left;font:inherit;color:inherit}
+.dpair{display:flex;flex:none}
+.dpair .dp{width:40px;height:40px;font-size:16px;box-shadow:0 0 0 3px var(--card)}
+.dpair .dp+.dp{margin-left:-10px}
+.dst{flex:1;min-width:0;display:flex;flex-direction:column}
+.dst b{font-size:16px}
+.dst span{font-size:13px;font-weight:700;color:var(--muted)}
+.dst span.lme{color:var(--acc)}.dst span.lot{color:var(--acc2-ink)}
+.dsh .chv{color:var(--muted);flex:none}
+.dsf{display:flex;align-items:center;gap:12px;margin-top:12px}
+.dsf .note{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dsf .btn,.chrow .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none}
+/* Panneau Encourager */
+.chl{display:flex;flex-direction:column;gap:8px}
+.chl button{border:1.5px solid var(--line);background:var(--card);border-radius:16px;padding:14px 16px;text-align:left;font:inherit;font-size:16px;font-weight:700;color:var(--ink)}
+.chl button:active{background:var(--acc-soft);border-color:var(--acc)}
+.cmsg{width:100%;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:16px;padding:12px 14px;font:16px var(--ui);resize:none}
+.cmsg:focus{outline:none;border-color:var(--acc)}
+/* Astuce Révision */
+.tip{display:flex;gap:12px;padding:14px;border-radius:20px;background:var(--acc-soft)}
+.tipi{flex:none;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:var(--acc);color:var(--on-acc)}
+.tip div{flex:1;display:flex;flex-direction:column;gap:4px}
+.tip b{font-size:15px}.tip span{font-size:14px;line-height:1.4}
+.tip .btn{align-self:flex-start;margin-top:6px;padding:8px 14px}
+/* Lecteur : À renforcer */
+.rdf .rdw{flex:1.4;display:inline-flex;align-items:center;justify-content:center;gap:6px;color:var(--hard);padding-left:8px;padding-right:8px;white-space:nowrap}
+.rdf .rdw svg{width:17px;height:17px}
+.rdf .rdw.on{background:var(--hard-soft);border-color:var(--hard)}
+/* Toast avec Annuler */
+.toast.act{display:flex;align-items:center;gap:14px;padding-right:8px}
+.toast button{border:0;background:rgba(127,127,127,.25);color:inherit;font:inherit;font-weight:800;border-radius:999px;padding:6px 12px}
 /* Barre du bas */
 nav{position:fixed;left:max(14px,env(safe-area-inset-left,0px));right:max(14px,env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));max-width:540px;margin:0 auto;background:color-mix(in srgb,var(--card) 88%,transparent);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-radius:30px;display:flex;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.12);z-index:5}
 nav button{flex:1;border:0;background:none;border-radius:24px;padding:8px 2px 7px;font-size:12px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px}
@@ -806,12 +854,12 @@ nav svg{width:24px;height:24px}
   <button data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g class="duo-f" fill="currentColor" stroke="none" opacity=".22"><path d="M3.5 10.5L12 3.8l8.5 6.7V19a2 2 0 0 1-2 2H5.5a2 2 0 0 1-2-2z"/></g><path d="M3.5 10.5L12 3.8l8.5 6.7V19a2 2 0 0 1-2 2h-3.3v-5.5h-6.4V21H5.5a2 2 0 0 1-2-2z"/></svg><span>Accueil</span></button>
   <button data-tab="rev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g class="duo-f" fill="currentColor" stroke="none" opacity=".22"><path d="M12 6.5C10 5 7 4.6 3.5 5.2v13c3.5-.6 6.5-.2 8.5 1.3 2-1.5 5-1.9 8.5-1.3v-13C17 4.6 14 5 12 6.5z"/></g><path d="M12 6.5C10 5 7 4.6 3.5 5.2v13c3.5-.6 6.5-.2 8.5 1.3 2-1.5 5-1.9 8.5-1.3v-13C17 4.6 14 5 12 6.5z"/><path d="M12 6.5v13"/></svg><span>Révision</span></button>
   <button data-tab="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g class="duo-f" fill="currentColor" stroke="none" opacity=".22"><path d="M3.5 8a3 3 0 0 1 3-3h11a3 3 0 0 1 3 3v2h-17z"/></g><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17"/><circle cx="8.5" cy="14.5" r=".9" fill="currentColor"/><circle cx="12" cy="14.5" r=".9" fill="currentColor"/><circle cx="15.5" cy="14.5" r=".9" fill="currentColor"/></svg><span>Planning</span></button>
-  <button data-tab="set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g class="duo-f" fill="currentColor" stroke="none" opacity=".22"><circle cx="12" cy="12" r="7.5"/></g><path d="M10.3 3.6a1.8 1.8 0 0 1 3.4 0l.3.9a1.8 1.8 0 0 0 2.4 1l.9-.4a1.8 1.8 0 0 1 2.4 2.4l-.4.9a1.8 1.8 0 0 0 1 2.4l.9.3a1.8 1.8 0 0 1 0 3.4l-.9.3a1.8 1.8 0 0 0-1 2.4l.4.9a1.8 1.8 0 0 1-2.4 2.4l-.9-.4a1.8 1.8 0 0 0-2.4 1l-.3.9a1.8 1.8 0 0 1-3.4 0l-.3-.9a1.8 1.8 0 0 0-2.4-1l-.9.4a1.8 1.8 0 0 1-2.4-2.4l.4-.9a1.8 1.8 0 0 0-1-2.4l-.9-.3a1.8 1.8 0 0 1 0-3.4l.9-.3a1.8 1.8 0 0 0 1-2.4l-.4-.9a1.8 1.8 0 0 1 2.4-2.4l.9.4a1.8 1.8 0 0 0 2.4-1z"/><circle cx="12" cy="12" r="3"/></svg><span>Réglages</span></button>
+  <button data-tab="moi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g class="duo-f" fill="currentColor" stroke="none" opacity=".22"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.4-3.7 4.2-5.5 7.5-5.5s6.1 1.8 7.5 5.5z"/></g><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.4-3.7 4.2-5.5 7.5-5.5s6.1 1.8 7.5 5.5"/></svg><span>Moi</span></button>
 </nav>
 <div class="reader" id="reader" hidden><div class="rdh" id="rdhead"></div><div class="rdb" id="rdbody"></div><div class="rdf" id="rdfoot"></div></div>
 <div class="sheet" id="sheet" hidden></div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="app.js?v=62"></script>
+<script src="app.js?v=63"></script>
 </body>
 </html>
