@@ -50,6 +50,8 @@ function program(c){
   const k=old.length?Math.ceil(old.length/d):0;
   return{a,b,p1,p2,total:pages.length,jadid,old,d,k}}
 const isOff=date=>(st.cfg.off||[]).includes(new Date(date+"T12:00").getDay());
+/* Garder le jour du cycle quand on change un réglage : nouvelle date de départ telle que « aujourd'hui » reste au jour i */
+function startKeeping(i,off){let d=today(),n=0,g=0;const o=off||[];while(n<i&&g++<4000){d=addDays(d,-1);if(!o.includes(new Date(d+"T12:00").getDay()))n++}return d}
 function workIndex(date){const s=st.cfg.start||date;let n=0,d=s;const dir=diff(date,s)>=0?1:-1;
   while(d!==date){if(!isOff(d))n+=dir;d=addDays(d,dir)}return n}
 function janbFor(pr,date){
@@ -751,7 +753,7 @@ document.addEventListener("click",e=>{
   else if(d.themeC){st.cfg.c=d.themeC;draft.c=d.themeC;save();applyTheme();const y=scrollY;render();scrollTo(0,y);toast("Thème "+THEMES[d.themeC].n)}
   else if(d.act==="save"){const old=st.cfg,r=pageRange(draft);draft.p1=r[0];draft.p2=r[1];
     const ch=pageRange(old)+""!==r+""||old.dir!==draft.dir||+old.jn!==+draft.jn||+old.d!==+draft.d||(old.off||[]).slice().sort()+""!==draft.off.slice().sort()+"";
-    const first=!st.cfg.start;if(old.dir!==draft.dir)draft.goal=0;st.cfg={...draft,c:st.cfg.c,icon:st.cfg.icon,name:st.cfg.name};if(ch||first){st.cfg.start=today();if(pageRange(old)+""!==r+""||old.dir!==draft.dir)st.cfg.fq=0}save();draft=null;toast("Programme enregistré");
+    const first=!st.cfg.start,oldPr=program(old),oldI=oldPr&&old.start?((workIndex(today())%oldPr.d)+oldPr.d)%oldPr.d:0;if(old.dir!==draft.dir)draft.goal=0;st.cfg={...draft,c:st.cfg.c,icon:st.cfg.icon,name:st.cfg.name};if(ch||first){const np=program(st.cfg);st.cfg.start=first?today():startKeeping(np?oldI%np.d:0,st.cfg.off);if(pageRange(old)+""!==r+""||old.dir!==draft.dir)st.cfg.fq=0}save();draft=null;toast("Programme enregistré");
     if(first)go("home");else{sub=null;render();scrollTo(0,0)}}
   else if(d.act==="sharephoto"){st.cfg.sharePhoto=!st.cfg.sharePhoto;save();clearTimeout(ghTimer);ghPush();toast(st.cfg.sharePhoto?"Ta photo sera visible dans le défi":"Ta photo n'est plus partagée");const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="nophoto"){st.cfg.photo="";save();const y=scrollY;render();scrollTo(0,y)}
