@@ -284,19 +284,27 @@ function vPlan(){
   const pr=program(st.cfg),t=today();
   let h='<div><h1>Planning</h1><div class="sub">Ton programme jour par jour</div></div>';
   if(!pr)return h+needSetup();
-  if(!planSel||planSel<t)planSel=t;
+  if(!planSel)planSel=t;
   /* 1. Bande des 14 prochains jours */
   h+='<div class="days2" id="days2">';
   for(let i=0;i<14;i++){const d=addDays(t,i),dt=new Date(d+"T12:00"),s=dayStatus(d);
     h+='<button class="dc'+(d===planSel?" on":"")+(isOff(d)?" off":"")+'" data-pday="'+d+'"><span>'+(i===0?"Auj.":DOW[dt.getDay()])+'</span><b class="num">'+dt.getDate()+'</b><i class="'+(s==="full"?"ok":isOff(d)?"":"dot")+'"></i></button>'}
   h+='</div>';
   /* 2. Le jour choisi */
-  const d=planSel,off=isOff(d),O=janbFor(pr,d),J=off?[]:pr.jadid,dd=dayRec(d),dir=planPrev&&planPrev!==d?(d>planPrev?"r":"l"):"";
-  h+='<div class="card dayd'+(dir?" sl-"+dir:"")+'"><div class="ddh"><div><span class="ddk">'+(d===t?"Aujourd'hui":diff(d,t)===1?"Demain":"Dans "+diff(d,t)+" jours")+'</span><b>'+fmtDay(d)+'</b></div>'+(off?'<span class="tag">Jour off</span>':'<span class="ddn"><b class="num">'+(J.length+O.length)+'</b>pages</span>')+'</div>';
-  if(off)h+='<div class="offday">'+I.moon+'<span>Pas de mémorisation ni de révision ce jour-là.</span></div>';
-  else{const part=(cls,t2,icon,pages,kind)=>{const L=surahsFor(pages,pr),n=L.filter(y=>dd[kind].includes(y.s.id)).length;
-      return'<div class="tl '+cls+'"><div class="tlr"><span class="tli">'+icon+'</span></div><div class="tlc"><div class="tlh"><b>'+t2+'</b><span class="num">'+rangeTxt(pages)+'</span></div><div class="chips2">'+(L.length?L.map((y,k)=>'<span style="--k:'+k+'" class="'+(dd[kind].includes(y.s.id)?"done":"")+'">'+y.s.t+'</span>').join(""):'<span class="none">Rien ce jour-là</span>')+'</div>'+(d===t&&L.length?'<div class="tlp num">'+n+'/'+L.length+' sourates faites</div>':'')+'</div></div>'};
+  const d=planSel,past=d<t,off=isOff(d),O=janbFor(pr,d),J=off?[]:pr.jadid,dd=dayRec(d),dir=planPrev&&planPrev!==d?(d>planPrev?"r":"l"):"";
+  const raw=st.day[d],kept=!!(raw&&raw.sj),done=(st.pg||{})[d]||0,ds2=dayStatus(d);
+  const when=d===t?"Aujourd'hui":past?(diff(t,d)===1?"Hier":"Il y a "+diff(t,d)+" jours"):diff(d,t)===1?"Demain":"Dans "+diff(d,t)+" jours";
+  h+='<div class="card dayd'+(dir?" sl-"+dir:"")+'"><div class="ddh"><div><span class="ddk">'+when+'</span><b>'+fmtDay(d)+'</b></div>'+(off&&!st.log[d]?'<span class="tag">Jour off</span>':past?'<span class="ddn"><b class="num">'+done+'</b>pages faites</span>':'<span class="ddn"><b class="num">'+(J.length+O.length)+'</b>pages</span>')+'</div>';
+  /* Jour passé : ce qui a vraiment été fait */
+  if(past){const b0=(st.beg||{})[d],f0=(st.fin||{})[d],dm=durMin(st,d);
+    const txt=st.log[d]&&!kept&&ds2!=="full"?"Révision faite":ds2==="full"?"Révision complète":ds2==="part"?"Révision commencée, pas terminée":ds2==="off"?"Jour off":ds2==="none"?"Tu n'avais pas encore commencé":"Pas de révision ce jour-là";
+    h+='<div class="pst '+(st.log[d]&&!kept?"full":ds2)+'">'+(ds2==="full"?I.check:ds2==="off"?I.moon:ds2==="part"?I.repeat:I.flag)+'<span>'+txt+(b0||f0?'<small>'+(b0?"Commencée à "+hm(b0):"")+(f0?(b0?" · ":"")+"finie à "+hm(f0)+(dm?" ("+fmtDur(dm)+")":""):"")+'</small>':'')+'</span></div>';
+    if(st.log[d]&&!kept)h+='<p class="note" style="margin:10px 0 0">Le détail par sourate n\'est gardé que 40 jours.</p>'}
+  if(off&&!(past&&kept&&st.log[d])){if(!past)h+='<div class="offday">'+I.moon+'<span>Pas de mémorisation ni de révision ce jour-là.</span></div>'}
+  else if(!past||kept){const part=(cls,t2,icon,pages,kind)=>{const L=surahsFor(pages,pr),ids=L.map(y=>y.s.id),extra=past?(dd[kind]||[]).filter(id=>!ids.includes(id)&&S[id-1]):[],n=L.filter(y=>dd[kind].includes(y.s.id)).length+extra.length,tot=L.length+extra.length;
+      return'<div class="tl '+cls+'"><div class="tlr"><span class="tli">'+icon+'</span></div><div class="tlc"><div class="tlh"><b>'+t2+'</b><span class="num">'+rangeTxt(pages)+'</span></div><div class="chips2">'+(tot?L.map((y,k)=>'<span style="--k:'+k+'" class="'+(dd[kind].includes(y.s.id)?"done":past?"miss":"")+'">'+(past?(dd[kind].includes(y.s.id)?"✓ ":"✗ "):"")+y.s.t+'</span>').join("")+extra.map((id,k)=>'<span style="--k:'+(k+L.length)+'" class="done">✓ '+S[id-1].t+'</span>').join(""):'<span class="none">Rien ce jour-là</span>')+'</div>'+((d===t||past)&&tot?'<div class="tlp num">'+n+'/'+tot+' sourates faites</div>':'')+'</div></div>'};
     h+=part("n","Hifdh al-Jadid",I.spark,J,"sj")+part("o","Hifdh",I.repeat,O,"so");
+    if(past&&(dd.sw||[]).length)h+='<div class="tl w"><div class="tlr"><span class="tli">'+I.flag+'</span></div><div class="tlc"><div class="tlh"><b>À renforcer</b></div><div class="chips2">'+dd.sw.filter(id=>S[id-1]).map((id,k)=>'<span style="--k:'+k+'" class="done">✓ '+S[id-1].t+'</span>').join("")+'</div></div></div>';
     if(d===t)h+='<button class="btn pri wide" data-tab="rev">Ouvrir la révision du jour'+I.next+'</button>'}
   h+='</div>';
   /* 3. Cycle de Hifdh : anneau découpé en jours */
@@ -312,7 +320,7 @@ function vPlan(){
    +'<div class="calg">'+["L","M","M","J","V","S","D"].map(x=>'<span class="cw">'+x+'</span>').join("");
   for(let k=0;k<lead;k++)h+='<span></span>';
   for(let k=1;k<=nd;k++){const dd2=planMonth+"-"+pad(k),s=dd2>t?(isOff(dd2)?"off":"future"):dayStatus(dd2);
-    h+=(dd2>=t?'<button data-pday="'+dd2+'"':'<span')+' class="cd2 '+s+(dd2===t?" now":"")+(dd2===planSel?" sel":"")+'" style="--k:'+(k+lead)+'"><b class="num">'+k+'</b>'+(dd2>=t?'</button>':'</span>')}
+    h+='<button data-pday="'+dd2+'" class="cd2 '+s+(dd2===t?" now":"")+(dd2===planSel?" sel":"")+'" style="--k:'+(k+lead)+'"><b class="num">'+k+'</b></button>'}
   h+='</div><div class="lgd"><span><i class="l2"></i>Complet</span><span><i class="l1"></i>Commencé</span><span><i class="mi"></i>Manqué</span><span><i class="off"></i>Jour off</span></div></div>';
   return h}
 function animatePlan(){const red=matchMedia("(prefers-reduced-motion: reduce)").matches,app=$("app");
@@ -672,7 +680,7 @@ function render(){
   document.body.classList.toggle("onset",tab==="set");
   if(tab==="home")animateHome();else homeShown=false;
   if(tab==="rev")animateRev();else{revShown=false;revPrevW=null;revPrevDone=null}
-  if(tab==="plan")animatePlan();else{planShown=false;planMonth=null}
+  if(tab==="plan")animatePlan();else{planShown=false;planMonth=null;planSel=null}
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab||(tab==="set"&&b.dataset.tab==="moi")));
   if(tab==="set"||tab==="moi"){
     const re=()=>{const y=scrollY;render();scrollTo(0,y)};
