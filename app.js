@@ -245,8 +245,21 @@ function block(kind,title,tag,pages,list,doneIds,pr,cls){
 
 function suRow(x,kind,on,part){const w=st.weak.includes(x.s.id);
   return'<div class="su '+(on?"on":"")+(w?" weak":"")+'"><button class="sc" data-su="'+x.s.id+'" data-k="'+kind+'" aria-label="Cocher '+x.s.t+'">'+(on?I.check:"")+'</button><button class="sb" data-read="'+x.s.id+'" data-lo="'+x.lo+'"><span class="sn"><b>'+x.s.t+'</b><span class="num">'+(x.lo===x.hi?"p. "+x.lo:"p. "+x.lo+"–"+x.hi)+(part?" · partie":"")+(w?' <em class="wtag">'+I.alert+'À renforcer</em>':"")+'</span></span><span class="ar">'+x.s.a+'</span></button></div>'}
+const REPS=()=>[3,5,7,10].includes(+st.cfg.reps)?+st.cfg.reps:5;
+function repOf(id){const d=st.day[today()];return d&&d.rep&&d.rep[id]||0}
+/* Une récitation de plus ; arrivé au but, la sourate est cochée */
+function repTap(id){const t=today();if(!st.day[t]||!st.day[t].sj)st.day[t]={sj:[],so:[],sw:[]};const d=st.day[t];if(!d.sw)d.sw=[];d.rep=d.rep||{};
+  const R=REPS(),done=d.sw.includes(id);
+  if(done){d.rep[id]=0;revTap=null;mark("sw",[id],false);return"reset"}
+  d.rep[id]=Math.min(R,(d.rep[id]||0)+1);if(navigator.vibrate)navigator.vibrate(8);
+  if(d.rep[id]>=R){revTap={id,k:"sw"};mark("sw",[id],true);return"done"}save();return"step"}
+function repRow(x,on){const R=REPS(),n=on?R:repOf(x.s.id);
+  return'<div class="su rp'+(on?" on":"")+'"><button class="sc rpc" data-rep="'+x.s.id+'" aria-label="Répétition de '+x.s.t+'" style="--r:'+(n/R*360)+'deg">'+(on?I.check:'<b class="num">'+n+'<small>/'+R+'</small></b>')+'</button><button class="sb" data-read="'+x.s.id+'" data-lo="'+x.lo+'"><span class="sn"><b>'+x.s.t+'</b><span class="num">'+(x.lo===x.hi?"p. "+x.lo:"p. "+x.lo+"–"+x.hi)+(on?" · "+R+" fois ✓":n?" · encore "+(R-n)+" fois":" · à réciter "+R+" fois")+'</span></span><span class="ar">'+x.s.a+'</span></button></div>'}
+function openReps(){const s=$("sheet"),R=REPS();
+  s.innerHTML='<div class="sheet-in"><button class="shx" data-act="recapclose" aria-label="Fermer">×</button><span class="ddk">À renforcer</span><h2>Combien de répétitions ?</h2><p class="note" style="margin:0 0 12px">Pour chaque sourate à renforcer, chaque jour.</p><div class="lqs rps">'+[3,5,7,10].map(n=>'<button data-reps="'+n+'"'+(n===R?' class="on"':'')+'><b>'+n+'</b><span>fois</span></button>').join("")+'</div></div>';
+  s.hidden=false;document.body.classList.add("sheet-open")}
 function weakBlock(x){if(!x.W.length)return"";const ids=x.d.sw,n=x.W.filter(y=>ids.includes(y.s.id)).length,all=n===x.W.length;
-  return'<div class="card blk w" id="blk-sw"><div class="bh"><div class="ctitle">'+I.flag+'À renforcer</div><span class="tag">Chaque jour</span></div><div class="rng">Les sourates que tu as marquées comme difficiles.</div><div class="sus">'+x.W.map(y=>suRow(y,"sw",ids.includes(y.s.id),false)).join("")+'</div><div class="bf"><span class="note num">'+n+'/'+x.W.length+'</span><button class="btn '+(all?"":"pri")+'" data-all="sw" data-on="'+(all?0:1)+'">'+(all?"Annuler":"Tout marquer comme fait")+'</button></div></div>'}
+  return'<div class="card blk w" id="blk-sw"><div class="bh"><div class="ctitle">'+I.flag+'À renforcer</div><button class="tag reps" data-act="reps">'+I.repeat+'×'+REPS()+'</button></div><div class="rng">Touche le compteur après chaque récitation. À '+REPS()+', la sourate est faite.</div><div class="sus">'+x.W.map(y=>repRow(y,ids.includes(y.s.id))).join("")+'</div><div class="bf"><span class="note num">'+n+'/'+x.W.length+'</span><button class="btn '+(all?"":"pri")+'" data-all="sw" data-on="'+(all?0:1)+'">'+(all?"Annuler":"Tout marquer comme fait")+'</button></div></div>'}
 let revShown=false,revTap=null,revPrevDone=null,revPrevW=null;
 function confetti(el){const cols=["var(--acc2)","#fff","var(--h2)","var(--acc2-soft)"];for(let k=0;k<28;k++){const c=document.createElement("i");c.className="cf";c.style.left=(5+Math.random()*90)+"%";c.style.background=cols[k%4];c.style.setProperty("--x",(Math.random()*120-60)+"px");c.style.setProperty("--r",(Math.random()*720-360)+"deg");c.style.animationDelay=(Math.random()*.25)+"s";c.style.width=c.style.height=(5+Math.random()*6)+"px";if(k%3===0)c.style.borderRadius="50%";el.appendChild(c)}}
 function animateRev(){const red=matchMedia("(prefers-reduced-motion: reduce)").matches,app=$("app"),x=dayState(today());
@@ -520,7 +533,7 @@ function closeRecap(){const s=$("sheet");s.hidden=true;document.body.classList.r
 let duoList=null,duoBusy=false;
 function duoFetch(force){if(!st.duo||duoBusy)return;if(!force&&st.duo.at&&Date.now()-st.duo.at<6e4)return;duoBusy=true;
   fetch(ghUrl(st.duo.file+"?t="+Date.now()),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}})
-   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={wkhit:d.wkhit||{},cheer:d.cheer||null,duoGoal:(d.cfg||{}).duoGoal,duoGoalAt:(d.cfg||{}).duoGoalAt,saved:d.saved||"",beg:d.beg||{},fin:d.fin||{},log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";saveLocal();if((tab==="home"||tab==="moi")&&!typing()){const y=scrollY;render();scrollTo(0,y)}})
+   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={wkhit:d.wkhit||{},cheer:d.cheer||null,duoGoal:(d.cfg||{}).duoGoal,duoGoalAt:(d.cfg||{}).duoGoalAt,saved:d.saved||"",beg:d.beg||{},fin:d.fin||{},log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||"",fq:(d.cfg||{}).fq||0}};st.duo.at=Date.now();st.duo.err="";saveLocal();if((tab==="home"||tab==="moi")&&!typing()){const y=scrollY;render();scrollTo(0,y)}})
    .catch(e=>{st.duo.err="Impossible de lire la sauvegarde de "+st.duo.name;saveLocal()}).finally(()=>{duoBusy=false})}
 let duoListErr="";
 function duoLoadList(){duoListErr="";fetch(ghUrl("sauvegardes?t="+Date.now()),{cache:"no-store"}).then(r=>{if(r.status===404)return[];if(!r.ok)throw r.status;return r.json()}).then(a=>{duoList=(Array.isArray(a)?a:[]).filter(f=>/\.json$/.test(f.name)&&"sauvegardes/"+f.name!==gh.file).map(f=>({file:f.path,name:f.name.replace(/\.json$/,"").replace(/-/g," ")}));duoList.forEach(f=>fetch(ghUrl(f.file),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.cfg&&d.cfg.name){f.name=d.cfg.name;if(tab==="moi"&&!st.duo){const y=scrollY;render();scrollTo(0,y)}}}).catch(()=>{}));if(tab==="moi"){const y=scrollY;render();scrollTo(0,y)}}).catch(e=>{duoList=[];duoListErr=e===403?"GitHub limite les demandes pour l'instant, réessaie dans quelques minutes.":"Impossible de joindre GitHub. Vérifie ta connexion.";if(tab==="moi"){const y=scrollY;render();scrollTo(0,y)}})}
@@ -548,7 +561,10 @@ function trophies(a,b){let ta=0,tb=0;const now=weekKey();new Set(Object.keys(a.w
 function pageRace(a,b){const first=(d)=>{const m={};(d.learned||[]).forEach(e=>{if(e.p&&e.n>0&&e.at&&(!m[e.p]||e.at<m[e.p]))m[e.p]=e.at});return m};
   const wk=weekKey(),fa=first(a),fb=first(b);let pa=0,pb=0;
   new Set(Object.keys(fa).concat(Object.keys(fb))).forEach(p=>{const x=fa[p],y=fb[p],inWk=t=>t&&weekKey(ld(t))===wk;
-    if(x&&y){if(x<y&&inWk(x))pa++;else if(y<x&&inWk(y))pb++}else if(x&&inWk(x))pa++;else if(y&&inWk(y))pb++});return[pa,pb]}
+    if(x&&y){if(x<y&&inWk(x))pa++;else if(y<x&&inWk(y))pb++}else if(x&&inWk(x))pa++;else if(y&&inWk(y))pb++});
+  /* page en cours : ¼ = ¼ de point, si ce morceau a été appris cette semaine */
+  const part=d=>{const q=Math.max(0,Math.min(3,+((d.cfg||{}).fq)||0));return q&&(d.learned||[]).some(e=>!e.p&&e.n>0&&e.n<1&&e.at&&weekKey(ld(e.at))===wk)?q/4:0};
+  return[pa+part(a),pb+part(b)]}
 const CHEERS=["Bon courage !","Tu y es presque !","Allez, on ne lâche rien !","Qu'Allah te facilite !"];
 function cheerBanner(){const o=st.duo&&st.duo.data;if(!o||!o.cheer)return"";const c=o.cheer;if(!c.at||c.to!==gh.file||(st.cheerSeen||"")>=c.at||diff(today(),ld(c.at))>2)return"";
   return'<div class="cheer">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':'<span class="dp dot2">'+esc((o.cfg.name||"?").charAt(0))+'</span>')+'<div><b>'+esc(o.cfg.name||st.duo.name)+' t\'encourage</b><span>« '+esc(c.msg)+' »</span></div><button class="bkx" data-act="cheerok" aria-label="Fermer">×</button></div>'}
@@ -571,7 +587,7 @@ function openCheer(){if(!st.duo)return;const o=st.duo.data||{cfg:{}},nm=esc(o.cf
   s.hidden=false;document.body.classList.add("sheet-open");const t=$("cmsg");t.oninput=()=>{$("ccount").textContent=t.value.length+"/140"}}
 function sendCheer(msg){st.cheer={to:st.duo.file,msg:msg,at:new Date().toISOString()};save();closeRecap();toast("Encouragement envoyé");const y=scrollY;render();scrollTo(0,y)}
 function duoCard(){if(!st.duo||!st.duo.data)return"";const o=st.duo.data,me=weekOf(st),him=weekOf(o),nm=esc(o.cfg.name||st.duo.name);
-  const row=(lab,a,b)=>{const m=Math.max(1,a,b),wa=a/m*100,wb=b/m*100;return'<div class="vr"><b class="num va'+(a>b?" win":"")+'">'+a+'</b><div class="vbar"><span class="vl"><i style="--w:'+wa+'%"></i></span><span class="vlab">'+lab+'</span><span class="vrt"><i style="--w:'+wb+'%"></i></span></div><b class="num vb'+(b>a?" win":"")+'">'+b+'</b></div>'};
+  const row=(lab,a,b)=>{const m=Math.max(1,a,b),wa=a/m*100,wb=b/m*100;return'<div class="vr"><b class="num va'+(a>b?" win":"")+'">'+fmtN(a)+'</b><div class="vbar"><span class="vl"><i style="--w:'+wa+'%"></i></span><span class="vlab">'+lab+'</span><span class="vrt"><i style="--w:'+wb+'%"></i></span></div><b class="num vb'+(b>a?" win":"")+'">'+fmtN(b)+'</b></div>'};
   const fw=fastWins(st,o),sa=me.pages+streakOf(st)*2+fw[0]*3,sb=him.pages+streakOf(o)*2+fw[1]*3,lead=sa===sb?"Égalité cette semaine":sa>sb?"Tu mènes cette semaine":nm+" mène cette semaine";
   return'<div class="card duo3"><div class="vhd"><div class="vp"><span class="dp dme">'+(st.cfg.photo?'<img src="'+st.cfg.photo+'" alt="">':esc((st.cfg.name||"M").charAt(0).toUpperCase()))+'</span><b>Toi</b></div><span class="vs">VS</span><div class="vp"><span class="dp dot2">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':esc(nm.charAt(0).toUpperCase()))+'</span><b>'+nm+'</b></div></div>'
    +duelBlock(o,nm)+todayRace(o,nm)
@@ -740,6 +756,10 @@ document.addEventListener("click",e=>{
     const x=dayState(today());if(on&&x.tot&&x.done===x.tot)toast("Révision du jour terminée !")}
   else if(d.all){revTap=d.on==="1"?{k:d.all,all:true}:null;const x=dayState(today());mark(d.all,(d.all==="sj"?x.Js:d.all==="so"?x.Os:x.W).map(y=>y.s.id),d.on==="1");const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="learnsheet"){openLearn()}
+  else if(d.rep){const id=+d.rep,r=repTap(id);const y=scrollY;render();scrollTo(0,y);if(r==="done")toast(S[id-1].t+" : "+REPS()+" répétitions ✓");else if(r==="step"){const b2=document.querySelector('[data-rep="'+id+'"]');if(b2&&!matchMedia("(prefers-reduced-motion: reduce)").matches){b2.classList.add("bump");setTimeout(()=>b2.classList.remove("bump"),300)}}}
+  else if(d.act==="rdrep"){if(!rd)return;const r=repTap(rd.id);rdFoot();if(r==="done")toast(S[rd.id-1].t+" : "+REPS()+" répétitions ✓");const y=scrollY;render();scrollTo(0,y)}
+  else if(d.act==="reps"){openReps()}
+  else if(d.reps){st.cfg.reps=+d.reps;save();closeRecap();toast(d.reps+" répétitions par sourate");const y=scrollY;render();scrollTo(0,y)}
   else if(d.cyc){const pr=program(st.cfg);if(!pr||!pr.old.length)return;if(isOff(today())){toast("Pas de cycle un jour off");return}const i=((workIndex(today())%pr.d)+pr.d)%pr.d,ni=(i+ +d.cyc+pr.d)%pr.d;st.cfg.start=startKeeping(ni,st.cfg.off);save();toast("Jour "+(ni+1)+" du cycle · Hifdh "+rangeTxt(janbFor(pr,today())));const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="unlearnsheet"){openUnlearn()}
   else if(d.uq){closeRecap();unlearn(+d.uq);const y=scrollY;render();scrollTo(0,y)}
@@ -803,8 +823,8 @@ function rdGo(p){if(!rd||p<1||p>604)return;rd.p=p;drawReader();$("rdbody").scrol
 const JUZ=["","الأول","الثاني","الثالث","الرابع","الخامس","السادس","السابع","الثامن","التاسع","العاشر","الحادي عشر","الثاني عشر","الثالث عشر","الرابع عشر","الخامس عشر","السادس عشر","السابع عشر","الثامن عشر","التاسع عشر","العشرون","الحادي والعشرون","الثاني والعشرون","الثالث والعشرون","الرابع والعشرون","الخامس والعشرون","السادس والعشرون","السابع والعشرون","الثامن والعشرون","التاسع والعشرون","الثلاثون"];
 function surahBand(c){return'<div class="mband"><svg viewBox="0 0 300 40" preserveAspectRatio="none"><rect x="1.5" y="1.5" width="297" height="37" rx="8" fill="var(--m-band)" stroke="var(--m-gold)" stroke-width="1.6"/><rect x="6" y="6" width="288" height="28" rx="5" fill="none" stroke="var(--m-gold)" stroke-width=".8"/></svg><span class="mbn">سُورَةُ '+S[c-1].a+'</span><i class="mro r"></i><i class="mro l"></i></div>'}
 const BASM='<div class="mbsm">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>';
-function rdFoot(){const p=rd.p,w=st.weak.includes(rd.id);
-  $("rdfoot").innerHTML='<button class="btn" data-rdgo="'+(p+1)+'"'+(p>=604?" disabled":"")+' aria-label="Page suivante">‹ '+(p+1)+'</button><button class="btn rdw'+(w?" on":"")+'" data-act="rdweak">'+I.flag+(w?"À renforcer ✓":"À renforcer")+'</button><button class="btn" data-rdgo="'+(p-1)+'"'+(p<=1?" disabled":"")+' aria-label="Page précédente">'+(p-1)+' ›</button>'}
+function rdFoot(){const p=rd.p,w=st.weak.includes(rd.id),R=REPS(),dn=(dayRec(today()).sw||[]).includes(rd.id),n=dn?R:repOf(rd.id);
+  $("rdfoot").innerHTML=(w?'<button class="rdrep'+(dn?" on":"")+'" data-act="rdrep"><span class="rpd">'+Array.from({length:R},(_,k)=>'<i class="'+(k<n?"on":"")+'"></i>').join("")+'</span><b class="num">'+(dn?"Fait · "+R+" fois ✓":"Répétition "+n+" / "+R)+'</b><span>'+(dn?"Touche pour recommencer":"Touche après chaque lecture")+'</span></button>':'')+'<button class="btn" data-rdgo="'+(p+1)+'"'+(p>=604?" disabled":"")+' aria-label="Page suivante">‹ '+(p+1)+'</button><button class="btn rdw'+(w?" on":"")+'" data-act="rdweak">'+I.flag+(w?"À renforcer ✓":"À renforcer")+'</button><button class="btn" data-rdgo="'+(p-1)+'"'+(p<=1?" disabled":"")+' aria-label="Page précédente">'+(p-1)+' ›</button>'}
 function drawReader(){const p=rd.p,s=S[rd.id-1];
   $("rdhead").innerHTML='<button class="rdx" data-rdclose aria-label="Fermer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="rdt"><b>'+s.t+'</b><span class="num">Page '+p+' sur 604</span></div><span class="ar rda">'+s.a+'</span>';
   rdFoot();
