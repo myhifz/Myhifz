@@ -9,7 +9,7 @@ const DEF={c:"vert",name:"",a:0,b:0,dir:"up",jn:6,d:3,start:"",icon:"rose",p1:0,
 
 let st={log:{},day:{},weak:[],cfg:{...DEF}}, tab="home", draft=null, resetArm=false;
 try{const v=JSON.parse(localStorage.getItem(KEY)||"null");
-  if(v){st.bk=v.bk||"";st.bkSnooze=v.bkSnooze||"";st.log=v.log||{};st.day=v.day||{};st.weak=v.weak||[];st.tp=v.tp;st.learned=v.learned||[];st.got=v.got;st.gotAt=v.gotAt||{};st.pg=v.pg;st.wkhit=v.wkhit||{};st.wkgoal=v.wkgoal||{};st.cheer=v.cheer||null;st.cheerSeen=v.cheerSeen||"";st.beg=v.beg||{};st.fin=v.fin||{};st.duo=v.duo||null;st.onb=v.onb;st.recapSeen=v.recapSeen||"";st.cfg=Object.assign({...DEF},v.cfg||{});
+  if(v){st.bk=v.bk||"";st.bkSnooze=v.bkSnooze||"";st.log=v.log||{};st.day=v.day||{};st.weak=v.weak||[];st.tp=v.tp;st.learned=v.learned||[];st.got=v.got;st.gotAt=v.gotAt||{};st.pg=v.pg;st.wkhit=v.wkhit||{};st.wkgoal=v.wkgoal||{};st.cheer=v.cheer||null;st.cheerSeen=v.cheerSeen||"";st.notifAsk=v.notifAsk||"";st.beg=v.beg||{};st.fin=v.fin||{};st.duo=v.duo||null;st.onb=v.onb;st.recapSeen=v.recapSeen||"";st.cfg=Object.assign({...DEF},v.cfg||{});
     // Ancienne version (cases par sourate) : on reprend la plage cochée
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}}}catch(e){}
 // Icône : celle de l'écran d'accueil vient du lien utilisé à l'installation (?icon=N)
@@ -187,6 +187,7 @@ function vHome(){
    +'<div class="stk'+(sk?"":" zero")+'" data-v="'+sk+'">'+I.flame+'<b class="num">'+sk+'</b><span>jour'+(sk>1?"s":"")+'</span></div></div>';
   if(!x.pr)return h+needSetup();
   h+=cheerBanner();
+  if(gh.token&&st.duo&&!(st.cfg.push&&st.cfg.push.endpoint)&&!notifSupport()&&st.notifAsk!==today())h+='<div class="cheer nask">'+I.bell+'<div><b>Activer les notifications</b><span>Pour savoir quand '+esc((st.duo.data&&st.duo.data.cfg.name)||"ton proche")+' t\'encourage ou finit sa révision.</span></div><button class="btn pri" data-act="notifon">Activer</button><button class="bkx" data-act="notiflater" aria-label="Plus tard">×</button></div>';
   if(needBackup()){const a=bkAge();h+='<div class="bkban">'+I.cloud+'<div><b>Pense à sauvegarder</b><span>'+(a===null?"Tu n\'as encore jamais sauvegardé.":"Dernière sauvegarde il y a "+a+" jours.")+'</span></div><button class="btn pri" data-act="savefile">Sauvegarder</button><button class="bkx" data-act="later" aria-label="Plus tard">×</button></div>'}
   const left=x.tot-x.done,pct=x.tot?Math.round(x.done/x.tot*100):100,R=34,C=2*Math.PI*R;
   /* 1. Aujourd'hui */
@@ -663,6 +664,7 @@ document.addEventListener("click",e=>{
   else if(d.act==="cheerok"){const o=st.duo&&st.duo.data;if(o&&o.cheer)st.cheerSeen=o.cheer.at;save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.dgoal){st.cfg.duoGoal=+d.dgoal;st.cfg.duoGoalAt=new Date().toISOString();save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="notifon"){notifOn()}
+  else if(d.act==="notiflater"){st.notifAsk=today();save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="notifoff"){notifOff()}
   else if(d.npref){st.cfg.notif=Object.assign({cheer:true,fin:true,duel:true},st.cfg.notif||{});st.cfg.notif[d.npref]=!st.cfg.notif[d.npref];save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="duoref"){duoFetch(true);toast("Actualisation…")}
