@@ -73,7 +73,9 @@
    "full": true
   }
  },
- "weak": [],
+ "weak": [
+  64
+ ],
  "cfg": {
   "c": "rose",
   "name": "Camélia",
@@ -189,5 +191,5 @@
  "recapSeen": "2026-10-17",
  "tipRev": 1,
  "app": "monhifz",
- "saved": "2026-10-18T20:00:49.881Z"
+ "saved": "2026-10-18T20:01:02.070Z"
 }
