@@ -139,6 +139,7 @@ const I={
  alert:'<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8 1.6 20.5h20.8zM11 9h2v6h-2zm0 7.5h2v2h-2z"/></svg>',
  trophy:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h10v2h3.5v3a4.5 4.5 0 0 1-4.6 4.5A5 5 0 0 1 13 15.9V18h3v3H8v-3h3v-2.1A5 5 0 0 1 8.1 12.5 4.5 4.5 0 0 1 3.5 8V5H7zm0 4H5.5v1A2.5 2.5 0 0 0 7.3 10.4 6 6 0 0 1 7 8.5zm10 0v1.5a6 6 0 0 1-.3 1.9A2.5 2.5 0 0 0 18.5 8V7z"/></svg>',
  bell:D(22,'<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>','<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/>'),
+ pen:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
  check:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
 };
 
@@ -520,7 +521,7 @@ function duoCard(){if(!st.duo||!st.duo.data)return"";const o=st.duo.data,me=week
   return'<div class="sect">Défi à deux</div><div class="card duo3"><div class="vhd"><div class="vp"><span class="dp dme">'+(st.cfg.photo?'<img src="'+st.cfg.photo+'" alt="">':esc((st.cfg.name||"M").charAt(0).toUpperCase()))+'</span><b>Toi</b></div><span class="vs">VS</span><div class="vp"><span class="dp dot2">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':esc(nm.charAt(0).toUpperCase()))+'</span><b>'+nm+'</b></div></div>'
    +duelBlock(o,nm)+todayRace(o,nm)
    +row("Pages révisées",me.pages,him.pages)+(()=>{const[fa,fb]=fastWins(st,o);return row("Premier à finir",fa,fb)})()+(()=>{const[pa,pb]=pageRace(st,o);return row("Course aux pages",pa,pb)})()+row("Jours de série",streakOf(st),streakOf(o))+row("Jours actifs",me.active,him.active)
-   +'<div class="dlead'+(sa===sb?"":sa>sb?" lme":" lot")+'">'+I.medal+lead+'</div>'+'<div class="chrow">'+(st.cheer&&st.cheer.at&&diff(today(),st.cheer.at.slice(0,10))<1?'<span class="note">Encouragement envoyé : « '+esc(st.cheer.msg)+' »</span>':'<span class="note">Encourager '+nm+' :</span>')+'<div class="chips">'+CHEERS.map((m,k)=>'<button class="chip" data-cheer="'+k+'">'+m+'</button>').join("")+'</div></div>'
+   +'<div class="dlead'+(sa===sb?"":sa>sb?" lme":" lot")+'">'+I.medal+lead+'</div>'+'<div class="chrow">'+(st.cheer&&st.cheer.at&&diff(today(),st.cheer.at.slice(0,10))<1?'<span class="note">Encouragement envoyé : « '+esc(st.cheer.msg)+' »</span>':'<span class="note">Encourager '+nm+' :</span>')+'<div class="chips">'+CHEERS.map((m,k)=>'<button class="chip" data-cheer="'+k+'">'+m+'</button>').join("")+'<button class="chip add" data-act="cheerwrite">'+I.pen+'Écrire un message</button></div><div class="cwrite" id="cwrite" hidden><textarea id="cmsg" maxlength="140" rows="2" placeholder="Ton message pour '+nm+'…"></textarea><div class="cwf"><span class="note" id="ccount">0/140</span><button class="btn pri" data-act="cheersend">Envoyer</button></div></div></div>'
    +(o.saved?'<div class="dsync">Dernière activité de '+nm+' : '+ago2(o.saved)+'</div>':'')+'</div>'}
 
 /* ===== Premier lancement ===== */
@@ -665,6 +666,9 @@ document.addEventListener("click",e=>{
   else if(d.duo){st.duo={file:d.duo,name:d.dn,at:0,data:null,err:""};save();duoFetch(true);const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="duolist"){duoList=null;const y=scrollY;render();scrollTo(0,y)}
   else if(d.cheer!==undefined){if(!st.duo){return}st.cheer={to:st.duo.file,msg:CHEERS[+d.cheer],at:new Date().toISOString()};save();toast("Encouragement envoyé");const y=scrollY;render();scrollTo(0,y)}
+  else if(d.act==="cheerwrite"){const w=$("cwrite");if(w){w.hidden=!w.hidden;if(!w.hidden){const t=$("cmsg");t.focus();t.oninput=()=>{$("ccount").textContent=t.value.length+"/140"}}}}
+  else if(d.act==="cheersend"){const m=($("cmsg").value||"").replace(/\s+/g," ").trim();if(!m){toast("Écris d'abord ton message");return}if(!st.duo)return;
+    st.cheer={to:st.duo.file,msg:m.slice(0,140),at:new Date().toISOString()};save();toast("Message envoyé");const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="cheerok"){const o=st.duo&&st.duo.data;if(o&&o.cheer)st.cheerSeen=o.cheer.at;save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.dgoal){st.cfg.duoGoal=+d.dgoal;st.cfg.duoGoalAt=new Date().toISOString();save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="notifon"){notifOn()}
