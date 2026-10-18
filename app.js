@@ -138,6 +138,7 @@ const I={
  bolt:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2.5L5 13.5h6l-1 8 8.5-11h-6z"/></svg>',
  alert:'<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8 1.6 20.5h20.8zM11 9h2v6h-2zm0 7.5h2v2h-2z"/></svg>',
  trophy:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h10v2h3.5v3a4.5 4.5 0 0 1-4.6 4.5A5 5 0 0 1 13 15.9V18h3v3H8v-3h3v-2.1A5 5 0 0 1 8.1 12.5 4.5 4.5 0 0 1 3.5 8V5H7zm0 4H5.5v1A2.5 2.5 0 0 0 7.3 10.4 6 6 0 0 1 7 8.5zm10 0v1.5a6 6 0 0 1-.3 1.9A2.5 2.5 0 0 0 18.5 8V7z"/></svg>',
+ bell:D(22,'<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>','<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/>'),
  check:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
 };
 
@@ -543,6 +544,26 @@ function onbClick(d){const c=ob.cfg;
   if(d.oboff!==undefined){const k=+d.oboff,i=c.off.indexOf(k);if(i<0&&c.off.length>=6)return true;if(i<0)c.off.push(k);else c.off.splice(i,1);render();return true}
   if(d.obc){c.c=d.obc;st.cfg.c=d.obc;applyTheme();render();return true}
   return false}
+/* ===== Notifications ===== */
+const VAPID_PUB="BKHKUBZamYT2RZwFD5fyTj6rMctVplO87rFLIdoCStltTPicI4BAlXrGLKx8jANAc1QnnARlqJ_FfepIiAI-isc";
+const b64u=s=>{const p="=".repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from([...b].map(c=>c.charCodeAt(0)))};
+function notifSupport(){const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;
+  if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window))return standalone?"Ton iPhone doit être en iOS 16.4 ou plus récent.":"Ouvre l'app depuis son icône sur l'écran d'accueil pour activer les notifications.";
+  if(!standalone)return"Ouvre l'app depuis son icône sur l'écran d'accueil pour activer les notifications.";return""}
+function notifOn(){if(!gh.token){toast("Active d'abord la sauvegarde automatique GitHub");return}
+  Notification.requestPermission().then(p=>{if(p!=="granted"){toast("Notifications refusées dans les réglages de l'iPhone");return null}
+    return navigator.serviceWorker.ready.then(r=>r.pushManager.getSubscription().then(s=>s||r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUB)})))})
+  .then(s=>{if(!s)return;const j=s.toJSON();st.cfg.push={endpoint:j.endpoint,keys:j.keys};st.cfg.notif=Object.assign({cheer:true,fin:true,duel:true},st.cfg.notif||{});save();toast("Notifications activées");const y=scrollY;render();scrollTo(0,y)})
+  .catch(e=>toast("Impossible d'activer les notifications"))}
+function notifOff(){navigator.serviceWorker.ready.then(r=>r.pushManager.getSubscription()).then(s=>s&&s.unsubscribe()).catch(()=>{});st.cfg.push=null;save();toast("Notifications désactivées");const y=scrollY;render();scrollTo(0,y)}
+function vNotif(){const sup=notifSupport(),on=!!(st.cfg.push&&st.cfg.push.endpoint),pref=Object.assign({cheer:true,fin:true,duel:true},st.cfg.notif||{}),nm=esc((st.duo&&st.duo.data&&st.duo.data.cfg.name)||"ton proche");
+  let h=subHead("Notifications","Pour le défi à deux.");
+  h+='<div class="card">'+head(I.bell,on?"Notifications activées":"Recevoir des notifications",on?"Sur ce téléphone, même quand l\'app est fermée.":"Sois prévenu quand "+nm+" t\'encourage, finit sa révision ou gagne le duel.",1);
+  if(!on&&sup)h+='<p class="note" style="margin:12px 0 0">'+sup+'</p>';
+  else if(!on)h+='<button class="btn pri wide" data-act="notifon">'+I.bell+'Activer les notifications</button>';
+  else{h+='<div class="nopts">'+[["cheer","Encouragements",nm+" t\'envoie un message"],["fin","Révision terminée",nm+" a fini sa révision du jour"],["duel","Duel gagné",nm+" gagne le duel de la semaine"]].map(([k,t,d])=>'<button class="tgl'+(pref[k]?" on":"")+'" data-npref="'+k+'"><span><b>'+t+'</b><small>'+d+'</small></span><i></i></button>').join("")+'</div><button class="linkb" style="margin-top:12px" data-act="notifoff">Désactiver sur ce téléphone</button>'}
+  h+='</div><p class="note">Les notifications arrivent en général moins d\'une minute après. '+nm.charAt(0).toUpperCase()+nm.slice(1)+' doit aussi les activer sur son téléphone pour recevoir les tiennes.</p>';
+  return h}
 function vSet(){
   if(!draft)initDraft();
   const pr=program(draft),per=pr&&pr.old.length?pr.k:0;
@@ -573,6 +594,7 @@ function vSet(){
      +(ic!==INSTALLED_ICON?'<div class="howto"><b>Pour l\'avoir sur ton écran d\'accueil :</b><ol><li>Copie ta sauvegarde (Réglages → Données).</li><li>Supprime l\'icône actuelle de l\'écran d\'accueil.</li><li>Ouvre ce lien dans Safari :<div class="lk"><span class="num">'+link+'</span><button class="btn" data-act="copylink">Copier</button></div></li><li>Partager → « Sur l\'écran d\'accueil ».</li><li>Ouvre l\'app, Réglages → Données → Restaurer.</li></ol></div>':'')+'</div>';
     return h}
   if(sub==="profile")return vMoi();
+  if(sub==="notif")return vNotif();
   if(sub==="data"){
     let h=subHead("Données","Tes données restent sur ce téléphone.");
     const a=bkAge();
@@ -592,6 +614,7 @@ function vSet(){
   let h='<div><h1>Réglages</h1><div class="sub">Configure ta méthode de révision</div></div>';
   h+='<div class="lbl">Méthode</div><div class="card list">'+setRow("prog",I.book,"Mon programme",progVal)+setRow("rev",I.loop,"Révision",revVal+' · Jour off : '+offVal)+'</div>';
   h+='<div class="lbl">Personnalisation</div><div class="card list">'+setRow("look",I.palette,"Apparence",THEMES[c.c]?THEMES[c.c].n:"Vert",1)+setRow("profile",I.user,"Moi",(c.name.trim()?esc(c.name.trim())+" · ":"")+badges().filter(b=>b.ok).length+" jalons")+'</div>';
+  h+='<div class="lbl">Défi à deux</div><div class="card list">'+setRow("notif",I.bell,"Notifications",st.cfg.push&&st.cfg.push.endpoint?"Activées":"Désactivées",1)+'</div>';
   h+='<div class="lbl">Données</div><div class="card list">'+setRow("data",I.cloud,"Sauvegarde et restauration",gh.token?(gh.err?"Sauvegarde auto : erreur":"Auto · "+ago2(gh.last)):bkAge()===null?"Jamais sauvegardé":bkAge()===0?"Sauvegardé aujourd\'hui":"Il y a "+bkAge()+" j",1)+'</div>';
   return h}
 
@@ -639,6 +662,9 @@ document.addEventListener("click",e=>{
   else if(d.cheer!==undefined){if(!st.duo){return}st.cheer={to:st.duo.file,msg:CHEERS[+d.cheer],at:new Date().toISOString()};save();toast("Encouragement envoyé");const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="cheerok"){const o=st.duo&&st.duo.data;if(o&&o.cheer)st.cheerSeen=o.cheer.at;save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.dgoal){st.cfg.duoGoal=+d.dgoal;st.cfg.duoGoalAt=new Date().toISOString();save();const y=scrollY;render();scrollTo(0,y)}
+  else if(d.act==="notifon"){notifOn()}
+  else if(d.act==="notifoff"){notifOff()}
+  else if(d.npref){st.cfg.notif=Object.assign({cheer:true,fin:true,duel:true},st.cfg.notif||{});st.cfg.notif[d.npref]=!st.cfg.notif[d.npref];save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="duoref"){duoFetch(true);toast("Actualisation…")}
   else if(d.act==="duooff"){st.duo=null;save();duoList=null;const y=scrollY;render();scrollTo(0,y)}
   else if(d.goto){go("rev");const el=$("blk-"+d.goto);if(el){const y=el.getBoundingClientRect().top+scrollY-14-(parseFloat(getComputedStyle(document.documentElement).paddingTop)||0);scrollTo({top:Math.max(0,y),behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),1200)}}
