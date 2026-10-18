@@ -838,6 +838,20 @@ body.onbm .wrap{padding-bottom:40px}
 /* Toast avec Annuler */
 .toast.act{display:flex;align-items:center;gap:14px;padding-right:8px}
 .toast button{border:0;background:rgba(127,127,127,.25);color:inherit;font:inherit;font-weight:800;border-radius:999px;padding:6px 12px}
+/* Apprentissage par quarts */
+.lqs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.lqs button{border:1.5px solid var(--line);background:var(--card);border-radius:20px;padding:18px 6px 14px;display:flex;flex-direction:column;align-items:center;gap:2px;font:inherit;color:var(--ink)}
+.lqs button:active{background:var(--acc-soft);border-color:var(--acc)}
+.lqs b{font-size:34px;line-height:1;font-weight:800;color:var(--acc)}
+.lqs span{font-size:14px;font-weight:700;color:var(--muted)}
+.lqs em{font-style:normal;font-size:11px;font-weight:800;color:var(--acc2-ink);margin-top:4px;text-align:center}
+.mqb{display:flex;gap:4px;margin-top:6px;max-width:140px}
+.mqb i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.mqb i.on{background:var(--acc2)}
+.mnext .mqb{flex:none;flex-direction:row;width:120px}
+.lqst{display:flex;align-items:center;gap:12px;margin:-4px 0 14px}
+.lqst .mqb{margin:0;width:110px}
+.lqst span{font-size:14px;font-weight:700}
 /* Barre du bas */
 nav{position:fixed;left:max(14px,env(safe-area-inset-left,0px));right:max(14px,env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));max-width:540px;margin:0 auto;background:color-mix(in srgb,var(--card) 88%,transparent);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-radius:30px;display:flex;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.12);z-index:5}
 nav button{flex:1;border:0;background:none;border-radius:24px;padding:8px 2px 7px;font-size:12px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px}
@@ -860,6 +874,6 @@ nav svg{width:24px;height:24px}
 <div class="sheet" id="sheet" hidden></div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="app.js?v=63"></script>
+<script src="app.js?v=64"></script>
 </body>
 </html>
