@@ -783,6 +783,12 @@ function rdFoot(){const p=rd.p,w=st.weak.includes(rd.id);
 function drawReader(){const p=rd.p,s=S[rd.id-1];
   $("rdhead").innerHTML='<button class="rdx" data-rdclose aria-label="Fermer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="rdt"><b>'+s.t+'</b><span class="num">Page '+p+' sur 604</span></div><span class="ar rda">'+s.a+'</span>';
   rdFoot();
+  /* Mushaf « Al-Wadih fi at-Tajwid » (pages scannées, couleurs du tajwid). Repli : mise en page Madani. */
+  const src=mImg(p);$("rdbody").innerHTML='<div class="mimg"><img src="'+src+'" alt="Page '+p+'" decoding="async"></div>';$("rdbody").classList.add("img");
+  const img=$("rdbody").querySelector("img");img.onerror=()=>{if(rd&&rd.p===p){$("rdbody").classList.remove("img");drawQcf(p)}};
+  img.onload=()=>{[p+1,p-1,p+2].forEach(q=>{if(q>=1&&q<=604){const x=new Image();x.src=mImg(q)}})}}
+const mImg=p=>"mushaf/"+String(p).padStart(3,"0")+".webp";
+function drawQcf(p){
   $("rdbody").innerHTML='<div class="mpage"><div class="rdload">Chargement de la page '+p+'…</div></div>';
   Promise.all([pageWords(p),loadFont(p)]).then(([ws,fam])=>{if(!rd||rd.p!==p)return;if(!ws.length)throw 0;
     const lines={};ws.forEach(o=>{(lines[o.w.line_v2]=lines[o.w.line_v2]||[]).push(o)});
