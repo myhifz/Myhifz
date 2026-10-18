@@ -158,6 +158,17 @@ function learn(q){ // q en quarts : 1, 2 ou 4
   if(done){if(up)p1=np;else p2=np;st.cfg.p1=p1;st.cfg.p2=p2;st.cfg.a=onPage(p1)[0].id;st.cfg.b=onPage(p2).slice(-1)[0].id}
   st.learned=(st.learned||[]).concat({d:today(),n:q/4,p:done?np:0,at:new Date().toISOString()}).slice(-400);save();checkBadges();
   toast(done?"Page "+np+" terminée":QL[q]+" ajouté"+(q===2?"e":"")+" · page "+np,"undolearn")}
+function unlearn(q){ // retirer q quarts
+  const r=pageRange(st.cfg);if(!r)return;let[p1,p2]=r;const up=st.cfg.dir==="up",f=fq();
+  if(f<q&&p1===p2){toast("Il faut garder au moins une page");return}
+  lastLearn={p1:st.cfg.p1,p2:st.cfg.p2,a:st.cfg.a,b:st.cfg.b,fq:f,n:(st.learned||[]).length,got:(st.got||[]).slice()};
+  let gone=0;if(f>=q)st.cfg.fq=f-q;else{gone=up?p1:p2;if(up)p1++;else p2--;st.cfg.fq=f+4-q;st.cfg.p1=p1;st.cfg.p2=p2;st.cfg.a=onPage(p1)[0].id;st.cfg.b=onPage(p2).slice(-1)[0].id}
+  st.learned=(st.learned||[]).concat({d:today(),n:-q/4,p:0,at:new Date().toISOString()}).slice(-400);save();
+  toast(QL[q]+" retiré"+(q===2?"e":"")+(gone?" · page "+gone+" enlevée":""),"undolearn")}
+function openUnlearn(){const pr=program(st.cfg);if(!pr)return;const up=st.cfg.dir==="up",f=fq(),last=up?pr.p1:pr.p2,s=$("sheet");
+  s.innerHTML='<div class="sheet-in"><button class="shx" data-act="recapclose" aria-label="Fermer">×</button><span class="ddk" style="color:var(--hard)">Retirer</span><h2>Je me suis trompé</h2>'
+   +'<p class="note" style="margin:0 0 12px">Combien veux-tu retirer ?'+(f?' En ce moment : '+["","¼","½","¾"][f]+' de la page '+(up?last-1:last+1)+'.':'')+'</p><div class="lqs rm">'+[1,2,4].map(q=>{const cross=f<q,dis=cross&&pr.total<=1;return'<button data-uq="'+q+'"'+(dis?" disabled":"")+'><b>'+["","¼","½","","1"][q]+'</b><span>'+(q===1?"de page":"page")+'</span>'+(cross?'<em>enlève la page '+last+'</em>':'')+'</button>'}).join("")+'</div></div>';
+  s.hidden=false;document.body.classList.add("sheet-open")}
 function openLearn(){const pr=program(st.cfg);if(!pr)return;const up=st.cfg.dir==="up",np=up?pr.p1-1:pr.p2+1;if(np<1||np>604)return;const f=fq(),s=$("sheet");
   s.innerHTML='<div class="sheet-in"><button class="shx" data-act="recapclose" aria-label="Fermer">×</button><span class="ddk">Nouvel apprentissage</span><h2>Page '+np+' · '+onPage(np).map(x=>x.t).join(", ")+'</h2>'
    +(f?'<div class="lqst"><div class="mqb">'+[0,1,2,3].map(k=>'<i class="'+(k<f?"on":"")+'"></i>').join("")+'</div><span>'+["","¼","½","¾"][f]+' déjà apprise</span></div>':'')
@@ -217,7 +228,7 @@ function vHome(){
   /* 3. Mémorisation */
   const pr=x.pr,mem=pr.total+fq()/4,cp=mem/PAGES*100,np=st.cfg.dir==="up"?pr.p1-1:pr.p2+1,nxt=np>=1&&np<=604?onPage(np):[];
   h+='<div class="sect">Mémorisation</div><div class="card memo2"><div class="mtop2"><div><b class="num">'+cp.toFixed(1)+'<small>%</small></b><span>du Coran mémorisé</span></div><div class="mstat num"><b>'+fmtN(mem)+'</b> pages<br><b>'+hizb(mem)+'</b> hizb</div></div><div class="prog"><i style="width:'+Math.max(cp,1)+'%"></i></div>'+goalLine()
-   +(nxt.length?'<div class="mnext"><div><span>Prochaine page'+(fq()?' · '+["","¼","½","¾"][fq()]+' apprise':'')+'</span><b class="num">'+np+' · '+nxt.map(s=>s.t).join(", ")+'</b>'+(fq()?'<div class="mqb">'+[0,1,2,3].map(k=>'<i class="'+(k<fq()?"on":"")+'"></i>').join("")+'</div>':'')+'</div><button class="plusb" data-act="learnsheet" aria-label="J\'ai appris">'+I.plus+'</button></div>':'<p class="note">Tu as atteint la fin du Mushaf. Toutes les pages sont mémorisées.</p>')+'</div>';
+   +(nxt.length?'<div class="mnext"><div><span>Prochaine page'+(fq()?' · '+["","¼","½","¾"][fq()]+' apprise':'')+'</span><b class="num">'+np+' · '+nxt.map(s=>s.t).join(", ")+'</b>'+(fq()?'<div class="mqb">'+[0,1,2,3].map(k=>'<i class="'+(k<fq()?"on":"")+'"></i>').join("")+'</div>':'')+'</div><button class="ghost" data-act="unlearnsheet" aria-label="Retirer">−</button><button class="plusb" data-act="learnsheet" aria-label="J\'ai appris">'+I.plus+'</button></div>':'<p class="note">Tu as atteint la fin du Mushaf. Toutes les pages sont mémorisées.</p>')+'</div>';
   /* 4. Cette semaine */
   h+=duoShort();
   h+='<div class="sect">Cette semaine</div><div class="card week">'+weekStrip()+'<div class="wkline">'+(()=>{const t=today(),dw=(new Date(t+"T12:00").getDay()+6)%7;let a=0;for(let k=0;k<=dw;k++)if(st.log[addDays(t,k-dw)])a++;return'<span><b class="num">'+a+'</b> jour'+(a>1?"s":"")+' actif'+(a>1?"s":"")+' cette semaine</span><span>Record : <b class="num">'+record()+'</b> j</span>'})()+'</div><button class="btn wide" data-act="recap">'+I.chart+'Voir le bilan de la semaine</button></div>';
@@ -718,6 +729,8 @@ document.addEventListener("click",e=>{
     const x=dayState(today());if(on&&x.tot&&x.done===x.tot)toast("Révision du jour terminée !")}
   else if(d.all){revTap=d.on==="1"?{k:d.all,all:true}:null;const x=dayState(today());mark(d.all,(d.all==="sj"?x.Js:d.all==="so"?x.Os:x.W).map(y=>y.s.id),d.on==="1");const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="learnsheet"){openLearn()}
+  else if(d.act==="unlearnsheet"){openUnlearn()}
+  else if(d.uq){closeRecap();unlearn(+d.uq);const y=scrollY;render();scrollTo(0,y)}
   else if(d.lq){const q=+d.lq;closeRecap();learn(q);const y=scrollY;render();scrollTo(0,y);
     if(!matchMedia("(prefers-reduced-motion: reduce)").matches){const btn=document.querySelector(".plusb");if(btn){const r=btn.getBoundingClientRect(),f=document.createElement("div");f.className="fly";f.textContent="+"+["","¼","½","","1"][q]+" page";f.style.left=(r.left+r.width/2)+"px";f.style.top=(r.top)+"px";document.body.appendChild(f);setTimeout(()=>f.remove(),1100);btn.classList.add("bump");setTimeout(()=>btn.classList.remove("bump"),400)}}}
   else if(d.off!==undefined){const n=+d.off,i=draft.off.indexOf(n);if(i<0&&draft.off.length>=6){toast("Garde au moins un jour de révision");return}if(i<0)draft.off.push(n);else draft.off.splice(i,1);const y=scrollY;render();scrollTo(0,y)}
