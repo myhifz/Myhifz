@@ -9,7 +9,7 @@ const DEF={c:"vert",name:"",a:0,b:0,dir:"up",jn:6,d:3,start:"",icon:"rose",p1:0,
 
 let st={log:{},day:{},weak:[],cfg:{...DEF}}, tab="home", draft=null, resetArm=false;
 try{const v=JSON.parse(localStorage.getItem(KEY)||"null");
-  if(v){st.bk=v.bk||"";st.bkSnooze=v.bkSnooze||"";st.log=v.log||{};st.day=v.day||{};st.weak=v.weak||[];st.tp=v.tp;st.learned=v.learned||[];st.got=v.got;st.gotAt=v.gotAt||{};st.pg=v.pg;st.beg=v.beg||{};st.fin=v.fin||{};st.duo=v.duo||null;st.onb=v.onb;st.recapSeen=v.recapSeen||"";st.cfg=Object.assign({...DEF},v.cfg||{});
+  if(v){st.bk=v.bk||"";st.bkSnooze=v.bkSnooze||"";st.log=v.log||{};st.day=v.day||{};st.weak=v.weak||[];st.tp=v.tp;st.learned=v.learned||[];st.got=v.got;st.gotAt=v.gotAt||{};st.pg=v.pg;st.wkhit=v.wkhit||{};st.wkgoal=v.wkgoal||{};st.cheer=v.cheer||null;st.cheerSeen=v.cheerSeen||"";st.beg=v.beg||{};st.fin=v.fin||{};st.duo=v.duo||null;st.onb=v.onb;st.recapSeen=v.recapSeen||"";st.cfg=Object.assign({...DEF},v.cfg||{});
     // Ancienne version (cases par sourate) : on reprend la plage cochée
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}}}catch(e){}
 // Icône : celle de l'écran d'accueil vient du lien utilisé à l'installation (?icon=N)
@@ -80,6 +80,7 @@ function mark(kind,ids,on){
   const t=today(),before=dayState(t).done;if(!st.day[t]||!st.day[t].sj)st.day[t]={sj:[],so:[],sw:[]};const d=st.day[t];if(!d.sw)d.sw=[];
   ids.forEach(p=>{const i=d[kind].indexOf(p);if(on&&i<0)d[kind].push(p);if(!on&&i>=0)d[kind].splice(i,1)});
   st.log[t]=d.sj.length+d.so.length+d.sw.length; if(!st.log[t])delete st.log[t];
+  setTimeout(()=>{if(typeof checkWeekHit==="function"){checkWeekHit();try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}},0);
   const x=dayState(t);const wasFull=!!d.full;d.full=!!(x.tot&&x.done>=x.tot);
   st.beg=st.beg||{};st.fin=st.fin||{};const now=new Date().toISOString();
   if(on&&!st.beg[t])st.beg[t]=now;if(d.full&&!wasFull&&!st.fin[t])st.fin[t]=now;if(!d.full&&st.fin[t]&&!wasFull)delete st.fin[t];
@@ -136,6 +137,7 @@ const I={
  git:D(24,'<circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="9" r="2.2"/><path d="M6 8.2v7.6M18 11.2c0 3.5-3.5 4.3-9.8 5.6"/>'),
  bolt:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2.5L5 13.5h6l-1 8 8.5-11h-6z"/></svg>',
  alert:'<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8 1.6 20.5h20.8zM11 9h2v6h-2zm0 7.5h2v2h-2z"/></svg>',
+ trophy:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h10v2h3.5v3a4.5 4.5 0 0 1-4.6 4.5A5 5 0 0 1 13 15.9V18h3v3H8v-3h3v-2.1A5 5 0 0 1 8.1 12.5 4.5 4.5 0 0 1 3.5 8V5H7zm0 4H5.5v1A2.5 2.5 0 0 0 7.3 10.4 6 6 0 0 1 7 8.5zm10 0v1.5a6 6 0 0 1-.3 1.9A2.5 2.5 0 0 0 18.5 8V7z"/></svg>',
  check:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
 };
 
@@ -145,7 +147,7 @@ function learn(delta){
   if(st.cfg.dir==="up"){p1=Math.min(Math.max(1,p1-delta),p2)}else{p2=Math.max(Math.min(604,p2+delta),p1)}
   if(p1===r[0]&&p2===r[1]){toast(delta>0?"Tu es déjà à la fin du Mushaf":"Il faut garder au moins une page");return}
   st.cfg.p1=p1;st.cfg.p2=p2;st.cfg.a=onPage(p1)[0].id;st.cfg.b=onPage(p2).slice(-1)[0].id;
-  st.learned=(st.learned||[]).concat({d:today(),n:delta>0?1:-1}).slice(-400);save();checkBadges();
+  st.learned=(st.learned||[]).concat({d:today(),n:delta>0?1:-1,p:delta>0?(st.cfg.dir==="up"?p1:p2):0,at:new Date().toISOString()}).slice(-400);save();checkBadges();
   const np=st.cfg.dir==="up"?p1:p2;
   toast(delta>0?"Page "+np+" ajoutée · "+onPage(np).map(s=>s.t).join(", "):"Dernière page retirée")}
 function needSetup(){return'<div class="card empty"><div class="ar">بسم الله</div><p>Indique dans Réglages les sourates que tu connais et ton rythme de révision.</p><div class="chips" style="justify-content:center;margin-top:16px"><button class="btn pri" data-tab="set">Configurer mon programme</button></div></div>'}
@@ -183,6 +185,7 @@ function vHome(){
   let h='<div class="hd"><div class="hdt">'+(name?'<span class="hs">Salam Aleykoum</span><h1>'+esc(name)+'</h1>':'<h1>Salam Aleykoum</h1>')+'<span class="hdate">'+fmtDay(today())+'</span></div>'
    +'<div class="stk'+(sk?"":" zero")+'" data-v="'+sk+'">'+I.flame+'<b class="num">'+sk+'</b><span>jour'+(sk>1?"s":"")+'</span></div></div>';
   if(!x.pr)return h+needSetup();
+  h+=cheerBanner();
   if(needBackup()){const a=bkAge();h+='<div class="bkban">'+I.cloud+'<div><b>Pense à sauvegarder</b><span>'+(a===null?"Tu n\'as encore jamais sauvegardé.":"Dernière sauvegarde il y a "+a+" jours.")+'</span></div><button class="btn pri" data-act="savefile">Sauvegarder</button><button class="bkx" data-act="later" aria-label="Plus tard">×</button></div>'}
   const left=x.tot-x.done,pct=x.tot?Math.round(x.done/x.tot*100):100,R=34,C=2*Math.PI*R;
   /* 1. Aujourd'hui */
@@ -368,7 +371,7 @@ function vMoi(){
   /* Défi à deux */
   h+='<div class="sect">Défi à deux</div><div class="card">';
   if(!gh.token)h+='<p class="note" style="margin:0">Pour faire un défi, active d\'abord la sauvegarde automatique GitHub (Réglages → Sauvegarde et restauration). Ton proche doit faire pareil sur son téléphone.</p>';
-  else if(st.duo){h+='<div class="duoset"><b>Avec '+esc((st.duo.data&&st.duo.data.cfg.name)||st.duo.name)+'</b><span>'+(st.duo.err||"Mis à jour "+ago2(st.duo.at?new Date(st.duo.at).toISOString():""))+'</span></div><div class="chips" style="margin-top:12px"><button class="btn" data-act="duoref">Actualiser</button><button class="btn" data-act="duooff">Arrêter le défi</button></div>'}
+  else if(st.duo){h+='<div class="fl" style="margin-top:0">Objectif du duel de la semaine</div><div class="seg3">'+[30,50,80].map(g=>'<button class="'+(duelGoal()===g?"on":"")+'" data-dgoal="'+g+'">'+g+' pages</button>').join("")+'</div><p class="note" style="margin:8px 0 14px">Le premier à réviser ce nombre de pages dans la semaine gagne un trophée. Le choix est partagé avec ton proche.</p><div class="duoset"><b>Avec '+esc((st.duo.data&&st.duo.data.cfg.name)||st.duo.name)+'</b><span>'+(st.duo.err||"Mis à jour "+ago2(st.duo.at?new Date(st.duo.at).toISOString():""))+'</span></div><div class="chips" style="margin-top:12px"><button class="btn" data-act="duoref">Actualiser</button><button class="btn" data-act="duooff">Arrêter le défi</button></div>'}
   else{if(duoList===null){duoLoadList();h+='<p class="note" style="margin:0">Recherche des autres sauvegardes…</p>'}
     else if(!duoList.length)h+='<p class="note" style="margin:0">'+(duoListErr||'Aucune autre sauvegarde trouvée. Ton proche doit mettre son prénom, puis activer la sauvegarde automatique avec la même clé.')+'</p><button class="btn wide" data-act="duolist">Actualiser la liste</button>';
     else h+='<p class="note" style="margin:0 0 10px">Avec qui veux-tu faire le défi ?</p><div class="chips">'+duoList.map(f=>'<button class="btn" data-duo="'+esc(f.file)+'" data-dn="'+esc(f.name)+'">'+esc(f.name.charAt(0).toUpperCase()+f.name.slice(1))+'</button>').join("")+'</div>'}
@@ -468,7 +471,7 @@ function closeRecap(){const s=$("sheet");s.hidden=true;document.body.classList.r
 let duoList=null,duoBusy=false;
 function duoFetch(force){if(!st.duo||duoBusy)return;if(!force&&st.duo.at&&Date.now()-st.duo.at<6e4)return;duoBusy=true;
   fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+st.duo.file+"?t="+Date.now(),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}})
-   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={saved:d.saved||"",beg:d.beg||{},fin:d.fin||{},log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if(tab==="home"||sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})
+   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={wkhit:d.wkhit||{},cheer:d.cheer||null,duoGoal:(d.cfg||{}).duoGoal,duoGoalAt:(d.cfg||{}).duoGoalAt,saved:d.saved||"",beg:d.beg||{},fin:d.fin||{},log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if(tab==="home"||sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})
    .catch(e=>{st.duo.err="Impossible de lire la sauvegarde de "+st.duo.name;save()}).finally(()=>{duoBusy=false})}
 let duoListErr="";
 function duoLoadList(){duoListErr="";fetch("https://api.github.com/repos/"+GH_REPO+"/contents/sauvegardes?t="+Date.now(),{cache:"no-store"}).then(r=>{if(r.status===404)return[];if(!r.ok)throw r.status;return r.json()}).then(a=>{duoList=(Array.isArray(a)?a:[]).filter(f=>/\.json$/.test(f.name)&&"sauvegardes/"+f.name!==gh.file).map(f=>({file:f.path,name:f.name.replace(/\.json$/,"").replace(/-/g," ")}));duoList.forEach(f=>fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+f.file,{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.cfg&&d.cfg.name){f.name=d.cfg.name;if(sub==="profile"&&!st.duo){const y=scrollY;render();scrollTo(0,y)}}}).catch(()=>{}));if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}}).catch(e=>{duoList=[];duoListErr=e===403?"GitHub limite les demandes pour l'instant, réessaie dans quelques minutes.":"Impossible de joindre GitHub. Vérifie ta connexion.";if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})}
@@ -483,13 +486,36 @@ function todayRace(o,nm){const t=today(),fa=(st.fin||{})[t],fb=(o.fin||{})[t],da
   else if(fa&&!fb)title="Tu as fini en premier aujourd'hui";else if(fb&&!fa)title=nm+" a fini en première aujourd'hui";
   else title=fa<fb?"Tu as fini en premier aujourd'hui":nm+" a fini en première aujourd'hui";
   return'<div class="race"><div class="rt">'+I.bolt+'<b>'+title+'</b></div><div class="rl"><span><i class="dme"></i>Toi : '+who(fa,da)+'</span><span><i class="dot2"></i>'+nm+' : '+who(fb,db)+'</span></div></div>'}
+/* ===== Duel de la semaine, course aux pages, encouragements ===== */
+const weekKey=d=>{const t=d||today();return addDays(t,-((new Date(t+"T12:00").getDay()+6)%7))};
+function duelGoal(){const o=st.duo&&st.duo.data;const mine={g:+st.cfg.duoGoal||50,at:st.cfg.duoGoalAt||""},his=o?{g:+o.duoGoal||0,at:o.duoGoalAt||""}:{g:0,at:""};return his.g&&his.at>mine.at?his.g:mine.g}
+function calWeekPages(d,wk){let n=0;for(let k=0;k<7;k++)n+=(d.pg||{})[addDays(wk,k)]||0;return n}
+function checkWeekHit(){const wk=weekKey(),g=duelGoal();st.wkhit=st.wkhit||{};if(!st.wkhit[wk]&&calWeekPages(st,wk)>=g){st.wkhit[wk]=new Date().toISOString();st.wkgoal=st.wkgoal||{};st.wkgoal[wk]=g}}
+function weekWinner(a,b,wk){const ha=(a.wkhit||{})[wk],hb=(b.wkhit||{})[wk];if(ha&&(!hb||ha<hb))return"a";if(hb&&(!ha||hb<ha))return"b";return""}
+function trophies(a,b){let ta=0,tb=0;const now=weekKey();new Set(Object.keys(a.wkhit||{}).concat(Object.keys(b.wkhit||{}))).forEach(wk=>{const w=weekWinner(a,b,wk);if(w==="a")ta++;if(w==="b")tb++});return[ta,tb]}
+/* Course aux pages : une page apprise par les deux → point à celui qui l'a validée en premier ; sinon point à celui qui l'a apprise */
+function pageRace(a,b){const first=(d)=>{const m={};(d.learned||[]).forEach(e=>{if(e.p&&e.n>0&&e.at&&(!m[e.p]||e.at<m[e.p]))m[e.p]=e.at});return m};
+  const wk=weekKey(),fa=first(a),fb=first(b);let pa=0,pb=0;
+  new Set(Object.keys(fa).concat(Object.keys(fb))).forEach(p=>{const x=fa[p],y=fb[p],inWk=t=>t&&weekKey(t.slice(0,10))===wk;
+    if(x&&y){if(x<y&&inWk(x))pa++;else if(y<x&&inWk(y))pb++}else if(x&&inWk(x))pa++;else if(y&&inWk(y))pb++});return[pa,pb]}
+const CHEERS=["Bon courage !","Tu y es presque !","Allez, on ne lâche rien !","Qu'Allah te facilite !"];
+function cheerBanner(){const o=st.duo&&st.duo.data;if(!o||!o.cheer)return"";const c=o.cheer;if(!c.at||c.to!==gh.file||(st.cheerSeen||"")>=c.at||diff(today(),c.at.slice(0,10))>2)return"";
+  return'<div class="cheer">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':'<span class="dp dot2">'+esc((o.cfg.name||"?").charAt(0))+'</span>')+'<div><b>'+esc(o.cfg.name||st.duo.name)+' t\'encourage</b><span>« '+esc(c.msg)+' »</span></div><button class="bkx" data-act="cheerok" aria-label="Fermer">×</button></div>'}
+function duelBlock(o,nm){const wk=weekKey(),g=duelGoal(),a=calWeekPages(st,wk),b=calWeekPages(o,wk),w=weekWinner(st,o,wk),[ta,tb]=trophies(st,o);
+  const bar=(v,cls)=>'<div class="dlbar '+cls+'"><i style="--w:'+Math.min(100,v/g*100)+'%"></i></div>';
+  const end=addDays(wk,6),left=diff(end,today());
+  return'<div class="duel"><div class="dlh">'+I.trophy+'<b>Duel de la semaine</b><span class="num">Premier à '+g+' pages</span></div>'
+   +'<div class="dlrow"><span>Toi</span>'+bar(a,"dlme")+'<b class="num">'+Math.min(a,g)+'/'+g+'</b>'+(w==="a"?I.trophy:'')+'</div>'
+   +'<div class="dlrow"><span>'+nm+'</span>'+bar(b,"dlot")+'<b class="num">'+Math.min(b,g)+'/'+g+'</b>'+(w==="b"?I.trophy:'')+'</div>'
+   +'<div class="dlf">'+(w?(w==="a"?"Tu as gagné le duel de la semaine !":nm+" a gagné le duel de la semaine !"):"Fin du duel "+(left<=0?"ce soir":"dans "+left+" jour"+(left>1?"s":"")))+'<span class="num">Trophées : Toi '+ta+' · '+nm+' '+tb+'</span></div></div>'}
 function duoCard(){if(!st.duo||!st.duo.data)return"";const o=st.duo.data,me=weekOf(st),him=weekOf(o),nm=esc(o.cfg.name||st.duo.name);
   const row=(lab,a,b)=>{const m=Math.max(1,a,b),wa=a/m*100,wb=b/m*100;return'<div class="vr"><b class="num va'+(a>b?" win":"")+'">'+a+'</b><div class="vbar"><span class="vl"><i style="--w:'+wa+'%"></i></span><span class="vlab">'+lab+'</span><span class="vrt"><i style="--w:'+wb+'%"></i></span></div><b class="num vb'+(b>a?" win":"")+'">'+b+'</b></div>'};
   const fw=fastWins(st,o),sa=me.pages+streakOf(st)*2+fw[0]*3,sb=him.pages+streakOf(o)*2+fw[1]*3,lead=sa===sb?"Égalité cette semaine":sa>sb?"Tu mènes cette semaine":nm+" mène cette semaine";
   return'<div class="sect">Défi à deux</div><div class="card duo3"><div class="vhd"><div class="vp"><span class="dp dme">'+(st.cfg.photo?'<img src="'+st.cfg.photo+'" alt="">':esc((st.cfg.name||"M").charAt(0).toUpperCase()))+'</span><b>Toi</b></div><span class="vs">VS</span><div class="vp"><span class="dp dot2">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':esc(nm.charAt(0).toUpperCase()))+'</span><b>'+nm+'</b></div></div>'
-   +todayRace(o,nm)
-   +row("Pages révisées",me.pages,him.pages)+(()=>{const[fa,fb]=fastWins(st,o);return row("Premier à finir",fa,fb)})()+row("Jours de série",streakOf(st),streakOf(o))+row("Jours actifs",me.active,him.active)
-   +'<div class="dlead'+(sa===sb?"":sa>sb?" lme":" lot")+'">'+I.medal+lead+'</div>'+(o.saved?'<div class="dsync">Dernière activité de '+nm+' : '+ago2(o.saved)+'</div>':'')+'</div>'}
+   +duelBlock(o,nm)+todayRace(o,nm)
+   +row("Pages révisées",me.pages,him.pages)+(()=>{const[fa,fb]=fastWins(st,o);return row("Premier à finir",fa,fb)})()+(()=>{const[pa,pb]=pageRace(st,o);return row("Course aux pages",pa,pb)})()+row("Jours de série",streakOf(st),streakOf(o))+row("Jours actifs",me.active,him.active)
+   +'<div class="dlead'+(sa===sb?"":sa>sb?" lme":" lot")+'">'+I.medal+lead+'</div>'+'<div class="chrow">'+(st.cheer&&st.cheer.at&&diff(today(),st.cheer.at.slice(0,10))<1?'<span class="note">Encouragement envoyé : « '+esc(st.cheer.msg)+' »</span>':'<span class="note">Encourager '+nm+' :</span>')+'<div class="chips">'+CHEERS.map((m,k)=>'<button class="chip" data-cheer="'+k+'">'+m+'</button>').join("")+'</div></div>'
+   +(o.saved?'<div class="dsync">Dernière activité de '+nm+' : '+ago2(o.saved)+'</div>':'')+'</div>'}
 
 /* ===== Premier lancement ===== */
 let ob=null;
@@ -610,6 +636,9 @@ document.addEventListener("click",e=>{
   else if(d.act==="recapclose"){closeRecap()}
   else if(d.duo){st.duo={file:d.duo,name:d.dn,at:0,data:null,err:""};save();duoFetch(true);const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="duolist"){duoList=null;const y=scrollY;render();scrollTo(0,y)}
+  else if(d.cheer!==undefined){if(!st.duo){return}st.cheer={to:st.duo.file,msg:CHEERS[+d.cheer],at:new Date().toISOString()};save();toast("Encouragement envoyé");const y=scrollY;render();scrollTo(0,y)}
+  else if(d.act==="cheerok"){const o=st.duo&&st.duo.data;if(o&&o.cheer)st.cheerSeen=o.cheer.at;save();const y=scrollY;render();scrollTo(0,y)}
+  else if(d.dgoal){st.cfg.duoGoal=+d.dgoal;st.cfg.duoGoalAt=new Date().toISOString();save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="duoref"){duoFetch(true);toast("Actualisation…")}
   else if(d.act==="duooff"){st.duo=null;save();duoList=null;const y=scrollY;render();scrollTo(0,y)}
   else if(d.goto){go("rev");const el=$("blk-"+d.goto);if(el){const y=el.getBoundingClientRect().top+scrollY-14-(parseFloat(getComputedStyle(document.documentElement).paddingTop)||0);scrollTo({top:Math.max(0,y),behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),1200)}}
@@ -637,7 +666,7 @@ document.addEventListener("click",e=>{
   else if(d.act==="sharephoto"){st.cfg.sharePhoto=!st.cfg.sharePhoto;save();clearTimeout(ghTimer);ghPush();toast(st.cfg.sharePhoto?"Ta photo sera visible dans le défi":"Ta photo n'est plus partagée");const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="nophoto"){st.cfg.photo="";save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="reset"){if(!resetArm){resetArm=true;const y=scrollY;render();scrollTo(0,y);return}
-    st={log:{},day:{},weak:[],tp:0,learned:[],got:[],gotAt:{},pg:{},beg:{},fin:{},cfg:{...DEF,c:st.cfg.c,icon:st.cfg.icon,mode:st.cfg.mode}};save();draft=null;resetArm=false;toast("Données effacées");render()}
+    st={log:{},day:{},weak:[],tp:0,learned:[],got:[],gotAt:{},pg:{},beg:{},fin:{},wkhit:{},cfg:{...DEF,c:st.cfg.c,icon:st.cfg.icon,mode:st.cfg.mode}};save();draft=null;resetArm=false;toast("Données effacées");render()}
   else if(d.act==="export"){const txt=JSON.stringify(st),ta=$("expt");ta.value=txt;const fb=()=>{ta.hidden=false;ta.select();toast("Sélectionne et copie le texte")};
     if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast("Sauvegarde copiée"),fb);else fb()}
   else if(d.act==="showimp"){$("imp").hidden=false}
