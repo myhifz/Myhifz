@@ -21,6 +21,7 @@ if(!ICONS[st.cfg.icon])st.cfg.icon="rose";
 function applyIcon(){document.querySelectorAll('link[rel="apple-touch-icon"],link[rel="icon"]').forEach(l=>l.href="icons/"+st.cfg.icon+".png")}
 const logo=()=>'<div class="logo"><img src="icons/'+st.cfg.icon+'.png" alt=""></div>';
 try{const t=localStorage.getItem(KEY+"-tab");if(["home","rev","plan","set","moi"].includes(t))tab=t}catch(e){}
+const saveLocal=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}; // sur ce téléphone seulement
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){};if(typeof ghSchedule==="function")ghSchedule()};
 
 const pad=n=>String(n).padStart(2,"0");
@@ -314,7 +315,7 @@ function vPlan(){
     let arcs="";for(let k=0;k<n;k++)arcs+='<circle r="'+R+'" cx="56" cy="56" fill="none" stroke-width="11" stroke-linecap="'+(n>24?"butt":"round")+'" class="cs '+(k<i?"past":k===i?"cur":"")+'" style="--k:'+k+'" stroke-dasharray="'+seg+' '+(C-seg)+'" stroke-dashoffset="'+(-(k*C/n))+'" transform="rotate(-90 56 56)"/>';
     let rem=n-i,end=t,g=0;while(rem>0&&g++<400){if(!isOff(end))rem--;if(rem>0)end=addDays(end,1)}
     h+='<div class="sect">Cycle de Hifdh</div><div class="card cyc2"><svg viewBox="0 0 112 112" class="cring">'+arcs+'<text x="56" y="54" text-anchor="middle" class="cn">'+(i+1)+'</text><text x="56" y="72" text-anchor="middle" class="cd">sur '+n+'</text></svg>'
-      +'<div class="cyt"><b>Jour '+(i+1)+' du cycle</b><span class="num">~'+pr.k+' pages par jour</span><span>'+(end===t?"Cycle bouclé <b>aujourd\'hui</b>":"Cycle bouclé le <b>"+new Date(end+"T12:00").toLocaleDateString("fr-BE",{weekday:"long",day:"numeric",month:"long"})+"</b>")+'</span></div></div>'}
+      +'<div class="cyt"><b>Jour '+(i+1)+' du cycle</b><span class="num">~'+pr.k+' pages par jour</span><span>'+(end===t?"Cycle bouclé <b>aujourd\'hui</b>":"Cycle bouclé le <b>"+new Date(end+"T12:00").toLocaleDateString("fr-BE",{weekday:"long",day:"numeric",month:"long"})+"</b>")+'</span><div class="cyfx"><span>Corriger le jour</span><button data-cyc="-1" aria-label="Jour précédent du cycle">'+I.prev+'</button><button data-cyc="1" aria-label="Jour suivant du cycle">'+I.next+'</button></div></div></div>'}
   /* 4. Calendrier du mois */
   if(!planMonth)planMonth=t.slice(0,7);
   const [Y,M]=planMonth.split("-").map(Number),first=planMonth+"-01",lead=(new Date(first+"T12:00").getDay()+6)%7,nd=new Date(Y,M,0).getDate();
@@ -519,8 +520,8 @@ function closeRecap(){const s=$("sheet");s.hidden=true;document.body.classList.r
 let duoList=null,duoBusy=false;
 function duoFetch(force){if(!st.duo||duoBusy)return;if(!force&&st.duo.at&&Date.now()-st.duo.at<6e4)return;duoBusy=true;
   fetch(ghUrl(st.duo.file+"?t="+Date.now()),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}})
-   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={wkhit:d.wkhit||{},cheer:d.cheer||null,duoGoal:(d.cfg||{}).duoGoal,duoGoalAt:(d.cfg||{}).duoGoalAt,saved:d.saved||"",beg:d.beg||{},fin:d.fin||{},log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if((tab==="home"||tab==="moi")&&!typing()){const y=scrollY;render();scrollTo(0,y)}})
-   .catch(e=>{st.duo.err="Impossible de lire la sauvegarde de "+st.duo.name;save()}).finally(()=>{duoBusy=false})}
+   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={wkhit:d.wkhit||{},cheer:d.cheer||null,duoGoal:(d.cfg||{}).duoGoal,duoGoalAt:(d.cfg||{}).duoGoalAt,saved:d.saved||"",beg:d.beg||{},fin:d.fin||{},log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";saveLocal();if((tab==="home"||tab==="moi")&&!typing()){const y=scrollY;render();scrollTo(0,y)}})
+   .catch(e=>{st.duo.err="Impossible de lire la sauvegarde de "+st.duo.name;saveLocal()}).finally(()=>{duoBusy=false})}
 let duoListErr="";
 function duoLoadList(){duoListErr="";fetch(ghUrl("sauvegardes?t="+Date.now()),{cache:"no-store"}).then(r=>{if(r.status===404)return[];if(!r.ok)throw r.status;return r.json()}).then(a=>{duoList=(Array.isArray(a)?a:[]).filter(f=>/\.json$/.test(f.name)&&"sauvegardes/"+f.name!==gh.file).map(f=>({file:f.path,name:f.name.replace(/\.json$/,"").replace(/-/g," ")}));duoList.forEach(f=>fetch(ghUrl(f.file),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.cfg&&d.cfg.name){f.name=d.cfg.name;if(tab==="moi"&&!st.duo){const y=scrollY;render();scrollTo(0,y)}}}).catch(()=>{}));if(tab==="moi"){const y=scrollY;render();scrollTo(0,y)}}).catch(e=>{duoList=[];duoListErr=e===403?"GitHub limite les demandes pour l'instant, réessaie dans quelques minutes.":"Impossible de joindre GitHub. Vérifie ta connexion.";if(tab==="moi"){const y=scrollY;render();scrollTo(0,y)}})}
 /* Quelqu'un écrit : on ne redessine pas l'écran (le texte serait perdu) */
@@ -739,6 +740,7 @@ document.addEventListener("click",e=>{
     const x=dayState(today());if(on&&x.tot&&x.done===x.tot)toast("Révision du jour terminée !")}
   else if(d.all){revTap=d.on==="1"?{k:d.all,all:true}:null;const x=dayState(today());mark(d.all,(d.all==="sj"?x.Js:d.all==="so"?x.Os:x.W).map(y=>y.s.id),d.on==="1");const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="learnsheet"){openLearn()}
+  else if(d.cyc){const pr=program(st.cfg);if(!pr||!pr.old.length)return;if(isOff(today())){toast("Pas de cycle un jour off");return}const i=((workIndex(today())%pr.d)+pr.d)%pr.d,ni=(i+ +d.cyc+pr.d)%pr.d;st.cfg.start=startKeeping(ni,st.cfg.off);save();toast("Jour "+(ni+1)+" du cycle · Hifdh "+rangeTxt(janbFor(pr,today())));const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="unlearnsheet"){openUnlearn()}
   else if(d.uq){closeRecap();unlearn(+d.uq);const y=scrollY;render();scrollTo(0,y)}
   else if(d.lq){const q=+d.lq;closeRecap();learn(q);const y=scrollY;render();scrollTo(0,y);
