@@ -26,6 +26,7 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){};if(t
 const pad=n=>String(n).padStart(2,"0");
 const ds=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
 const today=()=>ds(new Date());
+const ld=iso=>ds(new Date(iso)); // date locale (Belgique) d'une heure enregistrée
 const addDays=(s,n)=>{const d=new Date(s+"T12:00");d.setDate(d.getDate()+n);return ds(d)};
 const diff=(a,b)=>Math.round((new Date(a+"T12:00")-new Date(b+"T12:00"))/864e5);
 const $=id=>document.getElementById(id);
@@ -385,7 +386,7 @@ function vMoi(){
   h+='<div class="sect">Mon parcours</div><div class="card"><div class="fl" style="margin-top:0">Date de début du hifdh</div><input class="field" id="hst" type="date" max="'+today()+'" value="'+hs+'"><div class="note" style="margin-top:8px">Début le '+fmtShort(hs)+' · il y a '+since(hs)+'.</div></div>';
   return h}
 function restoreFrom(v){if(!v||(!v.cfg&&!v.s))throw 0;
-    const keep={bk:[st.bk,v.saved,v.bk].filter(Boolean).sort().pop()||""};st={log:v.log||{},day:v.day||{},weak:v.weak||[],tp:v.tp||0,learned:v.learned||[],got:v.got,gotAt:v.gotAt||{},pg:v.pg||{},beg:v.beg||{},fin:v.fin||{},duo:v.duo||null,onb:1,cfg:Object.assign({...DEF},v.cfg||{})};
+    const keep={bk:[st.bk,v.saved,v.bk].filter(Boolean).sort().pop()||""};st={log:v.log||{},day:v.day||{},weak:v.weak||[],tp:v.tp||0,learned:v.learned||[],got:v.got,gotAt:v.gotAt||{},pg:v.pg||{},beg:v.beg||{},fin:v.fin||{},duo:v.duo||null,onb:1,wkhit:v.wkhit||{},wkgoal:v.wkgoal||{},cheer:v.cheer||null,cheerSeen:[st.cheerSeen,v.cheerSeen].filter(Boolean).sort().pop()||"",recapSeen:v.recapSeen||"",cfg:Object.assign({...DEF},v.cfg||{},{push:(st.cfg&&st.cfg.push)||null})};
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}
     if(ICONS[URL_ICON])st.cfg.icon=URL_ICON;if(!ICONS[st.cfg.icon])st.cfg.icon="rose";
     Object.assign(st,keep);save();draft=null;applyTheme();applyIcon();toast("Données restaurées");render()}
@@ -478,10 +479,12 @@ function closeRecap(){const s=$("sheet");s.hidden=true;document.body.classList.r
 let duoList=null,duoBusy=false;
 function duoFetch(force){if(!st.duo||duoBusy)return;if(!force&&st.duo.at&&Date.now()-st.duo.at<6e4)return;duoBusy=true;
   fetch(ghUrl(st.duo.file+"?t="+Date.now()),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}})
-   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={wkhit:d.wkhit||{},cheer:d.cheer||null,duoGoal:(d.cfg||{}).duoGoal,duoGoalAt:(d.cfg||{}).duoGoalAt,saved:d.saved||"",beg:d.beg||{},fin:d.fin||{},log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if(tab==="home"||sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})
+   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={wkhit:d.wkhit||{},cheer:d.cheer||null,duoGoal:(d.cfg||{}).duoGoal,duoGoalAt:(d.cfg||{}).duoGoalAt,saved:d.saved||"",beg:d.beg||{},fin:d.fin||{},log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if((tab==="home"||sub==="profile")&&!typing()){const y=scrollY;render();scrollTo(0,y)}})
    .catch(e=>{st.duo.err="Impossible de lire la sauvegarde de "+st.duo.name;save()}).finally(()=>{duoBusy=false})}
 let duoListErr="";
 function duoLoadList(){duoListErr="";fetch(ghUrl("sauvegardes?t="+Date.now()),{cache:"no-store"}).then(r=>{if(r.status===404)return[];if(!r.ok)throw r.status;return r.json()}).then(a=>{duoList=(Array.isArray(a)?a:[]).filter(f=>/\.json$/.test(f.name)&&"sauvegardes/"+f.name!==gh.file).map(f=>({file:f.path,name:f.name.replace(/\.json$/,"").replace(/-/g," ")}));duoList.forEach(f=>fetch(ghUrl(f.file),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.cfg&&d.cfg.name){f.name=d.cfg.name;if(sub==="profile"&&!st.duo){const y=scrollY;render();scrollTo(0,y)}}}).catch(()=>{}));if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}}).catch(e=>{duoList=[];duoListErr=e===403?"GitHub limite les demandes pour l'instant, réessaie dans quelques minutes.":"Impossible de joindre GitHub. Vérifie ta connexion.";if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})}
+/* Quelqu'un écrit : on ne redessine pas l'écran (le texte serait perdu) */
+function typing(){const w=$("cwrite"),a=document.activeElement;return!!(w&&!w.hidden&&$("cmsg").value)||!!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))}
 const hm=iso=>{const d=new Date(iso);return d.getHours()+" h "+pad(d.getMinutes())};
 function durMin(o,day){const b=(o.beg||{})[day],f=(o.fin||{})[day];if(!b||!f)return null;return Math.max(1,Math.round((new Date(f)-new Date(b))/60000))}
 const fmtDur=m=>m<60?m+" min":Math.floor(m/60)+" h "+pad(m%60);
@@ -503,10 +506,10 @@ function trophies(a,b){let ta=0,tb=0;const now=weekKey();new Set(Object.keys(a.w
 /* Course aux pages : une page apprise par les deux → point à celui qui l'a validée en premier ; sinon point à celui qui l'a apprise */
 function pageRace(a,b){const first=(d)=>{const m={};(d.learned||[]).forEach(e=>{if(e.p&&e.n>0&&e.at&&(!m[e.p]||e.at<m[e.p]))m[e.p]=e.at});return m};
   const wk=weekKey(),fa=first(a),fb=first(b);let pa=0,pb=0;
-  new Set(Object.keys(fa).concat(Object.keys(fb))).forEach(p=>{const x=fa[p],y=fb[p],inWk=t=>t&&weekKey(t.slice(0,10))===wk;
+  new Set(Object.keys(fa).concat(Object.keys(fb))).forEach(p=>{const x=fa[p],y=fb[p],inWk=t=>t&&weekKey(ld(t))===wk;
     if(x&&y){if(x<y&&inWk(x))pa++;else if(y<x&&inWk(y))pb++}else if(x&&inWk(x))pa++;else if(y&&inWk(y))pb++});return[pa,pb]}
 const CHEERS=["Bon courage !","Tu y es presque !","Allez, on ne lâche rien !","Qu'Allah te facilite !"];
-function cheerBanner(){const o=st.duo&&st.duo.data;if(!o||!o.cheer)return"";const c=o.cheer;if(!c.at||c.to!==gh.file||(st.cheerSeen||"")>=c.at||diff(today(),c.at.slice(0,10))>2)return"";
+function cheerBanner(){const o=st.duo&&st.duo.data;if(!o||!o.cheer)return"";const c=o.cheer;if(!c.at||c.to!==gh.file||(st.cheerSeen||"")>=c.at||diff(today(),ld(c.at))>2)return"";
   return'<div class="cheer">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':'<span class="dp dot2">'+esc((o.cfg.name||"?").charAt(0))+'</span>')+'<div><b>'+esc(o.cfg.name||st.duo.name)+' t\'encourage</b><span>« '+esc(c.msg)+' »</span></div><button class="bkx" data-act="cheerok" aria-label="Fermer">×</button></div>'}
 function duelBlock(o,nm){const wk=weekKey(),g=duelGoal(),a=calWeekPages(st,wk),b=calWeekPages(o,wk),w=weekWinner(st,o,wk),[ta,tb]=trophies(st,o);
   const bar=(v,cls)=>'<div class="dlbar '+cls+'"><i style="--w:'+Math.min(100,v/g*100)+'%"></i></div>';
@@ -521,7 +524,7 @@ function duoCard(){if(!st.duo||!st.duo.data)return"";const o=st.duo.data,me=week
   return'<div class="sect">Défi à deux</div><div class="card duo3"><div class="vhd"><div class="vp"><span class="dp dme">'+(st.cfg.photo?'<img src="'+st.cfg.photo+'" alt="">':esc((st.cfg.name||"M").charAt(0).toUpperCase()))+'</span><b>Toi</b></div><span class="vs">VS</span><div class="vp"><span class="dp dot2">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':esc(nm.charAt(0).toUpperCase()))+'</span><b>'+nm+'</b></div></div>'
    +duelBlock(o,nm)+todayRace(o,nm)
    +row("Pages révisées",me.pages,him.pages)+(()=>{const[fa,fb]=fastWins(st,o);return row("Premier à finir",fa,fb)})()+(()=>{const[pa,pb]=pageRace(st,o);return row("Course aux pages",pa,pb)})()+row("Jours de série",streakOf(st),streakOf(o))+row("Jours actifs",me.active,him.active)
-   +'<div class="dlead'+(sa===sb?"":sa>sb?" lme":" lot")+'">'+I.medal+lead+'</div>'+'<div class="chrow">'+(st.cheer&&st.cheer.at&&diff(today(),st.cheer.at.slice(0,10))<1?'<span class="note">Encouragement envoyé : « '+esc(st.cheer.msg)+' »</span>':'<span class="note">Encourager '+nm+' :</span>')+'<div class="chips">'+CHEERS.map((m,k)=>'<button class="chip" data-cheer="'+k+'">'+m+'</button>').join("")+'<button class="chip add" data-act="cheerwrite">'+I.pen+'Écrire un message</button></div><div class="cwrite" id="cwrite" hidden><textarea id="cmsg" maxlength="140" rows="2" placeholder="Ton message pour '+nm+'…"></textarea><div class="cwf"><span class="note" id="ccount">0/140</span><button class="btn pri" data-act="cheersend">Envoyer</button></div></div></div>'
+   +'<div class="dlead'+(sa===sb?"":sa>sb?" lme":" lot")+'">'+I.medal+lead+'</div>'+'<div class="chrow">'+(st.cheer&&st.cheer.at&&diff(today(),ld(st.cheer.at))<1?'<span class="note">Encouragement envoyé : « '+esc(st.cheer.msg)+' »</span>':'<span class="note">Encourager '+nm+' :</span>')+'<div class="chips">'+CHEERS.map((m,k)=>'<button class="chip" data-cheer="'+k+'">'+m+'</button>').join("")+'<button class="chip add" data-act="cheerwrite">'+I.pen+'Écrire un message</button></div><div class="cwrite" id="cwrite" hidden><textarea id="cmsg" maxlength="140" rows="2" placeholder="Ton message pour '+nm+'…"></textarea><div class="cwf"><span class="note" id="ccount">0/140</span><button class="btn pri" data-act="cheersend">Envoyer</button></div></div></div>'
    +(o.saved?'<div class="dsync">Dernière activité de '+nm+' : '+ago2(o.saved)+'</div>':'')+'</div>'}
 
 /* ===== Premier lancement ===== */
@@ -801,5 +804,6 @@ if(!st.pg){st.pg={};Object.keys(st.day).forEach(k=>{try{const n=dayState(k).done
 checkBadges(true);
 applyTheme();applyIcon();render();
 let shownDay=today();
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&today()!==shownDay){shownDay=today();if(tab!=="set")render()}});
+function newDay(){if(document.visibilityState==="visible"&&today()!==shownDay&&!typing()&&!rd){shownDay=today();if(tab!=="set"){const y=scrollY;render();scrollTo(0,y)}}}
+document.addEventListener("visibilitychange",newDay);setInterval(newDay,30000);
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
