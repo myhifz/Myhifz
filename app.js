@@ -408,7 +408,11 @@ let smallCache={src:"",out:""};
 function smallPhoto(){const src=st.cfg.photo;if(smallCache.src===src)return smallCache.out;let out="";try{const img=new Image();img.src=src;if(img.complete&&img.naturalWidth){const cv=document.createElement("canvas");cv.width=cv.height=96;cv.getContext("2d").drawImage(img,0,0,96,96);out=cv.toDataURL("image/jpeg",.7)}}catch(e){}if(out)smallCache={src,out};return out}
 const b64e=t=>btoa(unescape(encodeURIComponent(t))),b64d=t=>decodeURIComponent(escape(atob(t.replace(/\s/g,""))));
 function ghPayload(){const o=JSON.parse(JSON.stringify(st));if(o.cfg){o.cfg.avatar=st.cfg.sharePhoto&&st.cfg.photo?smallPhoto():"";o.cfg.photo=""}if(o.duo)o.duo={file:o.duo.file,name:o.duo.name};o.app="monhifz";o.saved=new Date().toISOString();return JSON.stringify(o,null,1)}
-function ghApi(path,opt){return fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+path,Object.assign({cache:"no-store"},opt,{headers:{"Authorization":"Bearer "+gh.token,"Accept":"application/vnd.github+json"}}))}
+/* Les sauvegardes vivent sur la branche « sauvegardes » : elles ne relancent plus la publication de l'app */
+const GH_BR="sauvegardes";
+const ghUrl=path=>{const[p,q]=path.split("?");return"https://api.github.com/repos/"+GH_REPO+"/contents/"+p+"?ref="+GH_BR+(q?"&"+q:"")};
+if(gh.token&&gh.br!==GH_BR){gh.sha="";gh.br=GH_BR;gh.dirty=true;try{localStorage.setItem(KEY+"-github",JSON.stringify(gh))}catch(e){}}
+function ghApi(path,opt){const put=opt&&opt.method==="PUT";return fetch(put?"https://api.github.com/repos/"+GH_REPO+"/contents/"+path.split("?")[0]:ghUrl(path),Object.assign({cache:"no-store"},opt,{headers:{"Authorization":"Bearer "+gh.token,"Accept":"application/vnd.github+json"}}))}
 let ghBusy=false,ghTimer=null,ghAgain=false;
 /* Envoi fiable : délai max, nouvel essai automatique, rien n'est perdu tant que ce n'est pas parti */
 let ghRetry=0,ghRetryT=null,ghBusyAt=0;
@@ -418,7 +422,7 @@ function ghPush(force,bg){if(!gh.token||!gh.file)return Promise.resolve(false);
   ghBusy=true;ghBusyAt=Date.now();clearTimeout(ghRetryT);
   const tm=(p)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej("timeout"),20000))]);
   const body=()=>JSON.stringify({message:"Sauvegarde auto "+today(),content:b64e(ghPayload())});
-  const put=sha=>{const b=JSON.parse(body());if(sha)b.sha=sha;const txt=JSON.stringify(b);return tm(ghApi(gh.file,{method:"PUT",keepalive:!!bg&&txt.length<60000,body:txt}))};
+  const put=sha=>{const b=JSON.parse(body());b.branch=GH_BR;if(sha)b.sha=sha;const txt=JSON.stringify(b);return tm(ghApi(gh.file,{method:"PUT",keepalive:!!bg&&txt.length<60000,body:txt}))};
   const getSha=()=>tm(ghApi(gh.file+"?t="+Date.now())).then(r=>r.status===404?"":r.ok?r.json().then(j=>j.sha):Promise.reject(r.status));
   return (gh.sha?Promise.resolve(gh.sha):getSha()).then(put).then(r=>r.status===409||r.status===422?getSha().then(put):r).then(r=>r.status===409?new Promise(z=>setTimeout(z,1200)).then(getSha).then(put):r)
     .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(j=>{gh.sha=j.content.sha;gh.last=new Date().toISOString();gh.err="";gh.dirty=false;ghRetry=0;ghSave();st.bk=today();try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){};return true})
@@ -472,11 +476,11 @@ function closeRecap(){const s=$("sheet");s.hidden=true;document.body.classList.r
 /* ===== Défi à deux (via les sauvegardes GitHub publiques) ===== */
 let duoList=null,duoBusy=false;
 function duoFetch(force){if(!st.duo||duoBusy)return;if(!force&&st.duo.at&&Date.now()-st.duo.at<6e4)return;duoBusy=true;
-  fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+st.duo.file+"?t="+Date.now(),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}})
+  fetch(ghUrl(st.duo.file+"?t="+Date.now()),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}})
    .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={wkhit:d.wkhit||{},cheer:d.cheer||null,duoGoal:(d.cfg||{}).duoGoal,duoGoalAt:(d.cfg||{}).duoGoalAt,saved:d.saved||"",beg:d.beg||{},fin:d.fin||{},log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||""}};st.duo.at=Date.now();st.duo.err="";save();if(tab==="home"||sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})
    .catch(e=>{st.duo.err="Impossible de lire la sauvegarde de "+st.duo.name;save()}).finally(()=>{duoBusy=false})}
 let duoListErr="";
-function duoLoadList(){duoListErr="";fetch("https://api.github.com/repos/"+GH_REPO+"/contents/sauvegardes?t="+Date.now(),{cache:"no-store"}).then(r=>{if(r.status===404)return[];if(!r.ok)throw r.status;return r.json()}).then(a=>{duoList=(Array.isArray(a)?a:[]).filter(f=>/\.json$/.test(f.name)&&"sauvegardes/"+f.name!==gh.file).map(f=>({file:f.path,name:f.name.replace(/\.json$/,"").replace(/-/g," ")}));duoList.forEach(f=>fetch("https://api.github.com/repos/"+GH_REPO+"/contents/"+f.file,{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.cfg&&d.cfg.name){f.name=d.cfg.name;if(sub==="profile"&&!st.duo){const y=scrollY;render();scrollTo(0,y)}}}).catch(()=>{}));if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}}).catch(e=>{duoList=[];duoListErr=e===403?"GitHub limite les demandes pour l'instant, réessaie dans quelques minutes.":"Impossible de joindre GitHub. Vérifie ta connexion.";if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})}
+function duoLoadList(){duoListErr="";fetch(ghUrl("sauvegardes?t="+Date.now()),{cache:"no-store"}).then(r=>{if(r.status===404)return[];if(!r.ok)throw r.status;return r.json()}).then(a=>{duoList=(Array.isArray(a)?a:[]).filter(f=>/\.json$/.test(f.name)&&"sauvegardes/"+f.name!==gh.file).map(f=>({file:f.path,name:f.name.replace(/\.json$/,"").replace(/-/g," ")}));duoList.forEach(f=>fetch(ghUrl(f.file),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.cfg&&d.cfg.name){f.name=d.cfg.name;if(sub==="profile"&&!st.duo){const y=scrollY;render();scrollTo(0,y)}}}).catch(()=>{}));if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}}).catch(e=>{duoList=[];duoListErr=e===403?"GitHub limite les demandes pour l'instant, réessaie dans quelques minutes.":"Impossible de joindre GitHub. Vérifie ta connexion.";if(sub==="profile"){const y=scrollY;render();scrollTo(0,y)}})}
 const hm=iso=>{const d=new Date(iso);return d.getHours()+" h "+pad(d.getMinutes())};
 function durMin(o,day){const b=(o.beg||{})[day],f=(o.fin||{})[day];if(!b||!f)return null;return Math.max(1,Math.round((new Date(f)-new Date(b))/60000))}
 const fmtDur=m=>m<60?m+" min":Math.floor(m/60)+" h "+pad(m%60);
