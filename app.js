@@ -135,6 +135,7 @@ const I={
  cam:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.7l1.3-2h5l1.3 2h1.7A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><circle cx="12" cy="12.5" r="3.3"/></svg>',
  git:D(24,'<circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="9" r="2.2"/><path d="M6 8.2v7.6M18 11.2c0 3.5-3.5 4.3-9.8 5.6"/>'),
  bolt:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2.5L5 13.5h6l-1 8 8.5-11h-6z"/></svg>',
+ alert:'<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8 1.6 20.5h20.8zM11 9h2v6h-2zm0 7.5h2v2h-2z"/></svg>',
  check:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
 };
 
@@ -210,7 +211,7 @@ function block(kind,title,tag,pages,list,doneIds,pr,cls){
     return suRow(x,kind,on,part)}).join("")+'</div><div class="bf"><span class="note num">'+n+'/'+list.length+' sourate'+(list.length>1?"s":"")+'</span><button class="btn '+(all?"":"pri")+'" data-all="'+kind+'" data-on="'+(all?0:1)+'">'+(all?"Annuler":"Tout marquer comme fait")+'</button></div></div>'}
 
 function suRow(x,kind,on,part){const w=st.weak.includes(x.s.id);
-  return'<div class="su '+(on?"on":"")+(w?" weak":"")+'"><button class="sc" data-su="'+x.s.id+'" data-k="'+kind+'" aria-label="Cocher '+x.s.t+'">'+(on?I.check:"")+'</button><button class="sb" data-read="'+x.s.id+'" data-lo="'+x.lo+'"><span class="sn"><b>'+x.s.t+'</b><span class="num">'+(x.lo===x.hi?"p. "+x.lo:"p. "+x.lo+"–"+x.hi)+(part?" · partie":"")+(w?' · <em>à renforcer</em>':"")+'</span></span><span class="ar">'+x.s.a+'</span></button></div>'}
+  return'<div class="su '+(on?"on":"")+(w?" weak":"")+'"><button class="sc" data-su="'+x.s.id+'" data-k="'+kind+'" aria-label="Cocher '+x.s.t+'">'+(on?I.check:"")+'</button><button class="sb" data-read="'+x.s.id+'" data-lo="'+x.lo+'"><span class="sn"><b>'+x.s.t+'</b><span class="num">'+(x.lo===x.hi?"p. "+x.lo:"p. "+x.lo+"–"+x.hi)+(part?" · partie":"")+(w&&!on?' <em class="wtag">'+I.alert+'À renforcer</em>':"")+'</span></span><span class="ar">'+x.s.a+'</span></button></div>'}
 function weakBlock(x){if(!x.W.length)return"";const ids=x.d.sw,n=x.W.filter(y=>ids.includes(y.s.id)).length,all=n===x.W.length;
   return'<div class="card blk w" id="blk-sw"><div class="bh"><div class="ctitle">'+I.flag+'À renforcer</div><span class="tag">Chaque jour</span></div><div class="rng">Les sourates que tu as marquées comme difficiles.</div><div class="sus">'+x.W.map(y=>suRow(y,"sw",ids.includes(y.s.id),false)).join("")+'</div><div class="bf"><span class="note num">'+n+'/'+x.W.length+'</span><button class="btn '+(all?"":"pri")+'" data-all="sw" data-on="'+(all?0:1)+'">'+(all?"Annuler":"Tout marquer comme fait")+'</button></div></div>'}
 let revShown=false,revTap=null,revPrevDone=null,revPrevW=null;
