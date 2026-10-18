@@ -147,17 +147,24 @@ const I={
 };
 
 
-function learn(delta){
-  const r=pageRange(st.cfg);if(!r)return;let[p1,p2]=r;
-  if(st.cfg.dir==="up"){p1=Math.min(Math.max(1,p1-delta),p2)}else{p2=Math.max(Math.min(604,p2+delta),p1)}
-  if(p1===r[0]&&p2===r[1]){toast(delta>0?"Tu es déjà à la fin du Mushaf":"Il faut garder au moins une page");return}
-  lastLearn=delta>0?{p1:st.cfg.p1,p2:st.cfg.p2,a:st.cfg.a,b:st.cfg.b,n:(st.learned||[]).length,got:(st.got||[]).slice()}:null;
-  st.cfg.p1=p1;st.cfg.p2=p2;st.cfg.a=onPage(p1)[0].id;st.cfg.b=onPage(p2).slice(-1)[0].id;
-  st.learned=(st.learned||[]).concat({d:today(),n:delta>0?1:-1,p:delta>0?(st.cfg.dir==="up"?p1:p2):0,at:new Date().toISOString()}).slice(-400);save();checkBadges();
-  const np=st.cfg.dir==="up"?p1:p2;
-  toast(delta>0?"Page "+np+" ajoutée":"Dernière page retirée",delta>0?"undolearn":"")}
+const fq=()=>Math.max(0,Math.min(3,+st.cfg.fq||0)); // quarts déjà appris de la prochaine page
+const fmtN=x=>String(+(+x).toFixed(2)).replace(".",",");
+const QL={1:"¼ de page",2:"½ page",4:"1 page"};
+function learn(q){ // q en quarts : 1, 2 ou 4
+  const r=pageRange(st.cfg);if(!r)return;let[p1,p2]=r;const up=st.cfg.dir==="up";
+  if(up?p1<=1:p2>=604){toast("Tu es déjà à la fin du Mushaf");return}
+  lastLearn={p1:st.cfg.p1,p2:st.cfg.p2,a:st.cfg.a,b:st.cfg.b,fq:fq(),n:(st.learned||[]).length,got:(st.got||[]).slice()};
+  const tot=fq()+q,done=tot>=4,np=up?p1-1:p2+1;st.cfg.fq=tot%4;
+  if(done){if(up)p1=np;else p2=np;st.cfg.p1=p1;st.cfg.p2=p2;st.cfg.a=onPage(p1)[0].id;st.cfg.b=onPage(p2).slice(-1)[0].id}
+  st.learned=(st.learned||[]).concat({d:today(),n:q/4,p:done?np:0,at:new Date().toISOString()}).slice(-400);save();checkBadges();
+  toast(done?"Page "+np+" terminée":QL[q]+" ajouté"+(q===2?"e":"")+" · page "+np,"undolearn")}
+function openLearn(){const pr=program(st.cfg);if(!pr)return;const up=st.cfg.dir==="up",np=up?pr.p1-1:pr.p2+1;if(np<1||np>604)return;const f=fq(),s=$("sheet");
+  s.innerHTML='<div class="sheet-in"><button class="shx" data-act="recapclose" aria-label="Fermer">×</button><span class="ddk">Nouvel apprentissage</span><h2>Page '+np+' · '+onPage(np).map(x=>x.t).join(", ")+'</h2>'
+   +(f?'<div class="lqst"><div class="mqb">'+[0,1,2,3].map(k=>'<i class="'+(k<f?"on":"")+'"></i>').join("")+'</div><span>'+["","¼","½","¾"][f]+' déjà apprise</span></div>':'')
+   +'<p class="note" style="margin:0 0 12px">Combien as-tu appris ?</p><div class="lqs">'+[1,2,4].map(q=>'<button data-lq="'+q+'"><b>'+["","¼","½","","1"][q]+'</b><span>'+(q===4?"page":q===1?"de page":"page")+'</span>'+(f+q>=4?'<em>termine la page</em>':'')+'</button>').join("")+'</div></div>';
+  s.hidden=false;document.body.classList.add("sheet-open")}
 let lastLearn=null;
-function undoLearn(){const u=lastLearn;if(!u)return;lastLearn=null;Object.assign(st.cfg,{p1:u.p1,p2:u.p2,a:u.a,b:u.b});st.learned=(st.learned||[]).slice(0,u.n);st.got=u.got;save();$("toast").hidden=true;toast("Page retirée");const y=scrollY;render();scrollTo(0,y)}
+function undoLearn(){const u=lastLearn;if(!u)return;lastLearn=null;Object.assign(st.cfg,{p1:u.p1,p2:u.p2,a:u.a,b:u.b,fq:u.fq});st.learned=(st.learned||[]).slice(0,u.n);st.got=u.got;save();$("toast").hidden=true;toast("Page retirée");const y=scrollY;render();scrollTo(0,y)}
 function needSetup(){return'<div class="card empty"><div class="ar">بسم الله</div><p>Indique dans Réglages les sourates que tu connais et ton rythme de révision.</p><div class="chips" style="justify-content:center;margin-top:16px"><button class="btn pri" data-tab="set">Configurer mon programme</button></div></div>'}
 
 /* Accueil : tableau de bord du jour */
@@ -168,7 +175,7 @@ function weekStrip(){let h='<div class="wk">';const t=today(),dow=(new Date(t+"T
   for(let i=0;i<7;i++){const d=addDays(t,i-dow),s=d>t?"future":dayStatus(d);
     h+='<div class="wd '+s+(d===t?" now":"")+'"><span>'+DOW[new Date(d+"T12:00").getDay()].charAt(0)+'</span><i>'+(s==="full"?I.check:s==="off"?"–":"")+'</i></div>'}
   return h+'</div>'}
-function goalLine(){const g=goalInfo();if(!g)return"";return'<button class="gline" data-goal>'+I.flag+'<span>'+(g.done?"Objectif "+S[g.g-1].t+" atteint !":"Objectif "+S[g.g-1].t+" · "+g.rem+" p. · vers le "+new Date(g.eta+"T12:00").toLocaleDateString("fr-BE",{day:"numeric",month:"short"}))+'</span>'+I.next+'</button>'}
+function goalLine(){const g=goalInfo();if(!g)return"";return'<button class="gline" data-goal>'+I.flag+'<span>'+(g.done?"Objectif "+S[g.g-1].t+" atteint !":"Objectif "+S[g.g-1].t+" · "+fmtN(g.rem)+" p. · vers le "+new Date(g.eta+"T12:00").toLocaleDateString("fr-BE",{day:"numeric",month:"short"}))+'</span>'+I.next+'</button>'}
 const GEO='<svg class="geo" aria-hidden="true"><defs><pattern id="g8" width="56" height="56" patternUnits="userSpaceOnUse"><g fill="none" stroke="currentColor" stroke-width="1.1"><rect x="16" y="16" width="24" height="24"/><rect x="16" y="16" width="24" height="24" transform="rotate(45 28 28)"/><circle cx="28" cy="28" r="5"/><path d="M0 0l8 8M56 0l-8 8M0 56l8-8M56 56l-8-8"/></g></pattern></defs><rect width="200%" height="200%" fill="url(#g8)"/></svg>';
 /* Animations de l'accueil : valeurs précédentes pour animer seulement ce qui change */
 let prevPct=null,prevSk=null,prevMem=null,homeShown=false;
@@ -208,9 +215,9 @@ function vHome(){
     h+='<div class="sect">Programme du jour</div><div class="duo">'+tile("n",I.spark,"Hifdh al-Jadid",x.J,x.jd)+tile("o",I.repeat,"Hifdh",x.O,x.od)+'</div>';
     if(x.W.length){const n=x.W.filter(y=>x.d.sw.includes(y.s.id)).length;h+='<button class="weakchip" data-goto="sw">'+I.flag+'<span>À renforcer</span><b class="num">'+n+'/'+x.W.length+'</b>'+I.next+'</button>'}}
   /* 3. Mémorisation */
-  const pr=x.pr,cp=pr.total/PAGES*100,np=st.cfg.dir==="up"?pr.p1-1:pr.p2+1,nxt=np>=1&&np<=604?onPage(np):[];
-  h+='<div class="sect">Mémorisation</div><div class="card memo2"><div class="mtop2"><div><b class="num">'+cp.toFixed(1)+'<small>%</small></b><span>du Coran mémorisé</span></div><div class="mstat num"><b>'+pr.total+'</b> pages<br><b>'+hizb(pr.total)+'</b> hizb</div></div><div class="prog"><i style="width:'+Math.max(cp,1)+'%"></i></div>'+goalLine()
-   +(nxt.length?'<div class="mnext"><div><span>Prochaine page</span><b class="num">'+np+' · '+nxt.map(s=>s.t).join(", ")+'</b></div><button class="plusb" data-learn="1" aria-label="J\'ai appris une nouvelle page">'+I.plus+'</button></div>':'<p class="note">Tu as atteint la fin du Mushaf. Toutes les pages sont mémorisées.</p>')+'</div>';
+  const pr=x.pr,mem=pr.total+fq()/4,cp=mem/PAGES*100,np=st.cfg.dir==="up"?pr.p1-1:pr.p2+1,nxt=np>=1&&np<=604?onPage(np):[];
+  h+='<div class="sect">Mémorisation</div><div class="card memo2"><div class="mtop2"><div><b class="num">'+cp.toFixed(1)+'<small>%</small></b><span>du Coran mémorisé</span></div><div class="mstat num"><b>'+fmtN(mem)+'</b> pages<br><b>'+hizb(mem)+'</b> hizb</div></div><div class="prog"><i style="width:'+Math.max(cp,1)+'%"></i></div>'+goalLine()
+   +(nxt.length?'<div class="mnext"><div><span>Prochaine page'+(fq()?' · '+["","¼","½","¾"][fq()]+' apprise':'')+'</span><b class="num">'+np+' · '+nxt.map(s=>s.t).join(", ")+'</b>'+(fq()?'<div class="mqb">'+[0,1,2,3].map(k=>'<i class="'+(k<fq()?"on":"")+'"></i>').join("")+'</div>':'')+'</div><button class="plusb" data-act="learnsheet" aria-label="J\'ai appris">'+I.plus+'</button></div>':'<p class="note">Tu as atteint la fin du Mushaf. Toutes les pages sont mémorisées.</p>')+'</div>';
   /* 4. Cette semaine */
   h+=duoShort();
   h+='<div class="sect">Cette semaine</div><div class="card week">'+weekStrip()+'<div class="wkline">'+(()=>{const t=today(),dw=(new Date(t+"T12:00").getDay()+6)%7;let a=0;for(let k=0;k<=dw;k++)if(st.log[addDays(t,k-dw)])a++;return'<span><b class="num">'+a+'</b> jour'+(a>1?"s":"")+' actif'+(a>1?"s":"")+' cette semaine</span><span>Record : <b class="num">'+record()+'</b> j</span>'})()+'</div><button class="btn wide" data-act="recap">'+I.chart+'Voir le bilan de la semaine</button></div>';
@@ -319,7 +326,7 @@ function saveBar(){return'<div class="savebar" id="savebar"'+(dirty()?"":" hidde
 /* Moi : chiffres, objectif, jalons, date de début */
 function pace28(){const t=today();return Math.max(0,(st.learned||[]).filter(e=>diff(t,e.d)<28).reduce((a,e)=>a+e.n,0))/4}
 function goalInfo(){const pr=program(st.cfg),g=+st.cfg.goal;if(!pr||!g)return null;
-  const up=st.cfg.dir==="up",tp=up?S[g-1].p:S[g-1].e,rem=up?pr.p1-tp:tp-pr.p2,pace=Math.max(.25,+st.cfg.pace||2);
+  const up=st.cfg.dir==="up",tp=up?S[g-1].p:S[g-1].e,rem=(up?pr.p1-tp:tp-pr.p2)-fq()/4,pace=Math.max(.25,+st.cfg.pace||2);
   if(rem<=0)return{g,rem:0,done:true};
   const eta=addDays(today(),Math.ceil(rem/pace*7)),act=pace28();
   return{g,rem,pace,eta,act,ahead:act>=pace}}
@@ -356,7 +363,7 @@ function histData(){const out=[],t=today();
 function histChart(){const D=histData(),max=Math.max(1,...D.map(x=>x.r)),maxL=Math.max(1,...D.map(x=>x.l)),tr=D.reduce((a,x)=>a+x.r,0),tl=D.reduce((a,x)=>a+x.l,0);
   return'<div class="seg3 hseg"><button class="'+(histMode==="w"?"on":"")+'" data-hist="w">8 semaines</button><button class="'+(histMode==="m"?"on":"")+'" data-hist="m">6 mois</button></div>'
    +'<div class="htot"><div><i class="r"></i><b class="num">'+tr+'</b> pages révisées</div><div><i class="l"></i><b class="num">'+tl+'</b> pages apprises</div></div>'
-   +'<div class="hch">'+D.map((x,k)=>'<div class="hc'+(x.now?" now":"")+'"><div class="hb"><div class="hcol" style="--h:'+(x.r/max*100)+'%;--k:'+k+'">'+(x.l?'<em class="num">+'+x.l+'</em>':'')+'<i class="r"></i></div></div><span>'+x.lab+'</span></div>').join("")+'</div><p class="note" style="margin:8px 0 0">Les barres montrent les pages révisées, les pastilles « +N » les nouvelles pages apprises.</p>'
+   +'<div class="hch">'+D.map((x,k)=>'<div class="hc'+(x.now?" now":"")+'"><div class="hb"><div class="hcol" style="--h:'+(x.r/max*100)+'%;--k:'+k+'">'+(x.l?'<em class="num">+'+fmtN(x.l)+'</em>':'')+'<i class="r"></i></div></div><span>'+x.lab+'</span></div>').join("")+'</div><p class="note" style="margin:8px 0 0">Les barres montrent les pages révisées, les pastilles « +N » les nouvelles pages apprises.</p>'
    +(tr+tl===0?'<p class="note" style="margin:8px 0 0">Ton historique se remplit au fil de tes révisions.</p>':'')}
 function vMoi(){
   const c=st.cfg,pr=program(c),name=c.name.trim(),hs=c.hstart||firstDay(),bs=badges(),nOk=bs.filter(b=>b.ok).length;
@@ -371,7 +378,7 @@ function vMoi(){
   else{h+='<div class="fl">Mémoriser jusqu\'à</div><label class="pick"><span class="pt"><b>'+(c.goal&&S[c.goal-1]?S[c.goal-1].t:"Aucun objectif")+'</b>'+(c.goal&&S[c.goal-1]?'<span class="ar">'+S[c.goal-1].a+'</span>':'')+'</span>'+I.chev+'<select id="gsel" aria-label="Objectif"><option value="0">Aucun objectif</option>'+opts.map(s=>'<option value="'+s.id+'"'+(+c.goal===s.id?" selected":"")+'>'+s.id+'. '+s.t+'</option>').join("")+'</select></label>'
     +'<div class="fl">Mon rythme visé</div><label class="numf"><input id="gpace" type="text" inputmode="decimal" value="'+String(c.pace||2).replace(".",",")+'"><span>pages / semaine</span></label>';
     if(gi&&gi.done)h+='<div class="gres ok">'+I.check+'<span>Objectif atteint ! Choisis le suivant.</span></div>';
-    else if(gi)h+='<div class="gres"><div class="gbig"><b class="num">'+gi.rem+'</b> pages restantes</div><div>Arrivée prévue vers le <b>'+fmtShort(gi.eta)+'</b></div><div class="gst '+(gi.act===0?"":gi.ahead?"up":"down")+'">'+(gi.act===0?"Ajoute tes nouvelles pages avec le bouton + de l'accueil pour suivre ton rythme.":gi.ahead?"Dans les temps : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.":"Un peu en retard : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.")+'</div></div>'}
+    else if(gi)h+='<div class="gres"><div class="gbig"><b class="num">'+fmtN(gi.rem)+'</b> pages restantes</div><div>Arrivée prévue vers le <b>'+fmtShort(gi.eta)+'</b></div><div class="gst '+(gi.act===0?"":gi.ahead?"up":"down")+'">'+(gi.act===0?"Ajoute tes nouvelles pages avec le bouton + de l'accueil pour suivre ton rythme.":gi.ahead?"Dans les temps : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.":"Un peu en retard : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.")+'</div></div>'}
   h+='</div>';
   h+=defiSection();
   /* Mes chiffres */
@@ -484,7 +491,7 @@ function recapHtml(){const w=weekOf(st),pw=weekOf(st,addDays(today(),-7)),t=toda
    +(nb.length?'<div class="rnew"><span>Nouveaux jalons</span>'+nb.map(b=>'<i>'+I.medal+b.t+'</i>').join("")+'</div>':'')+'</div>'}
 function openRecap(){const s=$("sheet");s.innerHTML=recapHtml();s.hidden=false;document.body.classList.add("sheet-open");st.recapSeen=today();save();
   const red=matchMedia("(prefers-reduced-motion: reduce)").matches;
-  s.querySelectorAll(".cnt").forEach(e=>{const n=+e.dataset.n;if(red){e.textContent=n;return}const t0=performance.now(),go=x=>{const k=Math.min(1,(x-t0)/900);e.textContent=Math.round(n*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(go)};requestAnimationFrame(go)})}
+  s.querySelectorAll(".cnt").forEach(e=>{const n=+e.dataset.n;if(red){e.textContent=fmtN(n);return}const t0=performance.now(),go=x=>{const k=Math.min(1,(x-t0)/900);e.textContent=k<1?Math.round(n*(1-Math.pow(1-k,3))):fmtN(n);if(k<1)requestAnimationFrame(go)};requestAnimationFrame(go)})}
 function closeRecap(){const s=$("sheet");s.hidden=true;document.body.classList.remove("sheet-open")}
 
 /* ===== Défi à deux (via les sauvegardes GitHub publiques) ===== */
@@ -710,8 +717,9 @@ document.addEventListener("click",e=>{
   else if(d.su){const id=+d.su,k=d.k,on=!dayRec(today())[k].includes(id);revTap=on?{id,k}:null;mark(k,[id],on);const y=scrollY;render();scrollTo(0,y);
     const x=dayState(today());if(on&&x.tot&&x.done===x.tot)toast("Révision du jour terminée !")}
   else if(d.all){revTap=d.on==="1"?{k:d.all,all:true}:null;const x=dayState(today());mark(d.all,(d.all==="sj"?x.Js:d.all==="so"?x.Os:x.W).map(y=>y.s.id),d.on==="1");const y=scrollY;render();scrollTo(0,y)}
-  else if(d.learn){const before=program(st.cfg).total;learn(+d.learn);const y=scrollY;render();scrollTo(0,y);
-    const after=program(st.cfg).total;if(after!==before&&!matchMedia("(prefers-reduced-motion: reduce)").matches){const btn=document.querySelector(d.learn==="1"?".plusb":".ghost");if(btn){const r=btn.getBoundingClientRect(),f=document.createElement("div");f.className="fly"+(after<before?" neg":"");f.textContent=(after>before?"+1":"−1")+" page";f.style.left=(r.left+r.width/2)+"px";f.style.top=(r.top)+"px";document.body.appendChild(f);setTimeout(()=>f.remove(),1100);btn.classList.add("bump");setTimeout(()=>btn.classList.remove("bump"),400)}}}
+  else if(d.act==="learnsheet"){openLearn()}
+  else if(d.lq){const q=+d.lq;closeRecap();learn(q);const y=scrollY;render();scrollTo(0,y);
+    if(!matchMedia("(prefers-reduced-motion: reduce)").matches){const btn=document.querySelector(".plusb");if(btn){const r=btn.getBoundingClientRect(),f=document.createElement("div");f.className="fly";f.textContent="+"+["","¼","½","","1"][q]+" page";f.style.left=(r.left+r.width/2)+"px";f.style.top=(r.top)+"px";document.body.appendChild(f);setTimeout(()=>f.remove(),1100);btn.classList.add("bump");setTimeout(()=>btn.classList.remove("bump"),400)}}}
   else if(d.off!==undefined){const n=+d.off,i=draft.off.indexOf(n);if(i<0&&draft.off.length>=6){toast("Garde au moins un jour de révision");return}if(i<0)draft.off.push(n);else draft.off.splice(i,1);const y=scrollY;render();scrollTo(0,y)}
   else if(d.read){if(longFired){longFired=false;return}openReader(+d.read,+d.lo)}
   else if(d.rdgo){rdGo(+d.rdgo)}
@@ -722,7 +730,7 @@ document.addEventListener("click",e=>{
   else if(d.themeC){st.cfg.c=d.themeC;draft.c=d.themeC;save();applyTheme();const y=scrollY;render();scrollTo(0,y);toast("Thème "+THEMES[d.themeC].n)}
   else if(d.act==="save"){const old=st.cfg,r=pageRange(draft);draft.p1=r[0];draft.p2=r[1];
     const ch=pageRange(old)+""!==r+""||old.dir!==draft.dir||+old.jn!==+draft.jn||+old.d!==+draft.d||(old.off||[]).slice().sort()+""!==draft.off.slice().sort()+"";
-    const first=!st.cfg.start;if(old.dir!==draft.dir)draft.goal=0;st.cfg={...draft,c:st.cfg.c,icon:st.cfg.icon,name:st.cfg.name};if(ch||first)st.cfg.start=today();save();draft=null;toast("Programme enregistré");
+    const first=!st.cfg.start;if(old.dir!==draft.dir)draft.goal=0;st.cfg={...draft,c:st.cfg.c,icon:st.cfg.icon,name:st.cfg.name};if(ch||first){st.cfg.start=today();if(pageRange(old)+""!==r+""||old.dir!==draft.dir)st.cfg.fq=0}save();draft=null;toast("Programme enregistré");
     if(first)go("home");else{sub=null;render();scrollTo(0,0)}}
   else if(d.act==="sharephoto"){st.cfg.sharePhoto=!st.cfg.sharePhoto;save();clearTimeout(ghTimer);ghPush();toast(st.cfg.sharePhoto?"Ta photo sera visible dans le défi":"Ta photo n'est plus partagée");const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="nophoto"){st.cfg.photo="";save();const y=scrollY;render();scrollTo(0,y)}
