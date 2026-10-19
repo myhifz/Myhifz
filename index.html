@@ -735,6 +735,9 @@ body.onbm .wrap{padding-bottom:40px}
 .vr{display:grid;grid-template-columns:36px 1fr 36px;align-items:center;gap:8px;margin-top:14px}
 .vr>b{font-size:20px;font-weight:800;color:var(--muted);text-align:center}
 .vr>b.win{color:var(--ink)}
+.vr.pc{grid-template-columns:48px 1fr 48px}
+.vr.pc>b{font-size:17px;white-space:nowrap}
+.vr.pc>b small{font-size:11px;margin-left:1px}
 .vr>b.va.win{color:var(--acc)}
 .vr>b.vb.win{color:var(--acc2-ink)}
 .vbar{display:grid;grid-template-columns:1fr 112px 1fr;align-items:center;gap:6px}
@@ -923,6 +926,6 @@ nav svg{width:24px;height:24px}
 <div class="sheet" id="sheet" hidden></div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="app.js?v=75"></script>
+<script src="app.js?v=77"></script>
 </body>
 </html>
