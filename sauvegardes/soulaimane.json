@@ -207,8 +207,8 @@
  "wkgoal": {},
  "cheer": {
   "to": "sauvegardes/camelia.json",
-  "msg": "Allez, on ne lâche rien !",
-  "at": "2026-10-18T23:00:43.788Z"
+  "msg": "Tu y es presque !",
+  "at": "2026-10-19T15:36:48.387Z"
  },
  "cheerSeen": "2026-10-18T23:34:00.380Z",
  "notifAsk": "",
@@ -226,7 +226,10 @@
  },
  "onb": 1,
  "recapSeen": "2026-10-18",
+ "tg": {
+  "2026-10-19": 10
+ },
  "tipRev": 1,
  "app": "monhifz",
- "saved": "2026-10-18T23:56:16.103Z"
+ "saved": "2026-10-19T15:36:49.910Z"
 }
