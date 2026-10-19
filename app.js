@@ -435,7 +435,7 @@ function defiSection(){let h='<div class="sect">Défi à deux</div>';
     return h+'</div>'}
   const nm=esc((st.duo.data&&st.duo.data.cfg.name)||st.duo.name),on=!!(st.cfg.push&&st.cfg.push.endpoint);
   h+=duoCard()||'<div class="card"><p class="note" style="margin:0">'+(st.duo.err||"Chargement du défi…")+'</p></div>';
-  h+='<div class="card"><div class="fl" style="margin-top:0">Un défi juste</div><p class="note" style="margin:0">Chacun est comparé à <b>son propre programme</b> : le duel se gagne en faisant 100 % de sa révision de la semaine, et l\'apprentissage compte en % de son rythme visé (Mon objectif). Peu importe qui connaît le plus.</p></div>'
+  h+='<div class="card"><div class="fl" style="margin-top:0">Un défi juste</div><p class="note" style="margin:0">Chacun est comparé à <b>son propre programme</b> : le duel se gagne en faisant 100 % de sa révision de la semaine, et la mémorisation compte en % de son rythme visé (Mon objectif). Peu importe qui connaît le plus.</p></div>'
    +'<div class="card list">'+setRow("notif",I.bell,"Notifications",on?"Activées":"Désactivées",1)+'</div>'
    +'<div class="dfoot"><span>'+(st.duo.err?esc(st.duo.err):"Mis à jour "+ago2(st.duo.at?new Date(st.duo.at).toISOString():""))+'</span><button class="linkb" data-act="duoref">Actualiser</button><button class="linkb" data-act="duooff">Arrêter le défi</button></div>';
   return h}
@@ -604,7 +604,7 @@ function duoCard(){if(!st.duo||!st.duo.data)return"";const o=st.duo.data,me=week
   const fw=fastWins(st,o),sa=fairScore(st,fw[0]),sb=fairScore(o,fw[1]),lead=sa===sb?"Égalité cette semaine":sa>sb?"Tu mènes cette semaine":nm+" mène cette semaine";
   return'<div class="card duo3"><div class="vhd"><div class="vp"><span class="dp dme">'+(st.cfg.photo?'<img src="'+st.cfg.photo+'" alt="">':esc((st.cfg.name||"M").charAt(0).toUpperCase()))+'</span><b>Toi</b></div><span class="vs">VS</span><div class="vp"><span class="dp dot2">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':esc(nm.charAt(0).toUpperCase()))+'</span><b>'+nm+'</b></div></div>'
    +duelBlock(o,nm)+todayRace(o,nm)
-   +row("Révision faite",revPct(st),revPct(o),"%")+(()=>{const[fa,fb]=fastWins(st,o);return row("Premier à finir",fa,fb)})()+row("Apprentissage",learnPct(st),learnPct(o),"%")+row("Jours de série",streakOf(st),streakOf(o))+row("Jours actifs",me.active,him.active)
+   +row("Révision faite",revPct(st),revPct(o),"%")+(()=>{const[fa,fb]=fastWins(st,o);return row("Premier à finir",fa,fb)})()+row("Mémorisation",learnPct(st),learnPct(o),"%")+row("Jours de série",streakOf(st),streakOf(o))+row("Jours actifs",me.active,him.active)
    +'<div class="dlead'+(sa===sb?"":sa>sb?" lme":" lot")+'">'+I.medal+lead+'</div>'+(()=>{const cs=cheerSent();return'<div class="chrow">'+(cs?'<span class="note">Envoyé aujourd\'hui : « '+esc(cs)+' »</span>':'')+'<button class="btn pri wide" data-act="cheer">'+I.heart+'Encourager '+nm+'</button></div>'})()
    +(o.saved?'<div class="dsync">Dernière activité de '+nm+' : '+ago2(o.saved)+'</div>':'')+'</div>'}
 
