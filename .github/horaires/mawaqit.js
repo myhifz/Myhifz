@@ -6,17 +6,22 @@ const UA = { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS 
 async function findSlug(log) {
   let old = null; try { old = JSON.parse(fs.readFileSync(OUT, "utf8")).slug } catch (e) {}
   const found = [];
-  for (const w of WORDS) {
+  for (const w of WORDS) for (const v of ["2.0", "3.0"]) {
     try {
-      const r = await fetch("https://mawaqit.net/api/2.0/mosque/search?word=" + encodeURIComponent(w), { headers: UA });
-      const j = await r.json();
+      const r = await fetch("https://mawaqit.net/api/" + v + "/mosque/search?word=" + encodeURIComponent(w), { headers: { ...UA, Accept: "application/json" } });
+      const tx = await r.text(); let j;
+      try { j = JSON.parse(tx) } catch (e) { log.push(v + " " + w + ": " + r.status + " " + tx.slice(0, 80).replace(/\s+/g, " ")); continue }
       for (const m of (Array.isArray(j) ? j : [])) found.push({ w, slug: m.slug, name: m.name, loc: m.localisation || m.label || "" });
     } catch (e) { log.push(w + ": " + e) }
   }
   log.push(...found.map(f => [f.w, f.slug, f.name, f.loc].join(" | ")));
   const ok = found.find(f => /evere/i.test(f.loc + " " + f.name + " " + f.slug) && /ta[ow]u?ba|tawb/i.test(f.name + " " + f.slug))
     || found.find(f => /evere/i.test(f.loc + " " + f.slug) && /1140/.test(f.loc + f.slug));
-  return ok ? ok.slug : old;
+  if (ok) return ok.slug;
+  for (const g of ["mosquee-ettaouba-evere", "ettaouba-evere", "mosquee-ettaouba", "ettaouba", "mosquee-ettaouba-d-evere", "at-tawba-evere", "mosquee-at-tawba-evere", "masjid-ettaouba-evere", "ettaouba-evere-1140", "mosquee-ettaouba-evere-1140-belgium"]) {
+    try { const r = await fetch("https://mawaqit.net/fr/" + g, { headers: UA }); log.push("essai " + g + ": " + r.status); if (r.ok) return g } catch (e) {}
+  }
+  return old;
 }
 const OUT = "adhkar/horaires.json";
 
