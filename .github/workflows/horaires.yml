@@ -1,0 +1,30 @@
+name: Horaires Mawaqit (Mes Adhkar)
+on:
+  schedule:
+    - cron: "17 2 * * 1"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/horaires/**", ".github/workflows/horaires.yml"]
+permissions:
+  contents: write
+concurrency:
+  group: horaires
+  cancel-in-progress: false
+jobs:
+  horaires:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node .github/horaires/mawaqit.js
+      - run: |
+          git add adhkar/horaires.json
+          if git diff --cached --quiet; then echo "Rien de nouveau"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Horaires Mawaqit mis à jour"
+          git pull --rebase origin main
+          git push
