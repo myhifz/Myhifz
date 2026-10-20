@@ -1,5 +1,5 @@
 // Envoie les notifications quand une sauvegarde change : encouragement, révision finie, duel gagné.
-const {execSync}=require("child_process"),webpush=require("web-push");
+const {execSync}=require("child_process"),webpush=require("./webpush.js"); // web-push 3.6.7 en un seul fichier : pas d'installation, démarrage plus rapide
 const PUB="BKHKUBZamYT2RZwFD5fyTj6rMctVplO87rFLIdoCStltTPicI4BAlXrGLKx8jANAc1QnnARlqJ_FfepIiAI-isc";
 if(!process.env.VAPID_PRIVATE){console.log("Pas de clé VAPID_PRIVATE : rien à envoyer.");process.exit(0)}
 webpush.setVapidDetails("https://myhifz.github.io/Myhifz/",PUB,process.env.VAPID_PRIVATE);
@@ -10,7 +10,7 @@ const files=(before?sh("git diff --name-only "+before+" HEAD -- sauvegardes/"):s
 const name=d=>(d&&d.cfg&&d.cfg.name)||"Ton proche";
 async function send(file,kind,title,body){const r=read("",file);if(!r||!r.cfg||!r.cfg.push||!r.cfg.push.endpoint)return console.log("pas d'abonnement :",file);
   const pref=Object.assign({cheer:true,fin:true,duel:true},r.cfg.notif||{});if(!pref[kind])return console.log("désactivé :",kind,file);
-  try{await webpush.sendNotification(r.cfg.push,JSON.stringify({title,body,tag:kind}),{TTL:86400});console.log("envoyé :",kind,"→",file)}catch(e){console.log("échec :",file,e.statusCode||e.message)}}
+  try{await webpush.sendNotification(r.cfg.push,JSON.stringify({title,body,tag:kind}),{TTL:86400,urgency:"high"});console.log("envoyé :",kind,"→",file)}catch(e){console.log("échec :",file,e.statusCode||e.message)}}
 (async()=>{for(const f of files){const now=read("",f),old=before?read(before,f):read("HEAD~1",f);if(!now)continue;const o=old||{},who=name(now),partner=now.duo&&now.duo.file;
   // encouragement
   if(now.cheer&&now.cheer.at&&(!o.cheer||o.cheer.at!==now.cheer.at)&&now.cheer.to)await send(now.cheer.to,"cheer",who+" t'encourage",now.cheer.msg||"");
