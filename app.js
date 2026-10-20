@@ -255,9 +255,6 @@ function repTap(id){const t=today();if(!st.day[t]||!st.day[t].sj)st.day[t]={sj:[
   if(d.rep[id]>=R){revTap={id,k:"sw"};mark("sw",[id],true);return"done"}save();return"step"}
 function repRow(x,on){const R=REPS(),n=on?R:repOf(x.s.id);
   return'<div class="su rp'+(on?" on":"")+'"><button class="sc rpc" data-rep="'+x.s.id+'" aria-label="Répétition de '+x.s.t+'" style="--r:'+(n/R*360)+'deg">'+(on?I.check:'<b class="num">'+n+'<small>/'+R+'</small></b>')+'</button><button class="sb" data-read="'+x.s.id+'" data-lo="'+x.lo+'"><span class="sn"><b>'+x.s.t+'</b><span class="num">'+(x.lo===x.hi?"p. "+x.lo:"p. "+x.lo+"–"+x.hi)+(on?" · "+R+" fois ✓":n?" · encore "+(R-n)+" fois":" · à réciter "+R+" fois")+'</span></span><span class="ar">'+x.s.a+'</span></button></div>'}
-function openReps(){const s=$("sheet"),R=REPS();
-  s.innerHTML='<div class="sheet-in"><button class="shx" data-act="recapclose" aria-label="Fermer">×</button><span class="ddk">À renforcer</span><h2>Combien de répétitions ?</h2><p class="note" style="margin:0 0 12px">Pour chaque sourate à renforcer, chaque jour.</p><div class="lqs rps">'+[3,5,7,10].map(n=>'<button data-reps="'+n+'"'+(n===R?' class="on"':'')+'><b>'+n+'</b><span>fois</span></button>').join("")+'</div></div>';
-  s.hidden=false;document.body.classList.add("sheet-open")}
 function weakBlock(x){if(!x.W.length)return"";const ids=x.d.sw,n=x.W.filter(y=>ids.includes(y.s.id)).length,all=n===x.W.length;
   return'<div class="card blk w" id="blk-sw"><div class="bh"><div class="ctitle">'+I.flag+'À renforcer</div><span class="tag reps">'+I.repeat+'×'+REPS()+'</span></div><div class="rng">Touche le compteur après chaque récitation. À '+REPS()+', la sourate est faite.</div><div class="sus">'+x.W.map(y=>repRow(y,ids.includes(y.s.id))).join("")+'</div><div class="bf"><span class="note num">'+n+'/'+x.W.length+'</span><button class="btn '+(all?"":"pri")+'" data-all="sw" data-on="'+(all?0:1)+'">'+(all?"Annuler":"Tout marquer comme fait")+'</button></div></div>'}
 let revShown=false,revTap=null,revPrevDone=null,revPrevW=null;
@@ -512,7 +509,6 @@ function weekOf(d,end){end=end||today();let pages=0,active=0,learned=0;const per
   for(let k=6;k>=0;k--){const day=addDays(end,-k),p=(d.pg||{})[day]||0;per.push({day,p,on:!!(d.log||{})[day],off:offOf(d.cfg,day)});pages+=p;if((d.log||{})[day])active++}
   (d.learned||[]).forEach(e=>{if(diff(end,e.d)>=0&&diff(end,e.d)<7)learned+=e.n});
   return{pages,active,learned:Math.max(0,learned),per}}
-function memOf(d){try{const r=pageRange(d.cfg||{});return r?r[1]-r[0]+1:0}catch(e){return 0}}
 
 /* ===== Bilan de la semaine ===== */
 function recapHtml(){const w=weekOf(st),pw=weekOf(st,addDays(today(),-7)),t=today(),from=addDays(t,-6);
@@ -564,19 +560,10 @@ const pct=(a,b)=>b?Math.min(100,Math.round(a/b*100)):0;
 function revPct(p){let a=0,b=0;for(let k=0;k<7;k++){const d=addDays(today(),-k);a+=(p.pg||{})[d]||0;b+=plannedOf(p,d)}return pct(a,b)}
 /* Apprentissage de la semaine, en % de son rythme visé */
 function learnPct(p){const wk=weekKey(),pace=Math.max(.25,+((p.cfg||{}).pace)||2);const n=(p.learned||[]).filter(e=>e.d&&weekKey(e.d)===wk).reduce((s,e)=>s+(+e.n||0),0);return Math.max(0,Math.round(n/pace*100))}
-function duelGoal(){const o=st.duo&&st.duo.data;const mine={g:+st.cfg.duoGoal||50,at:st.cfg.duoGoalAt||""},his=o?{g:+o.duoGoal||0,at:o.duoGoalAt||""}:{g:0,at:""};return his.g&&his.at>mine.at?his.g:mine.g}
 function calWeekPages(d,wk){let n=0;for(let k=0;k<7;k++)n+=(d.pg||{})[addDays(wk,k)]||0;return n}
 function checkWeekHit(){const wk=weekKey(),g=weekTarget(st,wk);st.wkhit=st.wkhit||{};if(!st.wkhit[wk]&&g>0&&calWeekPages(st,wk)>=g){st.wkhit[wk]=new Date().toISOString();st.wkgoal=st.wkgoal||{};st.wkgoal[wk]=g}}
 function weekWinner(a,b,wk){const ha=(a.wkhit||{})[wk],hb=(b.wkhit||{})[wk];if(ha&&(!hb||ha<hb))return"a";if(hb&&(!ha||hb<ha))return"b";return""}
 function trophies(a,b){let ta=0,tb=0;const now=weekKey();new Set(Object.keys(a.wkhit||{}).concat(Object.keys(b.wkhit||{}))).forEach(wk=>{const w=weekWinner(a,b,wk);if(w==="a")ta++;if(w==="b")tb++});return[ta,tb]}
-/* Course aux pages : une page apprise par les deux → point à celui qui l'a validée en premier ; sinon point à celui qui l'a apprise */
-function pageRace(a,b){const first=(d)=>{const m={};(d.learned||[]).forEach(e=>{if(e.p&&e.n>0&&e.at&&(!m[e.p]||e.at<m[e.p]))m[e.p]=e.at});return m};
-  const wk=weekKey(),fa=first(a),fb=first(b);let pa=0,pb=0;
-  new Set(Object.keys(fa).concat(Object.keys(fb))).forEach(p=>{const x=fa[p],y=fb[p],inWk=t=>t&&weekKey(ld(t))===wk;
-    if(x&&y){if(x<y&&inWk(x))pa++;else if(y<x&&inWk(y))pb++}else if(x&&inWk(x))pa++;else if(y&&inWk(y))pb++});
-  /* page en cours : ¼ = ¼ de point, si ce morceau a été appris cette semaine */
-  const part=d=>{const q=Math.max(0,Math.min(3,+((d.cfg||{}).fq)||0));return q&&(d.learned||[]).some(e=>!e.p&&e.n>0&&e.n<1&&e.at&&weekKey(ld(e.at))===wk)?q/4:0};
-  return[pa+part(a),pb+part(b)]}
 const CHEERS=["Bon courage !","Tu y es presque !","Allez, on ne lâche rien !","Qu'Allah te facilite !"];
 function cheerBanner(){const o=st.duo&&st.duo.data;if(!o||!o.cheer)return"";const c=o.cheer;if(!c.at||c.to!==gh.file||(st.cheerSeen||"")>=c.at||diff(today(),ld(c.at))>2)return"";
   return'<div class="cheer">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':'<span class="dp dot2">'+esc((o.cfg.name||"?").charAt(0))+'</span>')+'<div><b>'+esc(o.cfg.name||st.duo.name)+' t\'encourage</b><span>« '+esc(c.msg)+' »</span></div><button class="bkx" data-act="cheerok" aria-label="Fermer">×</button></div>'}
@@ -752,7 +739,6 @@ document.addEventListener("click",e=>{
   else if(d.act==="tipok"){st.tipRev=1;save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="rdweak"){if(!rd)return;const i=st.weak.indexOf(rd.id);if(i<0)st.weak.push(rd.id);else st.weak.splice(i,1);save();rdFoot();toast(i<0?S[rd.id-1].t+" : à renforcer":S[rd.id-1].t+" : retirée");const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="cheerok"){const o=st.duo&&st.duo.data;if(o&&o.cheer)st.cheerSeen=o.cheer.at;save();const y=scrollY;render();scrollTo(0,y)}
-  else if(d.dgoal){st.cfg.duoGoal=+d.dgoal;st.cfg.duoGoalAt=new Date().toISOString();save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="notifon"){notifOn()}
   else if(d.act==="notiflater"){st.notifAsk=today();save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="notifoff"){notifOff()}
