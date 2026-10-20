@@ -248,6 +248,23 @@ nav svg{width:24px;height:24px}
   .sheet:not([hidden]){animation:fade .3s ease}
   @keyframes fade{from{opacity:0}}
 }
+/* Horaires */
+.tt .tw{font-size:13px;opacity:.85}
+.pr{padding:16px}
+.prh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:12px}
+.prh b{font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prh span{flex:none;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.prg{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.prg div{display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 0;border-radius:14px;background:var(--tint)}
+.prg span{font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap}
+.prg b{font-size:14px;font-weight:800}
+.prg .past{background:none;opacity:.5}
+.prg .sh{background:none;box-shadow:inset 0 0 0 1.5px var(--line)}
+.prg .sh.past{box-shadow:none}
+.prg .nx{background:var(--acc);color:var(--on-acc);box-shadow:0 6px 14px -6px var(--acc)}
+.prg .nx span{color:var(--on-acc);opacity:.85}
+.prn{display:flex;align-items:center;gap:8px;margin-top:12px;padding:10px 12px;border-radius:14px;background:var(--acc2-soft);font-size:14px}
+.prn svg{flex:none;color:var(--acc2-ink)}
 </style>
 </head>
 <body>
@@ -255,6 +272,6 @@ nav svg{width:24px;height:24px}
 <nav id="nav"></nav>
 <div class="sheet" id="sheet" hidden></div>
 <div class="toast" id="toast" hidden></div>
-<script src="app.js?v=1"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>

@@ -30,24 +30,6 @@ const ADHKAR = [
   ar:"اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَٰهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَىٰ عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ، أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ، وَأَبُوءُ بِذَنْبِي، فَاغْفِرْ لِي فَإِنَّهُ لَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ",
   fr:"Ô Allah, Tu es mon Seigneur, pas de divinité en dehors de Toi. Tu m'as créé et je suis Ton serviteur. Je respecte mon engagement et ma promesse envers Toi autant que je le peux. Je cherche refuge auprès de Toi contre le mal que j'ai commis. Je reconnais Tes bienfaits envers moi et je reconnais mon péché : pardonne-moi, car nul ne pardonne les péchés en dehors de Toi.",
   fd:"Celui qui le dit avec conviction et meurt ce jour-là, ou cette nuit-là, fait partie des gens du Paradis."},
- {id:"ushhid", in:"ms", n:4, src:"Abû Dâwud",
-  ar:{m:"اللَّهُمَّ إِنِّي أَصْبَحْتُ أُشْهِدُكَ، وَأُشْهِدُ حَمَلَةَ عَرْشِكَ، وَمَلَائِكَتَكَ، وَجَمِيعَ خَلْقِكَ، أَنَّكَ أَنْتَ اللَّهُ لَا إِلَٰهَ إِلَّا أَنْتَ وَحْدَكَ لَا شَرِيكَ لَكَ، وَأَنَّ مُحَمَّدًا عَبْدُكَ وَرَسُولُكَ",
-      s:"اللَّهُمَّ إِنِّي أَمْسَيْتُ أُشْهِدُكَ، وَأُشْهِدُ حَمَلَةَ عَرْشِكَ، وَمَلَائِكَتَكَ، وَجَمِيعَ خَلْقِكَ، أَنَّكَ أَنْتَ اللَّهُ لَا إِلَٰهَ إِلَّا أَنْتَ وَحْدَكَ لَا شَرِيكَ لَكَ، وَأَنَّ مُحَمَّدًا عَبْدُكَ وَرَسُولُكَ"},
-  fr:{m:"Ô Allah, en ce matin je Te prends à témoin, ainsi que les porteurs de Ton Trône, Tes anges et toutes Tes créatures, que Tu es Allah, pas de divinité en dehors de Toi, Seul, sans associé, et que Muhammad est Ton serviteur et Ton messager.",
-      s:"Ô Allah, en ce soir je Te prends à témoin, ainsi que les porteurs de Ton Trône, Tes anges et toutes Tes créatures, que Tu es Allah, pas de divinité en dehors de Toi, Seul, sans associé, et que Muhammad est Ton serviteur et Ton messager."}},
- {id:"nima", in:"ms", n:1, src:"Abû Dâwud",
-  ar:{m:"اللَّهُمَّ مَا أَصْبَحَ بِي مِنْ نِعْمَةٍ أَوْ بِأَحَدٍ مِنْ خَلْقِكَ فَمِنْكَ وَحْدَكَ لَا شَرِيكَ لَكَ، فَلَكَ الْحَمْدُ وَلَكَ الشُّكْرُ",
-      s:"اللَّهُمَّ مَا أَمْسَى بِي مِنْ نِعْمَةٍ أَوْ بِأَحَدٍ مِنْ خَلْقِكَ فَمِنْكَ وَحْدَكَ لَا شَرِيكَ لَكَ، فَلَكَ الْحَمْدُ وَلَكَ الشُّكْرُ"},
-  fr:{m:"Ô Allah, tout bienfait dont moi ou l'une de Tes créatures bénéficions ce matin vient de Toi seul, sans associé. À Toi la louange et à Toi la reconnaissance.",
-      s:"Ô Allah, tout bienfait dont moi ou l'une de Tes créatures bénéficions ce soir vient de Toi seul, sans associé. À Toi la louange et à Toi la reconnaissance."},
-  fd:"Celui qui le dit le matin s'est acquitté de la reconnaissance de sa journée, et le soir de celle de sa nuit."},
- {id:"afini", in:"ms", n:3, src:"Abû Dâwud",
-  ar:"اللَّهُمَّ عَافِنِي فِي بَدَنِي، اللَّهُمَّ عَافِنِي فِي سَمْعِي، اللَّهُمَّ عَافِنِي فِي بَصَرِي، لَا إِلَٰهَ إِلَّا أَنْتَ. اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْكُفْرِ وَالْفَقْرِ، وَأَعُوذُ بِكَ مِنْ عَذَابِ الْقَبْرِ، لَا إِلَٰهَ إِلَّا أَنْتَ",
-  fr:"Ô Allah, préserve mon corps ; ô Allah, préserve mon ouïe ; ô Allah, préserve ma vue. Pas de divinité en dehors de Toi. Ô Allah, je cherche refuge auprès de Toi contre la mécréance et la pauvreté, et je cherche refuge auprès de Toi contre le châtiment de la tombe. Pas de divinité en dehors de Toi."},
- {id:"hasbi", in:"ms", n:7, src:"Abû Dâwud",
-  ar:"حَسْبِيَ اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ، عَلَيْهِ تَوَكَّلْتُ، وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ",
-  fr:"Allah me suffit, pas de divinité en dehors de Lui. C'est en Lui que je place ma confiance, et Il est le Seigneur du Trône immense.",
-  fd:"Allah lui suffit pour ce qui le préoccupe, dans cette vie et dans l'au-delà."},
  {id:"afw", in:"ms", n:1, src:"Abû Dâwud, Ibn Mâjah",
   ar:"اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالْآخِرَةِ، اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي دِينِي وَدُنْيَايَ وَأَهْلِي وَمَالِي، اللَّهُمَّ اسْتُرْ عَوْرَاتِي، وَآمِنْ رَوْعَاتِي، اللَّهُمَّ احْفَظْنِي مِنْ بَيْنِ يَدَيَّ، وَمِنْ خَلْفِي، وَعَنْ يَمِينِي، وَعَنْ شِمَالِي، وَمِنْ فَوْقِي، وَأَعُوذُ بِعَظَمَتِكَ أَنْ أُغْتَالَ مِنْ تَحْتِي",
   fr:"Ô Allah, je Te demande le pardon et la préservation dans ce monde et dans l'au-delà. Ô Allah, je Te demande le pardon et la préservation dans ma religion, ma vie, ma famille et mes biens. Ô Allah, couvre mes défauts et apaise mes craintes. Ô Allah, protège-moi par devant, par derrière, à ma droite, à ma gauche et par au-dessus, et je cherche refuge dans Ta grandeur contre le fait d'être pris par en dessous."},
@@ -58,10 +40,6 @@ const ADHKAR = [
   ar:"بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ، وَهُوَ السَّمِيعُ الْعَلِيمُ",
   fr:"Au nom d'Allah, avec le nom duquel rien ne peut nuire, ni sur terre ni dans le ciel, et Il est Celui qui entend tout, Celui qui sait tout.",
   fd:"Rien ne lui nuira."},
- {id:"radhit", in:"ms", n:3, src:"Abû Dâwud, Ahmad",
-  ar:"رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ نَبِيًّا",
-  fr:"Je suis satisfait d'Allah comme Seigneur, de l'islam comme religion et de Muhammad ﷺ comme prophète.",
-  fd:"Allah s'est engagé à le satisfaire le Jour de la Résurrection."},
  {id:"hayy", in:"ms", n:1, src:"Al-Hâkim",
   ar:"يَا حَيُّ يَا قَيُّومُ بِرَحْمَتِكَ أَسْتَغِيثُ، أَصْلِحْ لِي شَأْنِي كُلَّهُ، وَلَا تَكِلْنِي إِلَىٰ نَفْسِي طَرْفَةَ عَيْنٍ",
   fr:"Ô Vivant, ô Toi qui subsistes par Toi-même, c'est en Ta miséricorde que je cherche secours. Arrange toutes mes affaires et ne me confie pas à moi-même, ne serait-ce que le temps d'un clin d'œil."},
@@ -74,11 +52,6 @@ const ADHKAR = [
       s:"أَمْسَيْنَا عَلَىٰ فِطْرَةِ الْإِسْلَامِ، وَعَلَىٰ كَلِمَةِ الْإِخْلَاصِ، وَعَلَىٰ دِينِ نَبِيِّنَا مُحَمَّدٍ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ، وَعَلَىٰ مِلَّةِ أَبِينَا إِبْرَاهِيمَ حَنِيفًا مُسْلِمًا، وَمَا كَانَ مِنَ الْمُشْرِكِينَ"},
   fr:{m:"Nous voici au matin sur la nature saine de l'islam, sur la parole de la sincérité, sur la religion de notre Prophète Muhammad ﷺ et sur la voie de notre père Ibrâhîm, monothéiste pur et soumis, qui n'était pas du nombre des associateurs.",
       s:"Nous voici au soir sur la nature saine de l'islam, sur la parole de la sincérité, sur la religion de notre Prophète Muhammad ﷺ et sur la voie de notre père Ibrâhîm, monothéiste pur et soumis, qui n'était pas du nombre des associateurs."}},
- {id:"fath", in:"ms", n:1, src:"Abû Dâwud",
-  ar:{m:"أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ رَبِّ الْعَالَمِينَ، اللَّهُمَّ إِنِّي أَسْأَلُكَ خَيْرَ هَٰذَا الْيَوْمِ: فَتْحَهُ، وَنَصْرَهُ، وَنُورَهُ، وَبَرَكَتَهُ، وَهُدَاهُ، وَأَعُوذُ بِكَ مِنْ شَرِّ مَا فِيهِ وَشَرِّ مَا بَعْدَهُ",
-      s:"أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ رَبِّ الْعَالَمِينَ، اللَّهُمَّ إِنِّي أَسْأَلُكَ خَيْرَ هَٰذِهِ اللَّيْلَةِ: فَتْحَهَا، وَنَصْرَهَا، وَنُورَهَا، وَبَرَكَتَهَا، وَهُدَاهَا، وَأَعُوذُ بِكَ مِنْ شَرِّ مَا فِيهَا وَشَرِّ مَا بَعْدَهَا"},
-  fr:{m:"Nous voici au matin, et le royaume appartient à Allah, Seigneur des mondes. Ô Allah, je Te demande le bien de ce jour : son ouverture, son secours, sa lumière, sa bénédiction et sa guidée ; et je cherche refuge auprès de Toi contre le mal qu'il contient et le mal de ce qui le suit.",
-      s:"Nous voici au soir, et le royaume appartient à Allah, Seigneur des mondes. Ô Allah, je Te demande le bien de cette nuit : son ouverture, son secours, sa lumière, sa bénédiction et sa guidée ; et je cherche refuge auprès de Toi contre le mal qu'elle contient et le mal de ce qui la suit."}},
  {id:"adad", in:"m", n:3, src:"Muslim",
   ar:"سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، عَدَدَ خَلْقِهِ، وَرِضَا نَفْسِهِ، وَزِنَةَ عَرْشِهِ، وَمِدَادَ كَلِمَاتِهِ",
   fr:"Gloire et louange à Allah, autant que le nombre de Ses créatures, autant qu'il Lui plaît, autant que le poids de Son Trône et autant que l'encre de Ses paroles."},
@@ -97,10 +70,6 @@ const ADHKAR = [
   ar:"أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ",
   fr:"Je demande pardon à Allah et je me repens à Lui.",
   fd:"Le Prophète ﷺ le disait cent fois par jour."},
- {id:"salat", in:"ms", n:10, src:"At-Tabarânî",
-  ar:"اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَىٰ نَبِيِّنَا مُحَمَّدٍ",
-  fr:"Ô Allah, prie sur notre Prophète Muhammad et accorde-lui la paix.",
-  fd:"Celui qui prie sur le Prophète ﷺ dix fois le matin et dix fois le soir obtiendra son intercession."},
 
  /* Avant de dormir */
  {id:"n_qul", in:"n", q:["ikh","fal","nas"], n:3, t:"Les trois Qul", src:"Al-Bukhârî",
@@ -167,6 +136,7 @@ const I={
  gear:D(22,'<path d="M10.3 3.6a1.8 1.8 0 0 1 3.4 0l.3.9a1.8 1.8 0 0 0 2.4 1l.9-.4a1.8 1.8 0 0 1 2.4 2.4l-.4.9a1.8 1.8 0 0 0 1 2.4l.9.3a1.8 1.8 0 0 1 0 3.4l-.9.3a1.8 1.8 0 0 0-1 2.4l.4.9a1.8 1.8 0 0 1-2.4 2.4l-.9-.4a1.8 1.8 0 0 0-2.4 1l-.3.9a1.8 1.8 0 0 1-3.4 0l-.3-.9a1.8 1.8 0 0 0-2.4-1l-.9.4a1.8 1.8 0 0 1-2.4-2.4l.4-.9a1.8 1.8 0 0 0-1-2.4l-.9-.3a1.8 1.8 0 0 1 0-3.4l.9-.3a1.8 1.8 0 0 0 1-2.4l-.4-.9a1.8 1.8 0 0 1 2.4-2.4l.9.4a1.8 1.8 0 0 0 2.4-1z"/><circle cx="12" cy="12" r="3"/>','<circle cx="12" cy="12" r="7.5"/>'),
  hand:D(18,'<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11M11 10.5V4a1.5 1.5 0 0 1 3 0v6.5M14 10.5V5.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-.5a6 6 0 0 1-4.9-2.5L3.4 15a1.6 1.6 0 0 1 2.5-2l2.1 2"/>'),
  star:D(16,'<path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8L3.6 9.6l5.8-.8z"/>','<path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8L3.6 9.6l5.8-.8z"/>'),
+ bell:D(18,'<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>','<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/>'),
  redo:D(18,'<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9"/><path d="M4.5 4.5V9H9"/>'),
  flame:'<svg viewBox="0 0 24 24"><defs><linearGradient id="fg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#E8432E"/><stop offset="1" stop-color="#FFA92E"/></linearGradient></defs><path fill="url(#fg)" d="M12 2c1 3.5 5 5.6 5 10.5A5.2 5.2 0 0 1 12 18a5.2 5.2 0 0 1-5-5.5c0-2.3 1.2-3.8 2.4-5 .1 1.6.8 2.7 1.8 3.3C11 7.9 11.4 4.6 12 2z"/><path fill="#FFD36E" d="M12 11c.6 1.5 2.3 2.4 2.3 4.4A2.3 2.3 0 0 1 12 18a2.3 2.3 0 0 1-2.3-2.6c0-1.3.7-2 1.3-2.6.1.7.4 1.1.8 1.3-.1-1.1.1-2.3.2-3.1z"/></svg>',
  next:'<svg class="chv" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
@@ -187,7 +157,24 @@ function prog(k,d){const L=items(k);let done=0,c=0,t=0;L.forEach(x=>{const v=Mat
 /* Temps estimé : ~4 s par répétition courte, plus pour les textes longs */
 function est(x,k){const len=x.q?x.q.reduce((a,q)=>a+QURAN[q].join(" ").length,0):pick(x.ar,k).length;return Math.max(2.2,len/14)*x.n}
 function remain(k){const s=items(k).reduce((a,x)=>a+est(x,k)*Math.max(0,x.n-Math.min(cnt(k,x.id),x.n))/x.n,0);return Math.max(1,Math.round(s/60))}
-function suggest(){const h=new Date().getHours();return h>=4&&h<12?"m":h>=12&&h<21?"s":"n"}
+/* Horaires de prière : mosquée Ettaouba (Evere), via Mawaqit (fichier mis à jour chaque semaine) */
+let H=null;try{H=JSON.parse(localStorage.getItem(KEY+"-h"))}catch(e){}
+function loadH(){fetch("horaires.json?"+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{if(j&&j.calendar){const ch=JSON.stringify(j.calendar)!==JSON.stringify(H&&H.calendar);H=j;try{localStorage.setItem(KEY+"-h",JSON.stringify(j))}catch(e){}if(ch&&tab!=="home"||ch&&tab==="home"){const y=scrollY;render();scrollTo(0,y)}}}).catch(()=>{})}
+const PN=["Fajr","Chourouq","Dhuhr","Asr","Maghrib","Icha"];
+const mins=s=>{const p=String(s).split(":");return +p[0]*60+ +p[1]};
+function ptimes(d){d=d||new Date();if(!H||!H.calendar)return null;const m=H.calendar[d.getMonth()];const t=m&&m[d.getDate()];return Array.isArray(t)&&t.length>=6?t:null}
+function nextPrayer(){const n=new Date(),c=n.getHours()*60+n.getMinutes(),t=ptimes();if(!t)return null;
+  for(const i of [0,2,3,4,5])if(mins(t[i])>c)return{i,at:t[i],m:mins(t[i])-c};
+  const tm=new Date(n);tm.setDate(tm.getDate()+1);const t2=ptimes(tm);return t2?{i:0,at:t2[0],m:mins(t2[0])+1440-c}:null}
+const dur=m=>m<60?m+" min":Math.floor(m/60)+" h "+String(m%60).padStart(2,"0");
+function suggest(){const n=new Date(),c=n.getHours()*60+n.getMinutes(),t=ptimes();
+  if(t)return c>=mins(t[0])&&c<mins(t[2])?"m":c>=mins(t[2])&&c<mins(t[5])?"s":"n";
+  const h=n.getHours();return h>=4&&h<12?"m":h>=12&&h<21?"s":"n"}
+function when(k){const t=ptimes();if(!t)return SESS[k].when;
+  return k==="m"?"Après Fajr ("+t[0]+"), jusqu'au lever du soleil ("+t[1]+")":k==="s"?"Après 'Asr ("+t[3]+"), jusqu'au Maghrib ("+t[4]+")":"Après 'Icha ("+t[5]+"), au moment de te coucher"}
+function prCard(){const t=ptimes();if(!t)return"";const nx=nextPrayer(),c=new Date().getHours()*60+new Date().getMinutes();
+  return'<div class="card pr"><div class="prh"><b>'+esc(H.mosque||"Mosquée Ettaouba")+'</b><span>Mawaqit</span></div><div class="prg">'+PN.map((n,i)=>'<div class="'+(nx&&nx.i===i&&nx.m<1440-c+mins(t[0])&&mins(t[i])>c?"nx":mins(t[i])<=c?"past":"")+(i===1?" sh":"")+'"><span>'+n+'</span><b class="num">'+t[i]+'</b></div>').join("")+'</div>'
+   +(nx?'<div class="prn">'+I.bell+'<span><b>'+PN[nx.i]+'</b> à <b class="num">'+nx.at+'</b>'+(nx.m>0?' · dans <b class="num">'+dur(nx.m)+'</b>':'')+'</span></div>':'')+'</div>'}
 
 /* Statut du jour et série : un jour compte quand matin et soir sont terminés */
 function dayStat(d){const a=prog("m",d),b=prog("s",d);if(a.pct===100&&b.pct===100)return"full";if(a.c||b.c||prog("n",d).c)return"part";return d<firstDay()?"none":d<today()?"miss":"todo"}
@@ -215,7 +202,8 @@ function homeView(){
    +'<div class="hdr"><div class="stk'+(sk?"":" zero")+'">'+I.flame+'<b class="num">'+sk+'</b><span>jour'+(sk>1?"s":"")+'</span></div><button class="gear" data-act="set" aria-label="Réglages">'+I.gear+'</button></div></div>';
   h+='<div class="today">'+GEO+'<div class="tring">'+(p.pct>=100?'<span class="tdone">'+I.check+'</span>':ring(p.pct,92,7)+'<b class="num">'+p.pct+'%</b>')+'</div>'
    +'<div class="tt"><span class="tk">Maintenant</span><b>'+S.full+'</b><span class="num">'+(p.pct>=100?"Terminé, qu'Allah les accepte":p.done+" / "+p.tot+" adhkar · ~"+remain(k)+" min")+'</span>'
-   +'<button class="tgo" data-go="'+k+'">'+(p.pct>=100?"Revoir":p.c?"Continuer":"Commencer")+I.next+'</button></div></div>';
+   +'<span class="tw">'+esc(when(k))+'</span><button class="tgo" data-go="'+k+'">'+(p.pct>=100?"Revoir":p.c?"Continuer":"Commencer")+I.next+'</button></div></div>';
+  h+=prCard();
   h+='<div class="sect">Aujourd\'hui</div><div class="card list">';
   ["m","s","n"].forEach(x=>{const q=prog(x),s=SESS[x];h+='<button class="srw sess'+(q.pct>=100?" ok":"")+'" data-go="'+x+'"><span class="dti">'+I[s.ic]+'</span><span class="srt">'+s.full+'<span class="dtb"><i style="width:'+q.pct+'%"></i></span></span><span class="srv num">'+(q.pct>=100?'<span class="okb">'+I.check+'</span>':q.done+"/"+q.tot)+'</span>'+I.next+'</button>'});
   h+='</div><div class="sect">Cette semaine</div><div class="card">'+weekStrip()
@@ -251,7 +239,7 @@ function card(x,k,i){const c=Math.min(cnt(k,x.id),x.n),done=c>=x.n,open=opened[k
    ;
   return h+'</article>'}
 function sessView(k){const S=SESS[k],p=prog(k),L=items(k);
-  let h='<div class="shd"><span class="dti big">'+I[S.ic]+'</span><div><h1>'+S.full+'</h1><span class="hdate">'+S.when+'</span></div></div>';
+  let h='<div class="shd"><span class="dti big">'+I[S.ic]+'</span><div><h1>'+S.full+'</h1><span class="hdate">'+esc(when(k))+'</span></div></div>';
   if(p.pct>=100)h+=finCard(k);
   else h+='<div class="rvp"><div class="rvt"><b class="num">'+p.done+' <small>/ '+p.tot+'</small></b><span class="num">~'+remain(k)+' min</span></div><div class="rvbar"><i style="width:'+p.pct+'%"></i></div></div>';
   h+='<div class="dks-list">'+L.map((x,i)=>card(x,k,i)).join("")+'</div>';
@@ -297,7 +285,7 @@ function openSet(){const c=st.cfg,s=$("sheet");
    +'<button class="tgl'+(c.fd?" on":"")+'" data-tg="fd"><span><b>Bienfaits</b><small>La récompense mentionnée dans le hadith</small></span><i></i></button></div>'
    +'<div class="fl">Aujourd\'hui</div><button class="reset" data-act="resetday">'+I.redo+' Remettre la journée à zéro</button>'
    +'<div class="howto"><b>Installer sur l\'iPhone</b><ol><li>Ouvre la page dans Safari</li><li>Touche Partager, puis « Sur l\'écran d\'accueil »</li></ol></div>'
-   +'<p class="note" style="text-align:center;margin-top:16px">Textes : Hisn al-Muslim. La journée se termine à 4 h du matin.</p></div>';
+   +'<p class="note" style="text-align:center;margin-top:16px">Uniquement des invocations authentiques (Al-Bukhârî, Muslim, ou jugées authentiques par les savants du hadith).<br>Horaires : mosquée Ettaouba d\'Evere, via Mawaqit.<br>La journée se termine à 4 h du matin.</p></div>';
   s.hidden=false;document.body.classList.add("sheet-open")}
 function closeSheet(){$("sheet").hidden=true;document.body.classList.remove("sheet-open")}
 
@@ -324,8 +312,9 @@ document.addEventListener("click",e=>{const t=e.target.closest("button,article,[
 document.addEventListener("input",e=>{if(e.target.id==="fname"){st.cfg.name=e.target.value.trim();save();if(tab==="home"){const h=document.querySelector(".hd h1");if(h)h.textContent=st.cfg.name||"Mes Adhkar"}}});
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",applyTheme);
 /* Si l'app reste ouverte, on rafraîchit l'accueil quand on y revient */
-document.addEventListener("visibilitychange",()=>{if(!document.hidden&&tab==="home")render()});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){loadH();if(tab==="home")render()}});
+setInterval(()=>{if(tab==="home"&&!document.hidden){const e=document.querySelector(".card.pr");if(e)e.outerHTML=prCard()}},30000);
 if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 const q0=new URLSearchParams(location.search).get("t");if(q0&&SESS[q0])tab=q0;
 $("nav").innerHTML=[["home","Accueil","home"],["m","Matin","sun"],["s","Soir","dusk"],["n","Sommeil","night"]].map(([k,n,i])=>'<button data-tab="'+k+'">'+I[i]+'<span>'+n+'</span></button>').join("");
-render();
+render();loadH();
