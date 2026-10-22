@@ -20,6 +20,7 @@ if(ICONS[URL_ICON])st.cfg.icon=URL_ICON;
 if(!ICONS[st.cfg.icon])st.cfg.icon="rose";
 function applyIcon(){document.querySelectorAll('link[rel="apple-touch-icon"],link[rel="icon"]').forEach(l=>l.href="icons/"+st.cfg.icon+".png")}
 const logo=()=>'<div class="logo"><img src="icons/'+st.cfg.icon+'.png" alt=""></div>';
+st.duo=null;st.cfg.sharePhoto=false;st.cfg.push=null;delete st.cfg.notif;delete st.cheer;
 try{const t=localStorage.getItem(KEY+"-tab");if(["home","rev","plan","set","moi"].includes(t))tab=t}catch(e){}
 const saveLocal=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}; // sur ce téléphone seulement
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){};if(typeof ghSchedule==="function")ghSchedule()};
@@ -84,7 +85,6 @@ function mark(kind,ids,on){
   const t=today(),before=dayState(t).done;if(!st.day[t]||!st.day[t].sj)st.day[t]={sj:[],so:[],sw:[]};const d=st.day[t];if(!d.sw)d.sw=[];
   ids.forEach(p=>{const i=d[kind].indexOf(p);if(on&&i<0)d[kind].push(p);if(!on&&i>=0)d[kind].splice(i,1)});
   st.log[t]=d.sj.length+d.so.length+d.sw.length; if(!st.log[t])delete st.log[t];
-  setTimeout(()=>{if(typeof checkWeekHit==="function"){checkWeekHit();try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}},0);
   const x=dayState(t);st.tg=st.tg||{};st.tg[t]=x.tot;const wasFull=!!d.full;d.full=!!(x.tot&&x.done>=x.tot);
   st.beg=st.beg||{};st.fin=st.fin||{};const now=new Date().toISOString();
   if(on&&!st.beg[t])st.beg[t]=now;if(d.full&&!wasFull&&!st.fin[t])st.fin[t]=now;if(!d.full&&st.fin[t]&&!wasFull)delete st.fin[t];
@@ -214,8 +214,6 @@ function vHome(){
   let h='<div class="hd"><div class="hdt">'+(name?'<span class="hs">Salam Aleykoum</span><h1>'+esc(name)+'</h1>':'<h1>Salam Aleykoum</h1>')+'<span class="hdate">'+fmtDay(today())+'</span></div>'
    +'<div class="stk'+(sk?"":" zero")+'" data-v="'+sk+'">'+I.flame+'<b class="num">'+sk+'</b><span>jour'+(sk>1?"s":"")+'</span></div></div>';
   if(!x.pr)return h+needSetup();
-  h+=cheerBanner();
-  if(gh.token&&st.duo&&!(st.cfg.push&&st.cfg.push.endpoint)&&!notifSupport()&&st.notifAsk!==today())h+='<div class="cheer nask">'+I.bell+'<div><b>Activer les notifications</b><span>Pour savoir quand '+esc((st.duo.data&&st.duo.data.cfg.name)||"ton proche")+' t\'encourage ou finit sa révision.</span></div><button class="btn pri" data-act="notifon">Activer</button><button class="bkx" data-act="notiflater" aria-label="Plus tard">×</button></div>';
   if(needBackup()){const a=bkAge();h+='<div class="bkban">'+I.cloud+'<div><b>Pense à sauvegarder</b><span>'+(a===null?"Tu n\'as encore jamais sauvegardé.":"Dernière sauvegarde il y a "+a+" jours.")+'</span></div><button class="btn pri" data-act="savefile">Sauvegarder</button><button class="bkx" data-act="later" aria-label="Plus tard">×</button></div>'}
   const left=x.tot-x.done,pct=x.tot?Math.round(x.done/x.tot*100):100,R=34,C=2*Math.PI*R;
   /* 1. Aujourd'hui */
@@ -233,7 +231,6 @@ function vHome(){
   h+='<div class="sect">Mémorisation</div><div class="card memo2"><div class="mtop2"><div><b class="num">'+cp.toFixed(1)+'<small>%</small></b><span>du Coran mémorisé</span></div><div class="mstat num"><b>'+fmtN(mem)+'</b> pages<br><b>'+hizb(mem)+'</b> hizb</div></div><div class="prog"><i style="width:'+Math.max(cp,1)+'%"></i></div>'+goalLine()
    +(nxt.length?'<div class="mnext"><div><span>Prochaine page'+(fq()?' · '+["","¼","½","¾"][fq()]+' apprise':'')+'</span><b class="num">'+np+' · '+nxt.map(s=>s.t).join(", ")+'</b>'+(fq()?'<div class="mqb">'+[0,1,2,3].map(k=>'<i class="'+(k<fq()?"on":"")+'"></i>').join("")+'</div>':'')+'</div><button class="ghost" data-act="unlearnsheet" aria-label="Retirer">−</button><button class="plusb" data-act="learnsheet" aria-label="J\'ai appris">'+I.plus+'</button></div>':'<p class="note">Tu as atteint la fin du Mushaf. Toutes les pages sont mémorisées.</p>')+'</div>';
   /* 4. Cette semaine */
-  h+=duoShort();
   h+='<div class="sect">Cette semaine</div><div class="card week">'+weekStrip()+'<div class="wkline">'+(()=>{const t=today(),dw=(new Date(t+"T12:00").getDay()+6)%7;let a=0;for(let k=0;k<=dw;k++)if(st.log[addDays(t,k-dw)])a++;return'<span><b class="num">'+a+'</b> jour'+(a>1?"s":"")+' actif'+(a>1?"s":"")+' cette semaine</span><span>Record : <b class="num">'+record()+'</b> j</span>'})()+'</div><button class="btn wide" data-act="recap">'+I.chart+'Voir le bilan de la semaine</button></div>';
   return h}
 
@@ -401,7 +398,7 @@ function vMoi(){
   const c=st.cfg,pr=program(c),name=c.name.trim(),hs=c.hstart||firstDay(),bs=badges(),nOk=bs.filter(b=>b.ok).length;
   let h='<div class="mhd"><h1>Moi</h1><button class="gear" data-tab="set" aria-label="Réglages">'+I.gear+'</button></div>';
   h+='<div class="card prof"><div class="pfr"><label class="av'+(c.photo?" ph":"")+'" aria-label="Changer la photo de profil">'+(c.photo?'<img src="'+c.photo+'" alt="">':(name?esc(name.charAt(0).toUpperCase()):I.user))+'<span class="avcam">'+I.cam+'</span><input type="file" id="photo" accept="image/*" class="vh"></label><div class="pfc"><input class="field" id="nm" type="text" maxlength="24" autocomplete="given-name" placeholder="Ton prénom" value="'+esc(c.name)+'"><span class="note">En hifdh depuis '+since(hs)+(pr?' · '+pr.total+' pages':'')+'</span></div></div>'
-   +(c.photo?(gh.token?'<button class="tgl'+(c.sharePhoto?" on":"")+'" data-act="sharephoto"><span><b>Montrer ma photo dans le défi</b><small>Visible publiquement sur GitHub, en petit format.</small></span><i></i></button>':'')+'<button class="linkb" data-act="nophoto">Retirer la photo</button>':'')+'</div>';
+   +(c.photo?'<button class="linkb" data-act="nophoto">Retirer la photo</button>':'')+'</div>';
   /* Mon objectif */
   const gi=goalInfo(),up=c.dir==="up";
   const opts=pr?S.filter(s=>(up?s.id<pr.a:s.id>pr.b)||s.id===+c.goal):[];if(up)opts.reverse();
@@ -412,7 +409,6 @@ function vMoi(){
     if(gi&&gi.done)h+='<div class="gres ok">'+I.check+'<span>Objectif atteint ! Choisis le suivant.</span></div>';
     else if(gi)h+='<div class="gres"><div class="gbig"><b class="num">'+fmtN(gi.rem)+'</b> pages restantes</div><div>Arrivée prévue vers le <b>'+fmtShort(gi.eta)+'</b></div><div class="gst '+(gi.act===0?"":gi.ahead?"up":"down")+'">'+(gi.act===0?"Ajoute tes nouvelles pages avec le bouton + de l'accueil pour suivre ton rythme.":gi.ahead?"Dans les temps : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.":"Un peu en retard : tu apprends "+gi.act.toFixed(1).replace(".",",")+" p./semaine.")+'</div></div>'}
   h+='</div>';
-  h+=defiSection();
   /* Mes chiffres */
   h+='<div class="sect">Mes chiffres</div><div class="kp"><div class="card"><b class="num">'+Math.round(st.tp||0)+'</b><span>pages révisées</span></div><div class="card"><b class="num">'+Object.keys(st.log).length+'</b><span>jours actifs</span></div><div class="card"><b class="num">'+record()+'</b><span>meilleure série</span></div><div class="card"><b class="num">'+pace28().toFixed(1).replace(".",",").replace(",0","")+'</b><span>pages apprises / semaine</span></div></div>';
   /* Carte du Coran */
@@ -424,20 +420,8 @@ function vMoi(){
   /* Date de début */
   h+='<div class="sect">Mon parcours</div><div class="card"><div class="fl" style="margin-top:0">Date de début du hifdh</div><input class="field" id="hst" type="date" max="'+today()+'" value="'+hs+'"><div class="note" style="margin-top:8px">Début le '+fmtShort(hs)+' · il y a '+since(hs)+'.</div></div>';
   return h}
-function defiSection(){let h='<div class="sect">Défi à deux</div>';
-  if(!gh.token)return h+'<div class="card"><p class="note" style="margin:0">Pour faire un défi, active d\'abord la sauvegarde automatique GitHub (Réglages → Sauvegarde). Ton proche doit faire pareil sur son téléphone.</p><button class="btn wide" style="margin-top:12px" data-gosub="data">Ouvrir la sauvegarde</button></div>';
-  if(!st.duo){h+='<div class="card">';if(duoList===null){duoLoadList();h+='<p class="note" style="margin:0">Recherche des autres sauvegardes…</p>'}
-    else if(!duoList.length)h+='<p class="note" style="margin:0">'+(duoListErr||'Aucune autre sauvegarde trouvée. Ton proche doit mettre son prénom, puis activer la sauvegarde automatique avec la même clé.')+'</p><button class="btn wide" data-act="duolist">Actualiser la liste</button>';
-    else h+='<p class="note" style="margin:0 0 10px">Avec qui veux-tu faire le défi ?</p><div class="chips">'+duoList.map(f=>'<button class="btn" data-duo="'+esc(f.file)+'" data-dn="'+esc(f.name)+'">'+esc(f.name.charAt(0).toUpperCase()+f.name.slice(1))+'</button>').join("")+'</div>';
-    return h+'</div>'}
-  const nm=esc((st.duo.data&&st.duo.data.cfg.name)||st.duo.name),on=!!(st.cfg.push&&st.cfg.push.endpoint);
-  h+=duoCard()||'<div class="card"><p class="note" style="margin:0">'+(st.duo.err||"Chargement du défi…")+'</p></div>';
-  h+='<div class="card"><div class="fl" style="margin-top:0">Un défi juste</div><p class="note" style="margin:0">Chacun est comparé à <b>son propre programme</b> : le duel se gagne en faisant 100 % de sa révision de la semaine, et la mémorisation compte en % de son rythme visé (Mon objectif). Peu importe qui connaît le plus.</p></div>'
-   +'<div class="card list">'+setRow("notif",I.bell,"Notifications",on?"Activées":"Désactivées",1)+'</div>'
-   +'<div class="dfoot"><span>'+(st.duo.err?esc(st.duo.err):"Mis à jour "+ago2(st.duo.at?new Date(st.duo.at).toISOString():""))+'</span><button class="linkb" data-act="duoref">Actualiser</button><button class="linkb" data-act="duooff">Arrêter le défi</button></div>';
-  return h}
 function restoreFrom(v){if(!v||(!v.cfg&&!v.s))throw 0;
-    const keep={bk:[st.bk,v.saved,v.bk].filter(Boolean).sort().pop()||""};st={log:v.log||{},day:v.day||{},weak:v.weak||[],tp:v.tp||0,learned:v.learned||[],got:v.got,gotAt:v.gotAt||{},pg:v.pg||{},beg:v.beg||{},fin:v.fin||{},duo:v.duo||null,onb:1,wkhit:v.wkhit||{},wkgoal:v.wkgoal||{},cheer:v.cheer||null,cheerSeen:[st.cheerSeen,v.cheerSeen].filter(Boolean).sort().pop()||"",recapSeen:v.recapSeen||"",tg:v.tg||{},tipRev:v.tipRev||st.tipRev||0,cfg:Object.assign({...DEF},v.cfg||{},{push:(st.cfg&&st.cfg.push)||null})};
+    const keep={bk:[st.bk,v.saved,v.bk].filter(Boolean).sort().pop()||""};st={log:v.log||{},day:v.day||{},weak:v.weak||[],tp:v.tp||0,learned:v.learned||[],got:v.got,gotAt:v.gotAt||{},pg:v.pg||{},beg:v.beg||{},fin:v.fin||{},duo:null,onb:1,wkhit:v.wkhit||{},wkgoal:v.wkgoal||{},cheer:v.cheer||null,cheerSeen:[st.cheerSeen,v.cheerSeen].filter(Boolean).sort().pop()||"",recapSeen:v.recapSeen||"",tg:v.tg||{},tipRev:v.tipRev||st.tipRev||0,cfg:Object.assign({...DEF},v.cfg||{},{push:(st.cfg&&st.cfg.push)||null})};
     if(!st.cfg.a&&v.s){const ids=Object.keys(v.s).map(Number);if(ids.length){st.cfg.a=Math.min(...ids);st.cfg.b=Math.max(...ids)}}
     if(ICONS[URL_ICON])st.cfg.icon=URL_ICON;if(!ICONS[st.cfg.icon])st.cfg.icon="rose";
     Object.assign(st,keep);save();draft=null;applyTheme();applyIcon();toast("Données restaurées");render()}
@@ -483,7 +467,6 @@ function ghPush(force,bg){if(!gh.token||!gh.file)return Promise.resolve(false);
     .finally(()=>{ghBusy=false;if(ghAgain){ghAgain=false;ghSchedule()}})}
 function ghLater(){clearTimeout(ghRetryT);const w=[4,10,30,60,120][Math.min(ghRetry,4)]*1000;ghRetry++;ghRetryT=setTimeout(()=>{if(gh.dirty)ghPush()},w)}
 function ghSchedule(){if(!gh.token)return;gh.dirty=true;ghSave();clearTimeout(ghTimer);ghTimer=setTimeout(()=>{ghTimer=null;ghPush()},1500)}
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&typeof duoFetch==="function"&&(tab==="home"||tab==="moi"))duoFetch()});
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&(ghTimer||gh.dirty)){clearTimeout(ghTimer);ghTimer=null;ghPush(false,true)}
   else if(document.visibilityState==="visible"&&gh.dirty){ghRetry=0;ghPush()}});
 addEventListener("online",()=>{if(gh.dirty){ghRetry=0;ghPush()}});
@@ -525,76 +508,12 @@ function openRecap(){const s=$("sheet");s.innerHTML=recapHtml();s.hidden=false;d
   s.querySelectorAll(".cnt").forEach(e=>{const n=+e.dataset.n;if(red){e.textContent=fmtN(n);return}const t0=performance.now(),go=x=>{const k=Math.min(1,(x-t0)/900);e.textContent=k<1?Math.round(n*(1-Math.pow(1-k,3))):fmtN(n);if(k<1)requestAnimationFrame(go)};requestAnimationFrame(go)})}
 function closeRecap(){const s=$("sheet");s.hidden=true;document.body.classList.remove("sheet-open")}
 
-/* ===== Défi à deux (via les sauvegardes GitHub publiques) ===== */
-let duoList=null,duoBusy=false;
-function duoFetch(force){if(!st.duo||duoBusy)return;if(!force&&st.duo.at&&Date.now()-st.duo.at<6e4)return;duoBusy=true;
-  fetch(ghUrl(st.duo.file+"?t="+Date.now()),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}})
-   .then(r=>{if(!r.ok)throw r.status;return r.json()}).then(d=>{st.duo.data={wkhit:d.wkhit||{},cheer:d.cheer||null,duoGoal:(d.cfg||{}).duoGoal,duoGoalAt:(d.cfg||{}).duoGoalAt,saved:d.saved||"",beg:d.beg||{},fin:d.fin||{},log:d.log||{},pg:d.pg||{},learned:d.learned||[],cfg:{avatar:/^data:image\/(jpeg|png);base64,/.test((d.cfg||{}).avatar||"")?(d.cfg||{}).avatar:"",off:(d.cfg||{}).off||[],p1:(d.cfg||{}).p1,p2:(d.cfg||{}).p2,a:(d.cfg||{}).a,b:(d.cfg||{}).b,name:(d.cfg||{}).name||"",fq:(d.cfg||{}).fq||0,jn:(d.cfg||{}).jn,d:(d.cfg||{}).d,dir:(d.cfg||{}).dir,start:(d.cfg||{}).start,pace:(d.cfg||{}).pace},tg:d.tg||{}};st.duo.at=Date.now();st.duo.err="";saveLocal();if((tab==="home"||tab==="moi")&&!typing()){const y=scrollY;render();scrollTo(0,y)}})
-   .catch(e=>{st.duo.err="Impossible de lire la sauvegarde de "+st.duo.name;saveLocal()}).finally(()=>{duoBusy=false})}
-let duoListErr="";
-function duoLoadList(){duoListErr="";fetch(ghUrl("sauvegardes?t="+Date.now()),{cache:"no-store"}).then(r=>{if(r.status===404)return[];if(!r.ok)throw r.status;return r.json()}).then(a=>{duoList=(Array.isArray(a)?a:[]).filter(f=>/\.json$/.test(f.name)&&"sauvegardes/"+f.name!==gh.file).map(f=>({file:f.path,name:f.name.replace(/\.json$/,"").replace(/-/g," ")}));duoList.forEach(f=>fetch(ghUrl(f.file),{cache:"no-store",headers:{"Accept":"application/vnd.github.raw+json"}}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.cfg&&d.cfg.name){f.name=d.cfg.name;if(tab==="moi"&&!st.duo){const y=scrollY;render();scrollTo(0,y)}}}).catch(()=>{}));if(tab==="moi"){const y=scrollY;render();scrollTo(0,y)}}).catch(e=>{duoList=[];duoListErr=e===403?"GitHub limite les demandes pour l'instant, réessaie dans quelques minutes.":"Impossible de joindre GitHub. Vérifie ta connexion.";if(tab==="moi"){const y=scrollY;render();scrollTo(0,y)}})}
+/* Petits outils (heures, durées) */
 /* Quelqu'un écrit : on ne redessine pas l'écran (le texte serait perdu) */
 function typing(){const a=document.activeElement;return!!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&$("app").contains(a))}
 const hm=iso=>{const d=new Date(iso);return d.getHours()+" h "+pad(d.getMinutes())};
 function durMin(o,day){const b=(o.beg||{})[day],f=(o.fin||{})[day];if(!b||!f)return null;return Math.max(1,Math.round((new Date(f)-new Date(b))/60000))}
 const fmtDur=m=>m<60?m+" min":Math.floor(m/60)+" h "+pad(m%60);
-function fastWins(a,b){let wa=0,wb=0;for(let k=0;k<7;k++){const day=addDays(today(),-k),fa=(a.fin||{})[day],fb=(b.fin||{})[day];if(!fa&&!fb)continue;
-  if(fa&&!fb){wa++;continue}if(fb&&!fa){wb++;continue}if(fa<fb)wa++;else if(fb<fa)wb++}return[wa,wb]}
-function todayRace(o,nm){const t=today(),fa=(st.fin||{})[t],fb=(o.fin||{})[t],da=durMin(st,t),db=durMin(o,t);
-  const who=(f,d)=>f?"fini à "+hm(f)+(d!==null?" en "+fmtDur(d):""):"pas encore fini";
-  let title;if(!fa&&!fb)title="Personne n'a encore fini aujourd'hui";
-  else if(fa&&!fb)title="Tu as fini en premier aujourd'hui";else if(fb&&!fa)title=nm+" a fini en première aujourd'hui";
-  else title=fa<fb?"Tu as fini en premier aujourd'hui":nm+" a fini en première aujourd'hui";
-  return'<div class="race"><div class="rt">'+I.bolt+'<b>'+title+'</b></div><div class="rl"><span><i class="dme"></i>Toi : '+who(fa,da)+'</span><span><i class="dot2"></i>'+nm+' : '+who(fb,db)+'</span></div></div>'}
-/* ===== Duel de la semaine, course aux pages, encouragements ===== */
-const weekKey=d=>{const t=d||today();return addDays(t,-((new Date(t+"T12:00").getDay()+6)%7))};
-/* Programme d'une personne (moi ou le proche) pour un jour donné */
-function workIndexC(c,date){const s0=c.start||date,o=c.off||[];let n=0,d=s0;const dir=diff(date,s0)>=0?1:-1,g0=Math.abs(diff(date,s0));let g=0;
-  while(d!==date&&g++<=g0+1){if(!o.includes(new Date(d+"T12:00").getDay()))n+=dir;d=addDays(d,dir)}return n}
-function firstOf(p){const ks=Object.keys(p.log||{}).filter(k=>(p.log||{})[k]).sort(),c=[(p.cfg||{}).start,ks[0]].filter(Boolean).sort();return c[0]||today()}
-function plannedOf(p,date){if(date<firstOf(p))return 0;const t=(p.tg||{})[date];if(t!=null)return t;const c=p.cfg||{};if(offOf(c,date))return 0;let pr=null;try{pr=program(Object.assign({jn:6,d:3,dir:"up"},c))}catch(e){}if(!pr)return 0;
-  let k=0;if(pr.old.length){const i=((workIndexC(c,date)%pr.d)+pr.d)%pr.d;k=pr.old.slice(i*pr.k,(i+1)*pr.k).length}return pr.jadid.length+k}
-function weekTarget(p,wk){let n=0;for(let k=0;k<7;k++)n+=plannedOf(p,addDays(wk,k));return n}
-const pct=(a,b)=>b?Math.min(100,Math.round(a/b*100)):0;
-/* Révision faite sur les 7 derniers jours, en % de ce qui était prévu */
-function revPct(p){let a=0,b=0;for(let k=0;k<7;k++){const d=addDays(today(),-k);a+=(p.pg||{})[d]||0;b+=plannedOf(p,d)}return pct(a,b)}
-/* Apprentissage de la semaine, en % de son rythme visé */
-function learnPct(p){const wk=weekKey(),pace=Math.max(.25,+((p.cfg||{}).pace)||2);const n=(p.learned||[]).filter(e=>e.d&&weekKey(e.d)===wk).reduce((s,e)=>s+(+e.n||0),0);return Math.max(0,Math.round(n/pace*100))}
-function calWeekPages(d,wk){let n=0;for(let k=0;k<7;k++)n+=(d.pg||{})[addDays(wk,k)]||0;return n}
-function checkWeekHit(){const wk=weekKey(),g=weekTarget(st,wk);st.wkhit=st.wkhit||{};if(!st.wkhit[wk]&&g>0&&calWeekPages(st,wk)>=g){st.wkhit[wk]=new Date().toISOString();st.wkgoal=st.wkgoal||{};st.wkgoal[wk]=g}}
-function weekWinner(a,b,wk){const ha=(a.wkhit||{})[wk],hb=(b.wkhit||{})[wk];if(ha&&(!hb||ha<hb))return"a";if(hb&&(!ha||hb<ha))return"b";return""}
-function trophies(a,b){let ta=0,tb=0;const now=weekKey();new Set(Object.keys(a.wkhit||{}).concat(Object.keys(b.wkhit||{}))).forEach(wk=>{const w=weekWinner(a,b,wk);if(w==="a")ta++;if(w==="b")tb++});return[ta,tb]}
-const CHEERS=["Bon courage !","Tu y es presque !","Allez, on ne lâche rien !","Qu'Allah te facilite !"];
-function cheerBanner(){const o=st.duo&&st.duo.data;if(!o||!o.cheer)return"";const c=o.cheer;if(!c.at||c.to!==gh.file||(st.cheerSeen||"")>=c.at||diff(today(),ld(c.at))>2)return"";
-  return'<div class="cheer">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':'<span class="dp dot2">'+esc((o.cfg.name||"?").charAt(0))+'</span>')+'<div><b>'+esc(o.cfg.name||st.duo.name)+' t\'encourage</b><span>« '+esc(c.msg)+' »</span></div><button class="bkx" data-act="cheerok" aria-label="Fermer">×</button></div>'}
-function duelBlock(o,nm){const wk=weekKey(),a=pct(calWeekPages(st,wk),weekTarget(st,wk)),b=pct(calWeekPages(o,wk),weekTarget(o,wk)),w=weekWinner(st,o,wk),[ta,tb]=trophies(st,o);
-  const bar=(v,cls)=>'<div class="dlbar '+cls+'"><i style="--w:'+v+'%"></i></div>';
-  const end=addDays(wk,6),left=diff(end,today());
-  return'<div class="duel"><div class="dlh">'+I.trophy+'<b>Duel de la semaine</b><span class="num">Premier à 100 %</span></div>'
-   +'<div class="dlrow"><span>Toi</span>'+bar(a,"dlme")+'<b class="num">'+a+' %</b>'+(w==="a"?I.trophy:'')+'</div>'
-   +'<div class="dlrow"><span>'+nm+'</span>'+bar(b,"dlot")+'<b class="num">'+b+' %</b>'+(w==="b"?I.trophy:'')+'</div>'
-   +'<div class="dlf">'+(w?(w==="a"?"Tu as gagné le duel de la semaine !":nm+" a gagné le duel de la semaine !"):"Fin du duel "+(left<=0?"ce soir":"dans "+left+" jour"+(left>1?"s":"")))+'<span class="num">Trophées : Toi '+ta+' · '+nm+' '+tb+'</span></div></div>'}
-const fairScore=(p,fw)=>revPct(p)/5+streakOf(p)*2+fw*3+Math.min(learnPct(p),200)/10;
-function leadOf(o,nm){const fw=fastWins(st,o),sa=fairScore(st,fw[0]),sb=fairScore(o,fw[1]);return{cls:sa===sb?"":sa>sb?" lme":" lot",t:sa===sb?"Égalité cette semaine":sa>sb?"Tu mènes cette semaine":nm+" mène cette semaine"}}
-const avMe=()=>'<span class="dp dme">'+(st.cfg.photo?'<img src="'+st.cfg.photo+'" alt="">':esc((st.cfg.name||"M").charAt(0).toUpperCase()))+'</span>';
-const avOt=(o,nm)=>'<span class="dp dot2">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':esc(nm.charAt(0).toUpperCase()))+'</span>';
-function cheerSent(){return st.cheer&&st.cheer.at&&st.duo&&st.cheer.to===st.duo.file&&diff(today(),ld(st.cheer.at))<1?st.cheer.msg:""}
-function duoShort(){if(!st.duo||!st.duo.data)return"";const o=st.duo.data,nm=esc(o.cfg.name||st.duo.name),L=leadOf(o,nm),cs=cheerSent();
-  return'<div class="sect">Défi à deux</div><div class="card dshort"><button class="dsh" data-tab="moi"><span class="dpair">'+avMe()+avOt(o,nm)+'</span><span class="dst"><b>Toi et '+nm+'</b><span class="'+L.cls+'">'+L.t+'</span></span>'+I.next+'</button>'
-   +duelBlock(o,nm)+'<div class="dsf">'+(cs?'<span class="note">Envoyé : « '+esc(cs)+' »</span>':'<span class="note">Un petit mot pour '+nm+' ?</span>')+'<button class="btn pri" data-act="cheer">'+I.heart+'Encourager</button></div></div>'}
-function openCheer(){if(!st.duo)return;const o=st.duo.data||{cfg:{}},nm=esc(o.cfg.name||st.duo.name),s=$("sheet");
-  s.innerHTML='<div class="sheet-in"><button class="shx" data-act="recapclose" aria-label="Fermer">×</button><span class="ddk">Encourager</span><h2>'+nm+'</h2><div class="chl">'+CHEERS.map((m,k)=>'<button data-cheer="'+k+'">'+m+'</button>').join("")+'</div><div class="fl">Ou écris ton message</div><textarea id="cmsg" class="cmsg" maxlength="140" rows="3" placeholder="Ton message pour '+nm+'…"></textarea><div class="cwf"><span class="note" id="ccount">0/140</span><button class="btn pri" data-act="cheersend">Envoyer</button></div></div>';
-  s.hidden=false;document.body.classList.add("sheet-open");const t=$("cmsg");t.oninput=()=>{$("ccount").textContent=t.value.length+"/140"}}
-function sendCheer(msg){st.cheer={to:st.duo.file,msg:msg,at:new Date().toISOString()};save();closeRecap();toast("Encouragement envoyé");const y=scrollY;render();scrollTo(0,y)}
-function duoCard(){if(!st.duo||!st.duo.data)return"";const o=st.duo.data,me=weekOf(st),him=weekOf(o),nm=esc(o.cfg.name||st.duo.name);
-  const row=(lab,a,b,u)=>{u=u||"";const m=Math.max(1,a,b),wa=a/m*100,wb=b/m*100;return'<div class="vr'+(u?" pc":"")+'"><b class="num va'+(a>b?" win":"")+'">'+fmtN(a)+(u?'<small>'+u+'</small>':'')+'</b><div class="vbar"><span class="vl"><i style="--w:'+wa+'%"></i></span><span class="vlab">'+lab+'</span><span class="vrt"><i style="--w:'+wb+'%"></i></span></div><b class="num vb'+(b>a?" win":"")+'">'+fmtN(b)+(u?'<small>'+u+'</small>':'')+'</b></div>'};
-  const fw=fastWins(st,o),sa=fairScore(st,fw[0]),sb=fairScore(o,fw[1]),lead=sa===sb?"Égalité cette semaine":sa>sb?"Tu mènes cette semaine":nm+" mène cette semaine";
-  return'<div class="card duo3"><div class="vhd"><div class="vp"><span class="dp dme">'+(st.cfg.photo?'<img src="'+st.cfg.photo+'" alt="">':esc((st.cfg.name||"M").charAt(0).toUpperCase()))+'</span><b>Toi</b></div><span class="vs">VS</span><div class="vp"><span class="dp dot2">'+(o.cfg.avatar?'<img src="'+o.cfg.avatar+'" alt="">':esc(nm.charAt(0).toUpperCase()))+'</span><b>'+nm+'</b></div></div>'
-   +duelBlock(o,nm)+todayRace(o,nm)
-   +row("Révision faite",revPct(st),revPct(o),"%")+(()=>{const[fa,fb]=fastWins(st,o);return row("Premier à finir",fa,fb)})()+row("Mémorisation",learnPct(st),learnPct(o),"%")+row("Jours de série",streakOf(st),streakOf(o))+row("Jours actifs",me.active,him.active)
-   +'<div class="dlead'+(sa===sb?"":sa>sb?" lme":" lot")+'">'+I.medal+lead+'</div>'+(()=>{const cs=cheerSent();return'<div class="chrow">'+(cs?'<span class="note">Envoyé aujourd\'hui : « '+esc(cs)+' »</span>':'')+'<button class="btn pri wide" data-act="cheer">'+I.heart+'Encourager '+nm+'</button></div>'})()
-   +(o.saved?'<div class="dsync">Dernière activité de '+nm+' : '+ago2(o.saved)+'</div>':'')+'</div>'}
-
 /* ===== Premier lancement ===== */
 let ob=null;
 function needOnb(){return!st.onb&&!program(st.cfg)}
@@ -621,26 +540,6 @@ function onbClick(d){const c=ob.cfg;
   if(d.oboff!==undefined){const k=+d.oboff,i=c.off.indexOf(k);if(i<0&&c.off.length>=6)return true;if(i<0)c.off.push(k);else c.off.splice(i,1);render();return true}
   if(d.obc){c.c=d.obc;st.cfg.c=d.obc;applyTheme();render();return true}
   return false}
-/* ===== Notifications ===== */
-const VAPID_PUB="BKHKUBZamYT2RZwFD5fyTj6rMctVplO87rFLIdoCStltTPicI4BAlXrGLKx8jANAc1QnnARlqJ_FfepIiAI-isc";
-const b64u=s=>{const p="=".repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from([...b].map(c=>c.charCodeAt(0)))};
-function notifSupport(){const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;
-  if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window))return standalone?"Ton iPhone doit être en iOS 16.4 ou plus récent.":"Ouvre l'app depuis son icône sur l'écran d'accueil pour activer les notifications.";
-  if(!standalone)return"Ouvre l'app depuis son icône sur l'écran d'accueil pour activer les notifications.";return""}
-function notifOn(){if(!gh.token){toast("Active d'abord la sauvegarde automatique GitHub");return}
-  Notification.requestPermission().then(p=>{if(p!=="granted"){toast("Notifications refusées dans les réglages de l'iPhone");return null}
-    return navigator.serviceWorker.ready.then(r=>r.pushManager.getSubscription().then(s=>s||r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUB)})))})
-  .then(s=>{if(!s)return;const j=s.toJSON();st.cfg.push={endpoint:j.endpoint,keys:j.keys};st.cfg.notif=Object.assign({cheer:true,fin:true,duel:true},st.cfg.notif||{});save();toast("Notifications activées");const y=scrollY;render();scrollTo(0,y)})
-  .catch(e=>toast("Impossible d'activer les notifications"))}
-function notifOff(){navigator.serviceWorker.ready.then(r=>r.pushManager.getSubscription()).then(s=>s&&s.unsubscribe()).catch(()=>{});st.cfg.push=null;save();toast("Notifications désactivées");const y=scrollY;render();scrollTo(0,y)}
-function vNotif(){const sup=notifSupport(),on=!!(st.cfg.push&&st.cfg.push.endpoint),pref=Object.assign({cheer:true,fin:true,duel:true},st.cfg.notif||{}),nm=esc((st.duo&&st.duo.data&&st.duo.data.cfg.name)||"ton proche");
-  let h=subHead("Notifications","Pour le défi à deux.","Moi");
-  h+='<div class="card">'+head(I.bell,on?"Notifications activées":"Recevoir des notifications",on?"Sur ce téléphone, même quand l\'app est fermée.":"Sois prévenu quand "+nm+" t\'encourage, finit sa révision ou gagne le duel.",1);
-  if(!on&&sup)h+='<p class="note" style="margin:12px 0 0">'+sup+'</p>';
-  else if(!on)h+='<button class="btn pri wide" data-act="notifon">'+I.bell+'Activer les notifications</button>';
-  else{h+='<div class="nopts">'+[["cheer","Encouragements",nm+" t\'envoie un message"],["fin","Révision terminée",nm+" a fini sa révision du jour"],["duel","Duel gagné",nm+" gagne le duel de la semaine"]].map(([k,t,d])=>'<button class="tgl'+(pref[k]?" on":"")+'" data-npref="'+k+'"><span><b>'+t+'</b><small>'+d+'</small></span><i></i></button>').join("")+'</div><button class="linkb" style="margin-top:12px" data-act="notifoff">Désactiver sur ce téléphone</button>'}
-  h+='</div><p class="note">Les notifications arrivent en général moins d\'une minute après. '+nm.charAt(0).toUpperCase()+nm.slice(1)+' doit aussi les activer sur son téléphone pour recevoir les tiennes.</p>';
-  return h}
 function vSet(){
   if(!draft)initDraft();
   const pr=program(draft),per=pr&&pr.old.length?pr.k:0;
@@ -694,8 +593,8 @@ function vSet(){
 function render(){
   const onb=needOnb();document.body.classList.toggle("onbm",onb);
   if(onb){$("app").innerHTML=vOnb();onbBind();return}
-  $("app").innerHTML=tab==="home"?vHome():tab==="rev"?vRev():tab==="plan"?vPlan():tab==="moi"?(sub==="notif"?vNotif():vMoi()):vSet();
-  if(tab==="moi")duoFetch();if(tab==="home"){duoFetch();if(new Date().getDay()===5&&st.recapSeen!==today()&&Object.keys(st.log).length>=2)setTimeout(()=>{if(tab==="home"&&$("sheet").hidden)openRecap()},900)}
+  $("app").innerHTML=tab==="home"?vHome():tab==="rev"?vRev():tab==="plan"?vPlan():tab==="moi"?vMoi():vSet();
+  if(tab==="home"){if(new Date().getDay()===5&&st.recapSeen!==today()&&Object.keys(st.log).length>=2)setTimeout(()=>{if(tab==="home"&&$("sheet").hidden)openRecap()},900)}
   document.body.classList.toggle("onset",tab==="set");
   if(tab==="home")animateHome();else homeShown=false;
   if(tab==="rev")animateRev();else{revShown=false;revPrevW=null;revPrevDone=null}
@@ -719,7 +618,7 @@ function render(){
     if($("gpace"))$("gpace").onchange=e=>{const v=parseFloat(String(e.target.value).replace(",","."));st.cfg.pace=isFinite(v)&&v>0?Math.max(.25,Math.min(50,v)):2;save();re()};
     if($("hst"))$("hst").onchange=e=>{if(e.target.value&&e.target.value<=today()){st.cfg.hstart=e.target.value;save();re()}};
   }}
-function go(t){if(t==="moi"&&tab!=="set")duoList=null;draft=null;resetArm=false;sub=null;tab=t;try{localStorage.setItem(KEY+"-tab",t)}catch(e){}render();scrollTo(0,0)}
+function go(t){draft=null;resetArm=false;sub=null;tab=t;try{localStorage.setItem(KEY+"-tab",t)}catch(e){}render();scrollTo(0,0)}
 
 document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
@@ -730,27 +629,15 @@ document.addEventListener("click",e=>{
   else if(d.mode){st.cfg.mode=d.mode;save();applyTheme();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="recap"){openRecap()}
   else if(d.act==="recapclose"){closeRecap()}
-  else if(d.duo){st.duo={file:d.duo,name:d.dn,at:0,data:null,err:""};save();duoFetch(true);const y=scrollY;render();scrollTo(0,y)}
-  else if(d.act==="duolist"){duoList=null;const y=scrollY;render();scrollTo(0,y)}
-  else if(d.cheer!==undefined){if(st.duo)sendCheer(CHEERS[+d.cheer])}
-  else if(d.act==="cheer"){openCheer()}
-  else if(d.act==="cheersend"){const m=($("cmsg").value||"").replace(/\s+/g," ").trim();if(!m){toast("Écris d'abord ton message");return}if(st.duo)sendCheer(m.slice(0,140))}
   else if(d.act==="undolearn"){undoLearn()}
   else if(d.act==="tipok"){st.tipRev=1;save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="rdweak"){if(!rd)return;const i=st.weak.indexOf(rd.id);if(i<0)st.weak.push(rd.id);else st.weak.splice(i,1);save();rdFoot();toast(i<0?S[rd.id-1].t+" : à renforcer":S[rd.id-1].t+" : retirée");const y=scrollY;render();scrollTo(0,y)}
-  else if(d.act==="cheerok"){const o=st.duo&&st.duo.data;if(o&&o.cheer)st.cheerSeen=o.cheer.at;save();const y=scrollY;render();scrollTo(0,y)}
-  else if(d.act==="notifon"){notifOn()}
-  else if(d.act==="notiflater"){st.notifAsk=today();save();const y=scrollY;render();scrollTo(0,y)}
-  else if(d.act==="notifoff"){notifOff()}
-  else if(d.npref){st.cfg.notif=Object.assign({cheer:true,fin:true,duel:true},st.cfg.notif||{});st.cfg.notif[d.npref]=!st.cfg.notif[d.npref];save();const y=scrollY;render();scrollTo(0,y)}
-  else if(d.act==="duoref"){duoFetch(true);toast("Actualisation…")}
-  else if(d.act==="duooff"){st.duo=null;save();duoList=null;const y=scrollY;render();scrollTo(0,y)}
   else if(d.goto){go("rev");const el=$("blk-"+d.goto);if(el){const y=el.getBoundingClientRect().top+scrollY-14-(parseFloat(getComputedStyle(document.documentElement).paddingTop)||0);scrollTo({top:Math.max(0,y),behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),1200)}}
   else if(d.goal!==undefined){go("moi")}
   else if(d.gosub){tab="set";sub=d.gosub;draft=null;render();scrollTo(0,0)}
   else if(d.pday){planPrev=planSel;planSel=d.pday;if(d.pday.slice(0,7)!==planMonth)planMonth=d.pday.slice(0,7);const y=scrollY;render();scrollTo(0,y);planPrev=null}
   else if(d.mon){const [Y,M]=planMonth.split("-").map(Number),nd=new Date(Y,M-1+ +d.mon,1);planMonth=nd.getFullYear()+"-"+pad(nd.getMonth()+1);const y=scrollY;render();scrollTo(0,y);const g=document.querySelector(".calg");if(g&&!matchMedia("(prefers-reduced-motion: reduce)").matches){g.classList.add("draw")}}
-  else if(d.sub!==undefined){if(d.sub==="profile")duoList=null;sub=d.sub||null;draft=null;resetArm=false;render();scrollTo(0,0)}
+  else if(d.sub!==undefined){sub=d.sub||null;draft=null;resetArm=false;render();scrollTo(0,0)}
   else if(d.su){const id=+d.su,k=d.k,on=!dayRec(today())[k].includes(id);revTap=on?{id,k}:null;mark(k,[id],on);const y=scrollY;render();scrollTo(0,y);
     const x=dayState(today());if(on&&x.tot&&x.done===x.tot)toast("Révision du jour terminée !")}
   else if(d.all){revTap=d.on==="1"?{k:d.all,all:true}:null;const x=dayState(today());mark(d.all,(d.all==="sj"?x.Js:d.all==="so"?x.Os:x.W).map(y=>y.s.id),d.on==="1");const y=scrollY;render();scrollTo(0,y)}
@@ -776,7 +663,6 @@ document.addEventListener("click",e=>{
     const ch=pageRange(old)+""!==r+""||old.dir!==draft.dir||+old.jn!==+draft.jn||+old.d!==+draft.d||(old.off||[]).slice().sort()+""!==draft.off.slice().sort()+"";
     const first=!st.cfg.start,oldPr=program(old),oldI=oldPr&&old.start?((workIndex(today())%oldPr.d)+oldPr.d)%oldPr.d:0;if(old.dir!==draft.dir)draft.goal=0;st.cfg={...draft,c:st.cfg.c,icon:st.cfg.icon,name:st.cfg.name};if(ch||first){const np=program(st.cfg);st.cfg.start=first?today():startKeeping(np?oldI%np.d:0,st.cfg.off);if(pageRange(old)+""!==r+""||old.dir!==draft.dir)st.cfg.fq=0}save();draft=null;toast("Programme enregistré");
     if(first)go("home");else{sub=null;render();scrollTo(0,0)}}
-  else if(d.act==="sharephoto"){st.cfg.sharePhoto=!st.cfg.sharePhoto;save();clearTimeout(ghTimer);ghPush();toast(st.cfg.sharePhoto?"Ta photo sera visible dans le défi":"Ta photo n'est plus partagée");const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="nophoto"){st.cfg.photo="";save();const y=scrollY;render();scrollTo(0,y)}
   else if(d.act==="reset"){if(!resetArm){resetArm=true;const y=scrollY;render();scrollTo(0,y);return}
     st={log:{},day:{},weak:[],tp:0,learned:[],got:[],gotAt:{},pg:{},beg:{},fin:{},wkhit:{},cfg:{...DEF,c:st.cfg.c,icon:st.cfg.icon,mode:st.cfg.mode}};save();draft=null;resetArm=false;toast("Données effacées");render()}
