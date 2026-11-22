@@ -11,25 +11,32 @@
  "fin": {},
  "wkhit": {},
  "cfg": {
-  "c": "jaune",
-  "name": "",
-  "a": 0,
-  "b": 0,
+  "c": "rose",
+  "name": "Camélia ",
+  "a": 62,
+  "b": 114,
   "dir": "up",
-  "jn": 6,
-  "d": 3,
-  "start": "",
+  "jn": 5,
+  "d": 7,
+  "start": "2026-11-22",
   "icon": "rose",
   "p1": 0,
   "p2": 0,
-  "off": [],
+  "off": [
+   5
+  ],
   "goal": 0,
   "pace": 2,
-  "hstart": "",
+  "hstart": "2026-11-22",
   "mode": "auto",
   "avatar": "",
   "photo": ""
  },
+ "bk": "2026-11-22",
+ "onb": 1,
+ "tg": {
+  "2026-11-22": 12
+ },
  "app": "monhifz",
- "saved": "2026-11-22T06:29:03.590Z"
+ "saved": "2026-11-22T06:29:37.569Z"
 }
